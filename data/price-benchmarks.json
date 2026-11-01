@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "last_updated": "2026-11-01",
+  "currency": "USD",
+  "records": [],
+  "source_status": {
+    "solar_installed_price": {
+      "status": "withheld",
+      "reason": "The August 2026 Berkeley Lab public file has not been obtained and reviewed as a real dataset, and current commercial reuse rights have not been confirmed in writing.",
+      "next_gates": [
+        "Obtain the exact August 2026 public CSV and preserve its source version.",
+        "Obtain explicit current commercial reuse permission or a clearly applicable dataset licence.",
+        "Run and independently review the documented 2024\u20132025 residential PV-only, rooftop, host-owned cohort.",
+        "Publish only city samples with at least 100 projects or state samples with at least 500 projects, with quartiles, sample count, period and limitations."
+      ]
+    },
+    "ahs_metro_roofing_job_cost": {
+      "status": "withheld",
+      "reason": "The 2023 AHS relational PUF has not been analyzed. The roofing JOBTYPE code, project universe, weighted percentiles, replicate variance and Census Table C-16 reconciliation remain unresolved.",
+      "next_gates": [
+        "Obtain and inspect the official 2023 relational PROJECT and HOUSEHOLD PUF files and value-label package.",
+        "Verify the roofing JOBTYPE code and replicate-weight method.",
+        "Reconcile the PUF metro estimates and uncertainty against official Census Table C-16 outputs.",
+        "Publish metro-only whole-project nominal-dollar distributions with a validated 2013 OMB CBSA identity, unweighted sample count and imputation/scope disclosures."
+      ]
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "attested_by": "",
+  "attested_on": "",
+  "checks": {
+    "publisher_identity_verified": false,
+    "domain_and_brand_clearance_verified": false,
+    "authorship_and_expert_reviews_verified": false,
+    "original_content_review_complete": false,
+    "calculator_validation_complete": false,
+    "legal_privacy_and_terms_review_complete": false,
+    "accessibility_manual_testing_complete": false,
+    "production_deployment_verified": false,
+    "official_data_rechecked": false
+  },
+  "evidence": {
+    "publisher_identity_verified": "",
+    "domain_and_brand_clearance_verified": "",
+    "authorship_and_expert_reviews_verified": "",
+    "original_content_review_complete": "",
+    "calculator_validation_complete": "",
+    "legal_privacy_and_terms_review_complete": "",
+    "accessibility_manual_testing_complete": "",
+    "production_deployment_verified": "",
+    "official_data_rechecked": ""
+  }
+}

@@ -1,0 +1,22 @@
+# Python caches and bytecode
+__pycache__/
+*.py[cod]
+
+# Operating-system/editor metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary audit/build artifacts
+.audit-inline-*
+*.tmp
+
+# Owner-only production files must never ship in a public build
+launch-readiness.json
+sitemap.xml
+.dev.vars
+
+# Generated public deployment output
+dist/
+.wrangler/

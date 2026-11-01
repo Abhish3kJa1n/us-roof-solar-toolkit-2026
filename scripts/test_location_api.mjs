@@ -1,0 +1,174 @@
+import assert from 'node:assert/strict';
+import { onRequestGet as locationGet } from '../functions/api/location.js';
+import { onRequestGet as pvGet } from '../functions/api/pvwatts.js';
+import { onRequestGet as tariffsGet } from '../functions/api/tariffs.js';
+
+const request = (path) => new Request(`https://example.test${path}`);
+const jsonResponse = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
+const read = async (response) => ({ status: response.status, body: await response.json() });
+const blockedQuotaDb = { prepare() { return { bind() { return { async first() { return null; } }; } }; } };
+const quotaDb = (row = { windowCount: 1, dayCount: 1 }) => {
+  const db = {
+    calls: 0,
+    sql: '',
+    values: null,
+    prepare(sql) {
+      db.sql = sql;
+      assert.match(sql, /INSERT INTO api_quota/);
+      assert.match(sql, /RETURNING window_count/);
+      return {
+        bind(...values) {
+          db.values = values;
+          assert.equal(values.length, 6);
+          if (values[0] === 'census') {
+            assert.equal(values[4], 60, 'Census lookup guard should allow at most 60 calls per 15-minute bucket');
+            assert.equal(values[5], 10000, 'Census lookup guard should cap daily calls at 10,000');
+          } else if (values[0] === 'pvwatts') {
+            assert.equal(values[4], 180, 'PVWatts guard should allow at most 180 calls per 15-minute bucket');
+            assert.equal(values[5], 15000, 'PVWatts guard should cap daily calls at 15,000');
+          } else if (values[0] === 'openei') {
+            assert.equal(values[4], 60, 'OpenEI site cap should allow at most 60 calls per 15-minute bucket');
+            assert.equal(values[5], 5000, 'OpenEI site cap should cap daily calls at 5,000');
+          }
+          return { async first() { db.calls += 1; return row; } };
+        },
+      };
+    },
+  };
+  return db;
+};
+
+// City/state endpoint input validation must happen before Census TIGERweb fetches.
+let calls = [];
+globalThis.fetch = async (url, options) => {
+  calls.push({ url: String(url), options });
+  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
+  if (layer === '28') return jsonResponse({ features: [{ attributes: {
+    BASENAME: 'Austin', STATE: '48', INTPTLAT: '30.2672', INTPTLON: '-97.7431', GEOID: '4805000', LSADC: '25',
+  } }] });
+  if (layer === '30') return jsonResponse({ features: [{ attributes: {
+    BASENAME: 'Example CDP', STATE: '48', INTPTLAT: '30.1', INTPTLON: '-97.9', GEOID: '4899999', LSADC: '57',
+  } }] });
+  throw new Error('Unexpected Census layer URL: ' + url);
+};
+let result = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: {} }));
+assert.equal(result.status, 503, 'Census lookup must fail closed without the shared quota binding');
+assert.equal(calls.length, 0, 'missing Census quota guard must not call TIGERweb');
+const censusQuotaDb = quotaDb();
+result = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: censusQuotaDb } }));
+assert.equal(result.status, 200);
+assert.equal(censusQuotaDb.values[0], 'census');
+assert.equal(censusQuotaDb.values[4], 60);
+assert.equal(censusQuotaDb.values[5], 10000);
+assert.equal(result.body.places.length, 2);
+assert.equal(result.body.places[0].placeName, 'Austin');
+assert.equal(result.body.places[0].stateAbbreviation, 'TX');
+assert.equal(result.body.places[0].geographyType, 'Incorporated place');
+assert.equal(result.body.places[1].geographyType, 'Census-designated place');
+assert.match(result.body.source, /US Census Bureau TIGERweb Current/);
+assert.match(result.body.geographyType, /not a citywide solar average/i);
+assert.equal(calls.length, 2, 'both incorporated and Census-designated places must be searched');
+assert.ok(calls.every((call) => /tigerweb\.geo\.census\.gov/.test(call.url)));
+assert.ok(calls.every((call) => /BASENAME/.test(decodeURIComponent(call.url))));
+
+calls = [];
+result = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: blockedQuotaDb } }));
+assert.equal(result.status, 429, 'Census lookup must honour its independent site-side request cap');
+assert.equal(calls.length, 0, 'exhausted Census quota must not call TIGERweb');
+
+calls = [];
+result = await read(await locationGet({ request: request('/api/location?city=Austin%27%20OR%201%3D1&state=TX') }));
+assert.equal(result.status, 400, 'reject SQL-like punctuation before calling Census');
+assert.equal(calls.length, 0);
+result = await read(await locationGet({ request: request('/api/location?city=Austin&state=XX') }));
+assert.equal(result.status, 400);
+assert.equal(calls.length, 0);
+
+// PVWatts missing-key and bounds errors should never call NLR.
+calls = [];
+result = await read(await pvGet({ request: request('/api/pvwatts?lat=30&lon=-97&capacity=4&tilt=20&azimuth=180&losses=14'), env: {} }));
+assert.equal(result.status, 503);
+result = await read(await pvGet({ request: request('/api/pvwatts?lat=30&lon=-97&capacity=0&tilt=20&azimuth=180&losses=14'), env: { PVWATTS_API_KEY: 'test-secret' } }));
+assert.equal(result.status, 400);
+result = await read(await pvGet({ request: request('/api/pvwatts?lat=0&lon=0&capacity=4&tilt=20&azimuth=180&losses=14'), env: { PVWATTS_API_KEY: 'test-secret' } }));
+assert.equal(result.status, 400, 'public PVWatts proxy must reject coordinates outside supported US bounds');
+assert.equal(calls.length, 0);
+
+// Global D1 quota guard is mandatory and must fail closed.
+const validPath = request('/api/pvwatts?lat=30.2672&lon=-97.7431&capacity=4&tilt=20&azimuth=180&losses=14');
+result = await read(await pvGet({ request: validPath, env: { PVWATTS_API_KEY: 'test-secret' } }));
+assert.equal(result.status, 503);
+assert.equal(calls.length, 0, 'missing D1 quota guard must not call NLR');
+const failedQuotaDb = { prepare() { throw new Error('D1 unavailable'); } };
+result = await read(await pvGet({ request: validPath, env: { PVWATTS_API_KEY: 'test-secret', API_QUOTA_DB: failedQuotaDb } }));
+assert.equal(result.status, 503);
+assert.equal(calls.length, 0, 'quota guard error must fail closed before NLR');
+result = await read(await pvGet({ request: validPath, env: { PVWATTS_API_KEY: 'test-secret', API_QUOTA_DB: blockedQuotaDb } }));
+assert.equal(result.status, 429);
+assert.equal(calls.length, 0, 'rejected shared quota must not call NLR');
+
+// Successful model response must not expose the server-side API key.
+calls = [];
+globalThis.fetch = async (url, options) => {
+  calls.push({ url: String(url), options });
+  return jsonResponse({
+    errors: [], warnings: ['Illustrative warning'],
+    outputs: { ac_annual: 6200, ac_monthly: [400, 420, 500, 530, 590, 610, 630, 600, 520, 490, 450, 460], solrad_annual: 5.1, capacity_factor: 11.79039279253541 },
+    station_info: { lat: 30.2, lon: -97.8, elev: 150, tz: -6, location: 'Example weather station', weather_data_source: 'NSRDB PSM V3 GOES tmy-2020 3.2.0', distance: 20.5 },
+    inputs: { api_key: 'test-secret' },
+  });
+};
+const goodQuotaDb = quotaDb();
+result = await read(await pvGet({ request: validPath, env: { PVWATTS_API_KEY: 'test-secret', API_QUOTA_DB: goodQuotaDb } }));
+assert.equal(result.status, 200);
+assert.equal(result.body.outputs.annualAcKwh, 6200);
+assert.equal(result.body.outputs.annualKwhPerKwDc, 1550);
+assert.equal(result.body.outputs.monthlyAcKwh.length, 12);
+assert.ok(Math.abs(result.body.outputs.capacityFactorPercent - 11.79039279253541) < 1e-9, 'capacity factor must remain in PVWatts percent units, not be multiplied by 100');
+assert.equal(result.body.stationInfo.weather_data_source, 'NSRDB PSM V3 GOES tmy-2020 3.2.0');
+assert.equal(result.body.stationInfo.distance, 20.5);
+assert.equal(JSON.stringify(result.body).includes('test-secret'), false);
+assert.equal(calls.length, 1);
+assert.equal(goodQuotaDb.calls, 1, 'global D1 quota reservation must be checked before NLR call');
+assert.equal(goodQuotaDb.values[0], 'pvwatts');
+assert.equal(goodQuotaDb.values[4], 180);
+assert.equal(goodQuotaDb.values[5], 15000);
+assert.match(calls[0].url, /pvwatts\/v8\.json/);
+assert.match(calls[0].url, /radius=100/, 'PVWatts must not use an unrestricted nearest-climate-station search');
+assert.match(calls[0].url, /api_key=test-secret/);
+
+// NLR quota exhaustion should remain a 429 rather than being hidden as a generic gateway error.
+calls = [];
+globalThis.fetch = async () => jsonResponse({ errors: ['Rate limit exceeded'] }, 429);
+result = await read(await pvGet({ request: validPath, env: { PVWATTS_API_KEY: 'test-secret', API_QUOTA_DB: quotaDb() } }));
+assert.equal(result.status, 429);
+assert.match(result.body.error, /request limit/i);
+
+// OpenEI candidates are labelled as candidates; API key is not returned.
+calls = [];
+result = await read(await tariffsGet({ request: request('/api/tariffs?lat=30.2672&lon=-97.7431'), env: {} }));
+assert.equal(result.status, 503);
+globalThis.fetch = async (url) => {
+  calls.push(String(url));
+  return jsonResponse({ items: [{ label: 'abc123', utility: 'Example Utility', name: 'Residential Basic', sector: 'Residential', approved: true, is_default: true, startdate: 1767225600, enddate: 1798675200, uri: 'https://apps.openei.org/USURDB/rate/view/abc123' }] });
+};
+result = await read(await tariffsGet({ request: request('/api/tariffs?lat=30.2672&lon=-97.7431'), env: { OPENEI_API_KEY: 'test-secret' } }));
+assert.equal(result.status, 503, 'OpenEI must fail closed if its shared quota binding is missing');
+assert.equal(calls.length, 0);
+result = await read(await tariffsGet({ request: request('/api/tariffs?lat=30.2672&lon=-97.7431'), env: { OPENEI_API_KEY: 'test-secret', API_QUOTA_DB: blockedQuotaDb } }));
+assert.equal(result.status, 429, 'OpenEI must honour its independent site-side request cap');
+assert.equal(calls.length, 0);
+const goodOpenEiQuotaDb = quotaDb();
+result = await read(await tariffsGet({ request: request('/api/tariffs?lat=30.2672&lon=-97.7431'), env: { OPENEI_API_KEY: 'test-secret', API_QUOTA_DB: goodOpenEiQuotaDb } }));
+assert.equal(result.status, 200);
+assert.equal(goodOpenEiQuotaDb.values[0], 'openei');
+assert.equal(result.body.rates[0].utility, 'Example Utility');
+assert.equal(result.body.rates[0].startDate, '2026-01-01');
+assert.equal(result.body.rates[0].endDate, '2026-12-31');
+assert.equal(result.body.rates[0].approved, true);
+assert.match(result.body.limitation, /not confirmation/i);
+assert.equal(JSON.stringify(result.body).includes('test-secret'), false);
+assert.match(calls[0], /sector=Residential/);
+assert.match(calls[0], /detail=minimal/);
+
+console.log('PASS: Census city/state validation and global D1 quota guard, PVWatts validation/key secrecy/output mapping, and quota-protected OpenEI candidate discovery tests.');

@@ -1,0 +1,4 @@
+# Copy this file to .dev.vars for local Wrangler testing.
+# Obtain keys directly from the providers; never commit real keys.
+PVWATTS_API_KEY=replace_with_your_NLR_API_key
+OPENEI_API_KEY=replace_with_your_OpenEI_API_key
