@@ -12,7 +12,8 @@ import sqlite3
 
 ROOT = Path(__file__).resolve().parents[1]
 FUNCTION = (ROOT / "functions/_shared/quota.js").read_text(encoding="utf-8")
-MIGRATION = (ROOT / "migrations/0001_create_api_quota.sql").read_text(encoding="utf-8")
+MIGRATION_1 = (ROOT / "migrations/0001_create_api_quota.sql").read_text(encoding="utf-8")
+MIGRATION_2 = (ROOT / "migrations/0002_add_census_suggest_quota.sql").read_text(encoding="utf-8")
 match = re.search(r"const QUOTA_SQL = `([\s\S]*?)`;", FUNCTION)
 assert match, "Shared quota module must contain the quota SQL constant"
 SQL = match.group(1)
@@ -27,7 +28,12 @@ DAY_MS = 24 * 60 * 60 * 1000
 
 def connect() -> sqlite3.Connection:
     db = sqlite3.connect(":memory:")
-    db.executescript(MIGRATION)
+    db.executescript(MIGRATION_1)
+    db.execute("INSERT INTO api_quota VALUES ('census', 1, 2, 2, 3, 4)")
+    db.executescript(MIGRATION_2)
+    preserved = db.execute("SELECT window_bucket, window_count, day_bucket, day_count, updated_at FROM api_quota WHERE scope = 'census'").fetchone()
+    assert preserved == (1, 2, 2, 3, 4), "schema migration must preserve existing Census quota counters"
+    db.execute("DELETE FROM api_quota WHERE scope = 'census'")
     return db
 
 
