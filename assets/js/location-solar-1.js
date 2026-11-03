@@ -5,6 +5,10 @@
   const stateEl = $('state');
   const stateDisplay = $('stateDisplay');
   const stateField = $('stateField');
+  const stateHelp = $('stateHelp');
+  const manualState = $('manualState');
+  const manualStateFallback = $('manualStateFallback');
+  const manualStateButton = $('useManualState');
   const suggestionsEl = $('citySuggestions');
   const placeEl = $('place');
   const placeField = $('placeField');
@@ -225,6 +229,7 @@
     stateEl.value = candidate.stateAbbreviation;
     stateDisplay.value = candidate.stateName + ' (' + candidate.stateAbbreviation + ')';
     stateField.hidden = false;
+    stateHelp.textContent = 'The state was matched to an official Census place suggestion.';
     hideCitySuggestions();
     lookupBtn.disabled = false;
     setStatus(locationStatus, candidate.placeName + ', ' + candidate.stateAbbreviation + ' selected. Verify it with Census to load the representative location.');
@@ -307,6 +312,9 @@
     stateEl.value = '';
     stateDisplay.value = '';
     stateField.hidden = true;
+    stateHelp.textContent = 'Select a Census suggestion or use the manual state fallback.';
+    manualState.value = '';
+    manualStateFallback.open = false;
     locationSequence += 1;
     currentPlace = null;
     currentSolarPriceBenchmark = null;
@@ -322,6 +330,28 @@
     invalidatePlaceSearch();
     scheduleCitySuggestions();
   });
+  manualStateButton.addEventListener('click', () => {
+    const city = cityEl.value.trim().replace(/\\s+/g, ' ');
+    const state = manualState.value.toUpperCase();
+    const option = manualState.options[manualState.selectedIndex];
+    if (city.length < 2 || city.length > 80) {
+      setStatus(locationStatus, 'Enter a city or locality name between 2 and 80 characters.');
+      return;
+    }
+    if (!/^[A-Z]{2}$/.test(state) || !option || !option.textContent) {
+      setStatus(locationStatus, 'Choose a state or territory first.');
+      return;
+    }
+    selectedCandidate = { placeName: city, stateAbbreviation: state, stateName: option.textContent, manual: true };
+    stateEl.value = state;
+    stateDisplay.value = option.textContent + ' (' + state + ')';
+    stateField.hidden = false;
+    stateHelp.textContent = 'State selected manually. Exact US Census city/state verification is still required.';
+    hideCitySuggestions();
+    lookupBtn.disabled = false;
+    setStatus(locationStatus, city + ', ' + state + ' entered manually. Verify it with Census before modeling solar production.');
+  });
+
   cityEl.addEventListener('keydown', (event) => {
     if (event.key === 'ArrowDown' && currentSuggestions.length) {
       event.preventDefault();
