@@ -23,6 +23,9 @@ const quotaDb = (row = { windowCount: 1, dayCount: 1 }) => {
           if (values[0] === 'census') {
             assert.equal(values[4], 60, 'Census lookup guard should allow at most 60 calls per 15-minute bucket');
             assert.equal(values[5], 10000, 'Census lookup guard should cap daily calls at 10,000');
+          } else if (values[0] === 'census_suggest') {
+            assert.equal(values[4], 120, 'Census suggestion guard should allow at most 120 calls per 15-minute bucket');
+            assert.equal(values[5], 20000, 'Census suggestion guard should cap daily calls at 20,000');
           } else if (values[0] === 'pvwatts') {
             assert.equal(values[4], 180, 'PVWatts guard should allow at most 180 calls per 15-minute bucket');
             assert.equal(values[5], 15000, 'PVWatts guard should cap daily calls at 15,000');
@@ -38,7 +41,7 @@ const quotaDb = (row = { windowCount: 1, dayCount: 1 }) => {
   return db;
 };
 
-// City/state endpoint input validation must happen before Census TIGERweb fetches.
+// Nationwide city suggestions require at least three characters and no state input.
 let calls = [];
 globalThis.fetch = async (url, options) => {
   calls.push({ url: String(url), options });
@@ -46,7 +49,43 @@ globalThis.fetch = async (url, options) => {
   if (layer === '28') return jsonResponse({ features: [{ attributes: {
     BASENAME: 'Austin', STATE: '48', INTPTLAT: '30.2672', INTPTLON: '-97.7431', GEOID: '4805000', LSADC: '25',
   } }] });
-  if (layer === '30') return jsonResponse({ features: [{ attributes: {
+  if (layer === '30') return jsonResponse({ features: [] });
+  throw new Error('Unexpected Census layer URL: ' + url);
+};
+let suggestionQuotaDb = quotaDb();
+let suggestionResult = await read(await locationGet({ request: request('/api/location?search=aust'), env: { API_QUOTA_DB: suggestionQuotaDb } }));
+assert.equal(suggestionResult.status, 200);
+assert.equal(suggestionQuotaDb.values[0], 'census_suggest');
+assert.equal(suggestionQuotaDb.values[4], 120);
+assert.equal(suggestionQuotaDb.values[5], 20000);
+assert.equal(suggestionResult.body.suggestions.length, 1);
+assert.equal(suggestionResult.body.suggestions[0].placeName, 'Austin');
+assert.equal(suggestionResult.body.suggestions[0].stateAbbreviation, 'TX');
+assert.equal(suggestionResult.body.suggestions[0].stateName, 'Texas');
+assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) LIKE UPPER\('aust%'/i);
+assert.equal(calls.length, 2, 'nationwide suggestion lookup must query both Census place layers once, not each state');
+
+calls = [];
+suggestionResult = await read(await locationGet({ request: request('/api/location?search=au'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(suggestionResult.status, 400, 'city suggestions must require at least three characters');
+assert.equal(calls.length, 0);
+suggestionResult = await read(await locationGet({ request: request('/api/location?search=aust%25%27%20OR%201%3D1'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(suggestionResult.status, 400, 'SQL wildcard / injection characters must be rejected before Census calls');
+assert.equal(calls.length, 0);
+suggestionResult = await read(await locationGet({ request: request('/api/location?search=aust'), env: { API_QUOTA_DB: blockedQuotaDb } }));
+assert.equal(suggestionResult.status, 429, 'city suggestions must honour their independent site-wide quota');
+assert.equal(calls.length, 0);
+
+// City/state endpoint input validation must happen before Census TIGERweb fetches.
+globalThis.fetch = async (url, options) => {
+  calls.push({ url: String(url), options });
+  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
+  const where = new URL(String(url)).searchParams.get('where') || '';
+  const isSuggestionQuery = /LIKE/i.test(where);
+  if (layer === '28') return jsonResponse({ features: [{ attributes: {
+    BASENAME: 'Austin', STATE: '48', INTPTLAT: '30.2672', INTPTLON: '-97.7431', GEOID: '4805000', LSADC: '25',
+  } }] });
+  if (layer === '30') return jsonResponse({ features: isSuggestionQuery ? [] : [{ attributes: {
     BASENAME: 'Example CDP', STATE: '48', INTPTLAT: '30.1', INTPTLON: '-97.9', GEOID: '4899999', LSADC: '57',
   } }] });
   throw new Error('Unexpected Census layer URL: ' + url);
