@@ -179,4 +179,24 @@ assert.equal(nodes.savingsLink.hidden, true);
 assert.equal(nodes.panelCountLink.hidden, true);
 assert.equal(nodes.combinedLink.hidden, true);
 
-console.log('PASS: location estimator validation, PVWatts output units, savings/panel-count/combined-calculator handoffs, editable benchmark assumptions, invalidation and stale-response protection.');
+// A city change after PVWatts has returned but while the secondary benchmark
+// hand-off is still pending must not publish links for the now-stale location.
+useDeferredModel = false;
+nodes.city.value = 'Austin';
+await nodes.city.emit('input');
+await nodes.lookup.emit('click');
+assert.equal(nodes.estimate.disabled, false);
+const staleSecondaryHandoff = nodes.estimate.emit('click');
+await new Promise((resolve) => setTimeout(resolve, 0));
+nodes.city.value = 'Dallas';
+await nodes.city.emit('input');
+await staleSecondaryHandoff;
+assert.equal(nodes.savingsLink.hidden, true, 'a stale secondary wait must not re-create the savings link');
+assert.equal(nodes.savingsLink.href, '');
+assert.equal(nodes.panelCountLink.hidden, true, 'a stale secondary wait must not re-create the panel-count link');
+assert.equal(nodes.panelCountLink.href, '');
+assert.equal(nodes.combinedLink.hidden, true, 'a stale secondary wait must not re-create the combined-calculator link');
+assert.equal(nodes.combinedLink.href, '');
+assert.match(nodes.result.children.map((n) => n.textContent).join(' '), /Model needs updating/);
+
+console.log('PASS: location estimator validation, PVWatts output units, editable handoffs, invalidation, stale PVWatts response protection, and stale secondary-benchmark race protection.');
