@@ -65,6 +65,14 @@ assert.equal(result.body.places[0].placeName, 'Austin');
 assert.equal(result.body.places[0].stateAbbreviation, 'TX');
 assert.equal(result.body.places[0].geographyType, 'Incorporated place');
 assert.equal(result.body.places[1].geographyType, 'Census-designated place');
+assert.match(decodeURIComponent(calls[0].url), /UPPER\(BASENAME\) = UPPER\('Austin'\)/, 'Census city-name matching must be case-insensitive');
+
+calls = [];
+result = await read(await locationGet({ request: request('/api/location?city=austin&state=TX'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(result.status, 200, 'lowercase city input must resolve the same Census place');
+assert.equal(result.body.places[0].placeName, 'Austin');
+assert.match(decodeURIComponent(calls[0].url), /UPPER\(BASENAME\) = UPPER\('austin'\)/, 'the original user input should be safely compared case-insensitively');
+
 assert.match(result.body.source, /US Census Bureau TIGERweb Current/);
 assert.match(result.body.geographyType, /not a citywide solar average/i);
 assert.equal(calls.length, 2, 'both incorporated and Census-designated places must be searched');
