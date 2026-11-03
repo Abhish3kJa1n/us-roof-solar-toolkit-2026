@@ -331,6 +331,8 @@
     scheduleCitySuggestions();
   });
   manualStateButton.addEventListener('click', () => {
+    suggestionSequence += 1;
+    if (suggestionTimer) clearTimeout(suggestionTimer);
     const city = cityEl.value.trim().replace(/\s+/g, ' ');
     const state = manualState.value.toUpperCase();
     const option = manualState.options[manualState.selectedIndex];
@@ -347,6 +349,7 @@
     stateDisplay.value = option.textContent + ' (' + state + ')';
     stateField.hidden = false;
     stateHelp.textContent = 'State selected manually. Exact US Census city/state verification is still required.';
+    manualStateFallback.open = false;
     hideCitySuggestions();
     lookupBtn.disabled = false;
     setStatus(locationStatus, city + ', ' + state + ' entered manually. Verify it with Census before modeling solar production.');
