@@ -144,7 +144,7 @@ async function getSuggestions(search, env) {
         || a.placeName.localeCompare(b.placeName, 'en-US')
         || a.stateName.localeCompare(b.stateName, 'en-US');
     })
-    .slice(0, 20);
+    .slice(0, 60);
 
   return json({
     search,
