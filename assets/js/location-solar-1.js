@@ -331,7 +331,7 @@
     scheduleCitySuggestions();
   });
   manualStateButton.addEventListener('click', () => {
-    const city = cityEl.value.trim().replace(/\\s+/g, ' ');
+    const city = cityEl.value.trim().replace(/\s+/g, ' ');
     const state = manualState.value.toUpperCase();
     const option = manualState.options[manualState.selectedIndex];
     if (city.length < 2 || city.length > 80) {
