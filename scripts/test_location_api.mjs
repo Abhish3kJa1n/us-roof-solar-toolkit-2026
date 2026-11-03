@@ -65,7 +65,7 @@ assert.equal(result.body.places[0].placeName, 'Austin');
 assert.equal(result.body.places[0].stateAbbreviation, 'TX');
 assert.equal(result.body.places[0].geographyType, 'Incorporated place');
 assert.equal(result.body.places[1].geographyType, 'Census-designated place');
-assert.match(decodeURIComponent(calls[0].url), /UPPER\(BASENAME\) = UPPER\('Austin'\)/, 'Census city-name matching must be case-insensitive');
+assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) = UPPER\('Austin'\)/, 'Census city-name matching must be case-insensitive');
 
 calls = [];
 result = await read(await locationGet({ request: request('/api/location?city=austin&state=TX'), env: { API_QUOTA_DB: quotaDb() } }));
