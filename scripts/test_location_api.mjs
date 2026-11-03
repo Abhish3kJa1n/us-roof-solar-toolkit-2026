@@ -49,7 +49,9 @@ globalThis.fetch = async (url, options) => {
   if (layer === '28') return jsonResponse({ features: [{ attributes: {
     BASENAME: 'Austin', STATE: '48', INTPTLAT: '30.2672', INTPTLON: '-97.7431', GEOID: '4805000', LSADC: '25',
   } }] });
-  if (layer === '30') return jsonResponse({ features: [] });
+  if (layer === '30') return jsonResponse({ features: [{ attributes: {
+    BASENAME: 'Austin', STATE: '27', INTPTLAT: '43.6666', INTPTLON: '-92.9746', GEOID: '2700000', LSADC: '25',
+  } }] });
   throw new Error('Unexpected Census layer URL: ' + url);
 };
 let suggestionQuotaDb = quotaDb();
@@ -58,10 +60,9 @@ assert.equal(suggestionResult.status, 200);
 assert.equal(suggestionQuotaDb.values[0], 'census_suggest');
 assert.equal(suggestionQuotaDb.values[4], 120);
 assert.equal(suggestionQuotaDb.values[5], 20000);
-assert.equal(suggestionResult.body.suggestions.length, 1);
-assert.equal(suggestionResult.body.suggestions[0].placeName, 'Austin');
-assert.equal(suggestionResult.body.suggestions[0].stateAbbreviation, 'TX');
-assert.equal(suggestionResult.body.suggestions[0].stateName, 'Texas');
+assert.equal(suggestionResult.body.suggestions.length, 2, 'same city name in different states must remain separate choices');
+assert.ok(suggestionResult.body.suggestions.some((item) => item.placeName === 'Austin' && item.stateAbbreviation === 'TX' && item.stateName === 'Texas'));
+assert.ok(suggestionResult.body.suggestions.some((item) => item.placeName === 'Austin' && item.stateAbbreviation === 'MN' && item.stateName === 'Minnesota'));
 assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) LIKE UPPER\('aust%'/i);
 assert.equal(calls.length, 2, 'nationwide suggestion lookup must query both Census place layers once, not each state');
 
