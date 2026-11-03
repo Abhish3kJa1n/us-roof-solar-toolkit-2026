@@ -71,7 +71,7 @@ calls = [];
 result = await read(await locationGet({ request: request('/api/location?city=austin&state=TX'), env: { API_QUOTA_DB: quotaDb() } }));
 assert.equal(result.status, 200, 'lowercase city input must resolve the same Census place');
 assert.equal(result.body.places[0].placeName, 'Austin');
-assert.match(decodeURIComponent(calls[0].url), /UPPER\(BASENAME\) = UPPER\('austin'\)/, 'the original user input should be safely compared case-insensitively');
+assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) = UPPER\('austin'\)/, 'the original user input should be safely compared case-insensitively');
 
 assert.match(result.body.source, /US Census Bureau TIGERweb Current/);
 assert.match(result.body.geographyType, /not a citywide solar average/i);
