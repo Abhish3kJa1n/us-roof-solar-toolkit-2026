@@ -34,3 +34,8 @@ button:disabled{opacity:.55;cursor:not-allowed}
 #stateDisplay{background:#f2f5f7;color:#43586b;cursor:default}
 
 .visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+.manual-location-fallback{grid-column:1/-1;border:1px solid #dce4eb;border-radius:9px;background:#f8fafb;padding:11px 13px;color:#586b7d;font-size:12px}
+.manual-location-fallback summary{cursor:pointer;color:#30465b;font-weight:800}
+.manual-location-fallback p{margin:7px 0 10px;font-size:12px}
+.manual-location-fallback .field{max-width:420px;margin:8px 0}
