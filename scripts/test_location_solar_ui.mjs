@@ -27,7 +27,7 @@ class FakeNode {
 }
 
 const ids = [
-  'city','state','stateDisplay','stateField','citySuggestions','place','placeField','lookup','estimate','tariffs','result','locationStatus',
+  'city','state','stateDisplay','stateField','stateHelp','manualState','manualStateFallback','useManualState','citySuggestions','place','placeField','lookup','estimate','tariffs','result','locationStatus',
   'modelStatus','tariffStatus','tariffResults','savingsLink','panelCountLink','combinedLink','stateBenchmark','capacity','tilt','azimuth','losses',
 ];
 const nodes = Object.fromEntries(ids.map((id) => [id, new FakeNode(id === 'place' ? 'select' : 'div')]));
@@ -35,6 +35,10 @@ nodes.savingsLink.hidden = true;
 nodes.panelCountLink.hidden = true;
 nodes.combinedLink.hidden = true;
 nodes.stateField.hidden = true;
+nodes.manualStateFallback.open = false;
+nodes.manualState.value = 'TX';
+nodes.manualState.selectedIndex = 0;
+nodes.manualState.options = [{ textContent: 'Texas' }];
 nodes.citySuggestions.hidden = true;
 nodes.lookup.disabled = true;
 const calls = [];
@@ -199,6 +203,20 @@ assert.match(nodes.result.children.map((n) => n.textContent).join(' '), /Model n
 assert.equal(nodes.savingsLink.hidden, true);
 assert.equal(nodes.panelCountLink.hidden, true);
 assert.equal(nodes.combinedLink.hidden, true);
+
+// The manual-state fallback is explicit and still requires the exact Census lookup.
+nodes.city.value = 'Austin';
+await nodes.city.emit('input');
+nodes.manualState.value = 'TX';
+await nodes.useManualState.emit('click');
+assert.equal(nodes.state.value, 'TX');
+assert.equal(nodes.stateDisplay.value, 'Texas (TX)');
+assert.match(nodes.stateHelp.textContent, /selected manually/);
+assert.equal(nodes.lookup.disabled, false);
+await nodes.lookup.emit('click');
+await new Promise((resolve) => setTimeout(resolve, 0));
+assert.equal(nodes.estimate.disabled, false, 'manual state choice must still pass the exact Census location route');
+assert.match(nodes.locationStatus.textContent, /Representative coordinates loaded/);
 
 // A city change after PVWatts has returned but while the secondary benchmark
 // hand-off is still pending must not publish links for the now-stale location.
