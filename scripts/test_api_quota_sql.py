@@ -78,7 +78,9 @@ row = db.execute(SQL, ("openei", 7, base // DAY_MS, base + 9, 60, 5000)).fetchon
 assert row == (1, 1), f"OpenEI scope did not receive an independent counter: {row}"
 row = db.execute(SQL, ("census", 7, base // DAY_MS, base + 10, 60, 10000)).fetchone()
 assert row == (1, 1), f"Census scope did not receive an independent counter: {row}"
-assert db.execute("SELECT COUNT(*) FROM api_quota").fetchone()[0] == 3
+row = db.execute(SQL, ("census_suggest", 7, base // DAY_MS, base + 11, 120, 20000)).fetchone()
+assert row == (1, 1), f"Census suggestion scope did not receive an independent counter: {row}"
+assert db.execute("SELECT COUNT(*) FROM api_quota").fetchone()[0] == 4
 
 # The Census cap is 60 per 15 minutes / 10,000 per UTC day; test both edges.
 db_census_window = connect()
@@ -94,6 +96,19 @@ for n in range(1, 10001):
 assert db_census_day.execute(SQL, ("census", 10001, day_bucket, day_base + 10001, 60, 10000)).fetchone() is None
 
 
+# Type-ahead has an isolated cap so suggestions cannot exhaust exact location lookups.
+db_suggest_window = connect()
+for n in range(1, 121):
+    row = db_suggest_window.execute(SQL, ("census_suggest", 12, day_bucket, day_base + n, 120, 20000)).fetchone()
+    assert row is not None, f"Census suggestion window request {n} unexpectedly rejected"
+assert db_suggest_window.execute(SQL, ("census_suggest", 12, day_bucket, day_base + 121, 120, 20000)).fetchone() is None
+
+db_suggest_day = connect()
+for n in range(1, 20001):
+    row = db_suggest_day.execute(SQL, ("census_suggest", n, day_bucket, day_base + n, 120, 20000)).fetchone()
+    assert row is not None, f"Census suggestion daily request {n} unexpectedly rejected"
+assert db_suggest_day.execute(SQL, ("census_suggest", 20001, day_bucket, day_base + 20001, 120, 20000)).fetchone() is None
+
 # A new UTC day resets the daily count and allows a fresh request.
 new_day = (day_base // DAY_MS + 1) * DAY_MS
 row = reserve(db_day, new_day + 1)
@@ -104,7 +119,8 @@ assert db_day.execute("SELECT COUNT(*) FROM api_quota WHERE scope = 'pvwatts'").
 assert WINDOW_LIMIT * 5 == 900 < 1000
 assert DAILY_LIMIT < 100_000
 assert 60 * 5 == 300 < 1000 and 5000 < 100_000
-assert 10000 + DAILY_LIMIT + 5000 == 30000 < 100_000
+assert 120 * 5 == 600 < 1000 and 20000 < 100_000
+assert 10000 + 20000 + DAILY_LIMIT + 5000 == 50000 < 100_000
 
-print("PASS: exact quota SQL enforces Census 60/15-min and 10,000/day, PVWatts 180/15-min and 15,000/day, OpenEI 60/15-min and 5,000/day caps, and UTC rollovers.")
+print("PASS: exact quota SQL enforces Census 60/15-min and 10,000/day, Census suggestions 120/15-min and 20,000/day, PVWatts 180/15-min and 15,000/day, OpenEI 60/15-min and 5,000/day caps, and UTC rollovers.")
 print("NOTE: SQLite simulation only; Cloudflare D1 live binding/concurrency not tested.")
