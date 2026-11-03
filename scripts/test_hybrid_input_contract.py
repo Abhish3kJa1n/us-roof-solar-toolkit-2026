@@ -76,6 +76,24 @@ for token in ('warningMin:', 'warningMax:', 'validateScope', 'aria-describedby',
     if token not in (ROOT/'assets/js/field-validation-1.js').read_text(encoding='utf-8'):
         fail(f'shared validator missing expected feedback feature: {token}')
 
+# Currency inputs are whole-dollar amounts, not $100 increments. A min=1/step=100
+# pair makes common values such as $30,000 fail the step check (1 + 100*n only).
+currency_fields = {
+    'guides/solar-installation-cost.html': {'pvCashPrice'},
+    'guides/solar-loan-vs-lease-vs-ppa.html': {'cashPrice', 'loanPrincipal', 'downPayment'},
+}
+for relative_path, expected_ids in currency_fields.items():
+    parser = Controls()
+    parser.feed((ROOT / relative_path).read_text(encoding='utf-8'))
+    indexed = {attrs.get('id'): attrs for _, attrs in parser.controls if attrs.get('id')}
+    for field_id in expected_ids:
+        attrs = indexed.get(field_id)
+        if not attrs:
+            fail(f'{relative_path} is missing currency field #{field_id}')
+        if attrs.get('type') != 'number' or attrs.get('step') != '1':
+            fail(f'{relative_path} #{field_id} must accept whole-dollar increments (step=1)')
+
 print(f'PASS: {len(interactive_pages)} calculator/data-entry pages load shared field validation; all numeric fields define hard bounds and precision.')
+print('PASS: solar cash price, loan principal, down payment and PV quote fields accept ordinary whole-dollar values without $100-step rejection.')
 print('PASS: city + state PVWatts/EIA scenario values hand off to editable combined-calculator fields; source-labelled national roof/solar fallbacks load only as broad references when local solar price data are not approved.')
 print('PASS: only approval-gated, sufficiently sampled city/state solar records can replace the national solar reference; the current registry remains withheld and no city/metro prices are fabricated.')
