@@ -32,3 +32,5 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .autocomplete-name{font-size:13px;font-weight:800;color:#17324c}
 .autocomplete-detail{font-size:11px;color:#65778a;line-height:1.4}
 #stateDisplay{background:#f2f5f7;color:#43586b;cursor:default}
+
+.visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
