@@ -31,7 +31,7 @@ const validCoordinates = (lat, lon) => Number.isFinite(lat) && Number.isFinite(l
 async function queryLayer(layerId, city, stateFips) {
   const safeCity = city.replace(/'/g, "''");
   const params = new URLSearchParams({
-    where: `BASENAME = '${safeCity}' AND STATE = '${stateFips}'`,
+    where: `UPPER(BASENAME) = UPPER('${safeCity}') AND STATE = '${stateFips}'`,
     outFields: 'BASENAME,NAME,STATE,INTPTLAT,INTPTLON,GEOID,LSADC',
     returnGeometry: 'false',
     f: 'json',
