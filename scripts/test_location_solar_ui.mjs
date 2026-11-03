@@ -18,7 +18,7 @@ class FakeNode {
     this.rel = '';
   }
   addEventListener(name, callback) { this.listeners[name] = callback; }
-  emit(name) { return this.listeners[name]?.({ target: this }); }
+  emit(name, event = {}) { return this.listeners[name]?.({ target: this, ...event }); }
   replaceChildren(...children) { this.children = [...children]; }
   append(...children) { this.children.push(...children); }
   add(child) { this.children.push(child); }
@@ -27,18 +27,24 @@ class FakeNode {
 }
 
 const ids = [
-  'city','state','place','placeField','lookup','estimate','tariffs','result','locationStatus',
+  'city','state','stateDisplay','stateField','citySuggestions','place','placeField','lookup','estimate','tariffs','result','locationStatus',
   'modelStatus','tariffStatus','tariffResults','savingsLink','panelCountLink','combinedLink','stateBenchmark','capacity','tilt','azimuth','losses',
 ];
 const nodes = Object.fromEntries(ids.map((id) => [id, new FakeNode(id === 'place' ? 'select' : 'div')]));
 nodes.savingsLink.hidden = true;
 nodes.panelCountLink.hidden = true;
 nodes.combinedLink.hidden = true;
+nodes.stateField.hidden = true;
+nodes.citySuggestions.hidden = true;
+nodes.lookup.disabled = true;
 const calls = [];
 let pendingResolve;
 let useDeferredModel = false;
+const suggestionPayload = {
+  search: 'Aust', suggestions: [{ placeName: 'Austin', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', geographyTypes: ['Incorporated place'], geoid: '4805000' }],
+};
 const locationPayload = {
-  city: 'Austin', state: 'TX', places: [{ placeName: 'Austin', stateAbbreviation: 'TX', geographyType: 'Incorporated place', latitude: 30.2672, longitude: -97.7431 }],
+  city: 'Austin', state: 'TX', places: [{ placeName: 'Austin', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', latitude: 30.2672, longitude: -97.7431 }],
 };
 const modelPayload = {
   model: 'NLR PVWatts V8',
@@ -75,7 +81,11 @@ const context = {
   encodeURIComponent,
   fetch: async (url) => {
     calls.push(String(url));
-    if (String(url).includes('/api/location?')) return { ok: true, json: async () => locationPayload };
+    if (String(url).includes('/api/location?search=')) {
+      const search = new URL(String(url), 'https://example.test').searchParams.get('search') || '';
+      return { ok: true, json: async () => search.toLowerCase().startsWith('aus') ? suggestionPayload : { suggestions: [] } };
+    }
+    if (String(url).includes('/api/location?city=')) return { ok: true, json: async () => locationPayload };
     if (String(url).includes('eia-residential-electricity-prices-2026-08-ytd.csv')) {
       return { ok: true, text: async () => 'area,code,jan_aug_2026_ytd_cents_per_kwh,jan_aug_2025_ytd_cents_per_kwh,yoy_change_percent,source,data_release_date\nTexas,TX,16.51,16.01,3.12,EIA Electric Power Monthly Table 5.6.B,2026-10-23\n' };
     }
@@ -90,17 +100,28 @@ const context = {
 const source = fs.readFileSync(new URL('../assets/js/location-solar-1.js', import.meta.url), 'utf8');
 vm.runInNewContext(source, context, { filename: 'location-solar-1.js' });
 
-// A city/state lookup selects a Census representative place, not a roof/address coordinate.
+// Typing a city returns nationwide Census suggestions. Selecting one fills its state.
 nodes.city.value = 'Austin';
-nodes.state.value = 'TX';
 await nodes.city.emit('input');
-await nodes.state.emit('change');
+await new Promise((resolve) => setTimeout(resolve, 475));
+assert.equal(nodes.citySuggestions.hidden, false);
+assert.equal(nodes.citySuggestions.children.length, 1);
+let prevented = false;
+await nodes.city.emit('keydown', { key: 'ArrowDown', preventDefault: () => { prevented = true; } });
+assert.equal(prevented, true, 'city suggestions should support keyboard navigation');
+assert.equal(nodes.citySuggestions.children[0].attributes['aria-selected'], 'true');
+await nodes.city.emit('keydown', { key: 'Enter', preventDefault: () => {} });
+assert.equal(nodes.state.value, 'TX');
+assert.equal(nodes.stateDisplay.value, 'Texas (TX)');
+assert.equal(nodes.stateField.hidden, false);
+assert.equal(nodes.lookup.disabled, false);
 await nodes.lookup.emit('click');
 await new Promise((resolve) => setTimeout(resolve, 0));
 assert.equal(nodes.estimate.disabled, false);
 assert.match(nodes.locationStatus.textContent, /Representative coordinates loaded/);
-assert.match(calls.find((call) => call.includes('/api/location?')), /city=Austin/);
-assert.match(calls.find((call) => call.includes('/api/location?')), /state=TX/);
+assert.match(calls.find((call) => call.includes('/api/location?city=')), /city=Austin/);
+assert.match(calls.find((call) => call.includes('/api/location?city=')), /state=TX/);
+assert.ok(calls.some((call) => call.includes('/api/location?search=Austin')), 'city typing should call the nationwide suggestion route');
 assert.equal(nodes.stateBenchmark.hidden, false);
 assert.match(nodes.stateBenchmark.children.map((n) => n.textContent).join(' '), /16.51¢\/kWh/);
 assert.match(nodes.stateBenchmark.children.map((n) => n.textContent).join(' '), /not your utility’s marginal energy charge/);
@@ -184,6 +205,8 @@ assert.equal(nodes.combinedLink.hidden, true);
 useDeferredModel = false;
 nodes.city.value = 'Austin';
 await nodes.city.emit('input');
+assert.equal(nodes.citySuggestions.children.length, 1, 'previously fetched suggestions should be cached for this browser session');
+nodes.citySuggestions.children[0].emit('click');
 await nodes.lookup.emit('click');
 assert.equal(nodes.estimate.disabled, false);
 const staleSecondaryHandoff = nodes.estimate.emit('click');
