@@ -312,8 +312,10 @@
       setStatus(modelStatus, `Model returned ${new Date(data.fetchedAt).toLocaleString('en-US')}.`);
       const kwhPerKw = data.outputs.annualKwhPerKwDc;
       const stateAverageRate = await loadStateBenchmark(selectedPlace.stateAbbreviation);
+      if (seq !== requestSequence) return;
       const placeLabel = `${selectedPlace.placeName}, ${selectedPlace.stateAbbreviation}`;
       const priceBenchmark = await waitForSolarPriceBenchmark(selectedPlace);
+      if (seq !== requestSequence) return;
       const savingsHandoff = { production: kwhPerKw.toFixed(1), location: placeLabel, city: selectedPlace.placeName, state: selectedPlace.stateAbbreviation };
       if (Number.isFinite(stateAverageRate) && stateAverageRate > 0 && stateAverageRate <= 5) savingsHandoff.stateAverageRate = stateAverageRate.toFixed(4);
       savingsLink.href = `solar-savings.html?${params(savingsHandoff).toString()}`;
