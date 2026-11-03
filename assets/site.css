@@ -22,3 +22,13 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .field-checker-message.is-warning{color:#8a5b12;font-weight:550}
 .field input.field-invalid,.field select.field-invalid,.field textarea.field-invalid{border-color:#bd5145;background:#fffafa;box-shadow:0 0 0 2px rgba(189,81,69,.08)}
 .field input.field-warning,.field select.field-warning,.field textarea.field-warning{border-color:#c08a2b}
+
+
+/* Nationwide Census city autocomplete: visible, keyboard-accessible suggestions. */
+.autocomplete-results{display:grid;gap:2px;margin-top:6px;padding:5px;border:1px solid #cbd7e1;border-radius:10px;background:#fff;box-shadow:0 12px 28px rgba(16,36,59,.12);max-height:280px;overflow-y:auto}
+.autocomplete-results[hidden]{display:none}
+.autocomplete-option{display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;padding:9px 11px;border:0;border-radius:7px;background:#fff;color:#172b40;text-align:left;cursor:pointer;font:inherit}
+.autocomplete-option:hover,.autocomplete-option:focus-visible,.autocomplete-option[aria-selected="true"]{background:#eef4f8}
+.autocomplete-name{font-size:13px;font-weight:800;color:#17324c}
+.autocomplete-detail{font-size:11px;color:#65778a;line-height:1.4}
+#stateDisplay{background:#f2f5f7;color:#43586b;cursor:default}
