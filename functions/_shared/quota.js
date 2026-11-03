@@ -25,7 +25,7 @@ const QUOTA_SQL = `
  */
 export async function reserveApiQuota(db, scope, windowLimit, dailyLimit, now = Date.now()) {
   if (!db || typeof db.prepare !== 'function') throw new Error('D1 quota binding is missing.');
-  if (!['census', 'pvwatts', 'openei'].includes(scope)) throw new Error('Unknown API quota scope.');
+  if (!['census', 'census_suggest', 'pvwatts', 'openei'].includes(scope)) throw new Error('Unknown API quota scope.');
   if (!Number.isInteger(windowLimit) || windowLimit < 1 || !Number.isInteger(dailyLimit) || dailyLimit < 1) {
     throw new Error('Invalid API quota limits.');
   }
