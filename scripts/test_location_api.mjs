@@ -46,8 +46,12 @@ let calls = [];
 globalThis.fetch = async (url, options) => {
   calls.push({ url: String(url), options });
   const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
-  if (layer === '28') return jsonResponse({ features: [{ attributes: {
+  const offset = new URL(String(url)).searchParams.get('resultOffset') || '0';
+  if (layer === '28' && offset === '0') return jsonResponse({ features: [{ attributes: {
     BASENAME: 'Austin', STATE: '48', INTPTLAT: '30.2672', INTPTLON: '-97.7431', GEOID: '4805000', LSADC: '25',
+  } }], exceededTransferLimit: true });
+  if (layer === '28' && offset === '1') return jsonResponse({ features: [{ attributes: {
+    BASENAME: 'Austell', STATE: '13', INTPTLAT: '33.8126', INTPTLON: '-84.6344', GEOID: '1300000', LSADC: '25',
   } }] });
   if (layer === '30') return jsonResponse({ features: [{ attributes: {
     BASENAME: 'Austin', STATE: '27', INTPTLAT: '43.6666', INTPTLON: '-92.9746', GEOID: '2700000', LSADC: '25',
@@ -60,11 +64,15 @@ assert.equal(suggestionResult.status, 200);
 assert.equal(suggestionQuotaDb.values[0], 'census_suggest');
 assert.equal(suggestionQuotaDb.values[4], 120);
 assert.equal(suggestionQuotaDb.values[5], 20000);
-assert.equal(suggestionResult.body.suggestions.length, 2, 'same city name in different states must remain separate choices');
+assert.equal(suggestionResult.body.suggestions.length, 3, 'same city name in different states and paginated results must remain separate choices');
+assert.equal(suggestionResult.body.totalMatches, 3);
 assert.ok(suggestionResult.body.suggestions.some((item) => item.placeName === 'Austin' && item.stateAbbreviation === 'TX' && item.stateName === 'Texas'));
 assert.ok(suggestionResult.body.suggestions.some((item) => item.placeName === 'Austin' && item.stateAbbreviation === 'MN' && item.stateName === 'Minnesota'));
+assert.ok(suggestionResult.body.suggestions.some((item) => item.placeName === 'Austell' && item.stateAbbreviation === 'GA' && item.stateName === 'Georgia'));
 assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) LIKE UPPER\('aust%'/i);
-assert.equal(calls.length, 2, 'nationwide suggestion lookup must query both Census place layers once, not each state');
+assert.match(calls[0].url, /tigerWMS_ACS2026/);
+assert.ok(calls.some((call) => new URL(call.url).searchParams.get('resultOffset') === '1'), 'Census suggestions must continue after an exceeded-transfer-limit page');
+assert.equal(calls.length, 3, 'one broad prefix should page the first layer and query the second layer once');
 
 calls = [];
 suggestionResult = await read(await locationGet({ request: request('/api/location?search=au'), env: { API_QUOTA_DB: quotaDb() } }));
@@ -83,11 +91,15 @@ globalThis.fetch = async (url, options) => {
   const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
   const where = new URL(String(url)).searchParams.get('where') || '';
   const isSuggestionQuery = /LIKE/i.test(where);
+  const requestedFips = (where.match(/STATE = '([0-9]+)'/) || [])[1];
+  if (layer === '28' && requestedFips === '66') return jsonResponse({ features: [{ attributes: {
+    BASENAME: 'Hagåtña', STATE: '66', INTPTLAT: '13.4745', INTPTLON: '144.7504', GEOID: '6600000', LSADC: '25',
+  } }] });
   if (layer === '28') return jsonResponse({ features: [{ attributes: {
     BASENAME: 'Austin', STATE: '48', INTPTLAT: '30.2672', INTPTLON: '-97.7431', GEOID: '4805000', LSADC: '25',
   } }] });
   if (layer === '30') return jsonResponse({ features: isSuggestionQuery ? [] : [{ attributes: {
-    BASENAME: 'Example CDP', STATE: '48', INTPTLAT: '30.1', INTPTLON: '-97.9', GEOID: '4899999', LSADC: '57',
+    BASENAME: 'Example CDP', STATE: requestedFips || '48', INTPTLAT: '30.1', INTPTLON: '-97.9', GEOID: '4899999', LSADC: '57',
   } }] });
   throw new Error('Unexpected Census layer URL: ' + url);
 };
@@ -113,11 +125,20 @@ assert.equal(result.status, 200, 'lowercase city input must resolve the same Cen
 assert.equal(result.body.places[0].placeName, 'Austin');
 assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) = UPPER\('austin'\)/, 'the original user input should be safely compared case-insensitively');
 
-assert.match(result.body.source, /US Census Bureau TIGERweb Current/);
+assert.match(result.body.source, /US Census Bureau TIGERweb ACS2026/);
 assert.match(result.body.geographyType, /not a citywide solar average/i);
 assert.equal(calls.length, 2, 'both incorporated and Census-designated places must be searched');
 assert.ok(calls.every((call) => /tigerweb\.geo\.census\.gov/.test(call.url)));
 assert.ok(calls.every((call) => /BASENAME/.test(decodeURIComponent(call.url))));
+
+// 2026 Census place lookup and coordinates must support Pacific island areas.
+calls = [];
+result = await read(await locationGet({ request: request('/api/location?city=Hag%C3%A5t%C3%B1a&state=GU'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(result.status, 200);
+assert.equal(result.body.places[0].stateAbbreviation, 'GU');
+assert.equal(result.body.places[0].latitude, 13.4745);
+assert.equal(result.body.places[0].longitude, 144.7504);
+assert.match(calls[0].url, /tigerWMS_ACS2026/);
 
 calls = [];
 result = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: blockedQuotaDb } }));
@@ -143,7 +164,8 @@ assert.equal(result.status, 400, 'public PVWatts proxy must reject coordinates o
 assert.equal(calls.length, 0);
 
 // Global D1 quota guard is mandatory and must fail closed.
-const validPath = request('/api/pvwatts?lat=30.2672&lon=-97.7431&capacity=4&tilt=20&azimuth=180&losses=14');
+const validPath = request('/api/pvwatts?lat=30.2672&lon=-97.7431&state=TX&capacity=4&tilt=20&azimuth=180&losses=14');
+const guamPath = request('/api/pvwatts?lat=13.4745&lon=144.7504&state=GU&capacity=4&tilt=20&azimuth=180&losses=14');
 result = await read(await pvGet({ request: validPath, env: { PVWATTS_API_KEY: 'test-secret' } }));
 assert.equal(result.status, 503);
 assert.equal(calls.length, 0, 'missing D1 quota guard must not call NLR');
@@ -184,6 +206,16 @@ assert.equal(goodQuotaDb.values[5], 15000);
 assert.match(calls[0].url, /pvwatts\/v8\.json/);
 assert.match(calls[0].url, /radius=100/, 'PVWatts must not use an unrestricted nearest-climate-station search');
 assert.match(calls[0].url, /api_key=test-secret/);
+globalThis.fetch = async (url) => { calls.push({ url: String(url) }); return jsonResponse({
+  errors: [], warnings: [], outputs: { ac_annual: 6200, ac_monthly: [400,420,500,530,590,610,630,600,520,490,450,460], capacity_factor: 11.79 },
+  station_info: { distance: 20.5, weather_data_source: 'NSRDB Himawari TMY' },
+}); };
+const guamQuotaDb = quotaDb();
+result = await read(await pvGet({ request: guamPath, env: { PVWATTS_API_KEY: 'test-secret', API_QUOTA_DB: guamQuotaDb } }));
+assert.equal(result.status, 200, 'Guam coordinates should pass territory-specific validation');
+assert.match(calls[0].url, /lat=13\.4745/);
+assert.match(calls[0].url, /lon=144\.7504/);
+assert.equal(guamQuotaDb.values[0], 'pvwatts');
 
 // NLR quota exhaustion should remain a 429 rather than being hidden as a generic gateway error.
 calls = [];
