@@ -1,0 +1,46 @@
+name: Real-browser Preview QA
+
+on:
+  push:
+    branches:
+      - "audit/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[browser-qa]'))
+    name: Playwright desktop/mobile and accessibility smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Install temporary browser QA packages
+        run: npm install --prefix /tmp/roofsolar-playwright --no-save playwright @axe-core/playwright
+      - name: Install Chromium
+        run: /tmp/roofsolar-playwright/node_modules/.bin/playwright install --with-deps chromium
+      - name: Run real-browser Preview checks
+        run: node scripts/browser_preview_smoke.mjs
+        env:
+          PREVIEW_BASE_URL: https://audit-stage1-20261103.roof-solar-toolkit-2026.pages.dev
+          PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
+          AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
+          QA_SCREENSHOT_DIR: browser-qa-output
+      - name: Retain browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: roof-solar-preview-browser-screenshots
+          path: browser-qa-output/*.png
+          if-no-files-found: warn
+          retention-days: 3
