@@ -28,3 +28,11 @@ jobs:
         run: python -m pip install --disable-pip-version-check pypdf gdown pymupdf
       - name: Download and inspect official LBNL source files
         run: python scripts/audit_lbnl_source_files.py
+      - name: Retain public guide-page render previews (no raw CSV)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lbnl-2026-guide-render-preview
+          path: .lbnl-guide-renders/*.png
+          if-no-files-found: warn
+          retention-days: 3
