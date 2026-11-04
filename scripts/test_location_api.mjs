@@ -157,7 +157,7 @@ assert.equal(result.body.places.length, 2);
 assert.equal(result.body.places[0].placeName, 'Austin');
 assert.equal(result.body.places[0].stateAbbreviation, 'TX');
 assert.equal(typeof result.body.places[0].locationToken, 'string', 'exact Census verification must return a signed location proof when a provider key is configured');
-assert.match(result.body.places[0].locationToken, /^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/);
+assert.match(result.body.places[0].locationToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
 assert.match(result.headers.get('Cache-Control') || '', /private,\s*no-store/i, 'exact Census results carrying bearer proofs must not be cached');
 assert.equal(result.body.places[0].geographyType, 'Incorporated place');
 assert.equal(result.body.places[1].geographyType, 'Census-designated place');
