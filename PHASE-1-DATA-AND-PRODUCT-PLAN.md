@@ -1,6 +1,6 @@
 # Phase 1 — Data feasibility and product architecture
 
-**Prepared:** November 1, 2026  
+**Prepared:** November 4, 2026  
 **Project:** Roof & Solar Toolkit  
 **Business model:** U.S.-focused free homeowner tools, primarily monetized through display advertising  
 **Status:** The isolated Cloudflare Preview is deployed and its Census, PVWatts and OpenEI routes have passed a live smoke test. Production deployment, custom-domain cutover, indexing, ad activation and paid services are not authorized.
@@ -40,7 +40,7 @@ The current static website is a usable foundation. Keep its calculator formulas,
 
 There is no single complete official, current, machine-readable installed-roof-price dataset covering every U.S. city. However, the evidence landscape is better than a simple "no data" conclusion:
 
-- The Census/HUD 2023 AHS infographic reports a $10,000 national median roofing expenditure for the 2021–2023 reference period. The corrected research script uses generic relational PUF fields (`JOBTYPE`, `JOBCOST`, `JOBDIY`) joined to owner-occupied HOUSEHOLD records by `CONTROL`; it includes Census-edited/imputed values and uses the 160 replicate weights. It remains research-only: the official PUF archive was not downloaded, no real PUF summary was generated, and this source has no roof-size denominator or local $/sq-ft data.
+- The Census/HUD 2023 AHS infographic reports a $10,000 national median roofing expenditure for the 2021–2023 reference period. The research script uses generic relational National PUF fields (`JOBTYPE`, `JOBCOST`, `JOBDIY`) joined to HOUSEHOLD records by `CONTROL`; it uses `WEIGHT` and 160 replicate-weight fields provisionally. Census confirms C-16 is job/project-level. The exact roofing `JOBTYPE`, C-16 universe, weight selection and variance method remain unverified against official Value Labels/Table Specifications. No real PUF output has been generated. This source has no roof-size denominator or local $/sq-ft data.
 - Some local governments publish permit records with declared reroof project values. San Francisco's official PermitSF dataset identifies reroof permits and includes valuation, but its field is not a final paid invoice. This is a local research indicator, not a city cost benchmark until the subset, value completeness, scope and permit status have been audited. Other jurisdictions require separate licensing and schema checks.
 - Commercial and publisher datasets exist, but their methodologies, source access and reuse rights vary. Do not scrape or republish proprietary estimates without permission.
 
@@ -91,7 +91,7 @@ Track, once legally and technically ready: U.S. organic clicks, U.S. share of se
 ### Gate A — source validation (next)
 1. The official Berkeley Lab 2026 update record confirms roughly 5.3 million systems overall through end-2025. The current downloadable CSV row count and 2026 guide's field definitions have not been inspected. Obtain the 2026 guide and CSV, count rows, validate current field names and cohort filters, and obtain explicit current commercial-reuse permission. Do not rely on the older Data.gov CC BY record as proof of the 2026 file's licence.
 2. Obtain the AHS 2023 relational PUF and official value-label/Table Specifications files; verify the roofing `JOBTYPE` code, the exact C-16-OO universe, replicate-weight calculation, and reconcile p25/median/p75 against Census before any publication. Do not apply a 2023-only `JOBWORKYR` filter to the 2021–2023 national benchmark without a separate analytical reason.
-3. Prototype PVWatts V8 requests for a small set of test coordinates and compare outputs to the official calculator. Test API error/warning handling, station distance and model assumptions.
+3. A live PVWatts V8 Austin smoke test passed on November 4, 2026 (1,483 kWh/year for 1 kW DC, station ID 677404). Next compare multiple US climates and orientation/loss settings against the official calculator, record station distance, and inspect warning/error paths. One Austin smoke test is not nationwide validation.
 4. Test OpenEI candidate-rate retrieval for overlapping service territories and multiple residential tariffs; compare against the utility's official tariff sheet and current effective date.
 5. Download the 2023 National PUF and official Value Labels / Table Specifications; verify `JOBTYPE`, `OMB13CBSA`, project universe and weight fields, then reconcile national and Top 15 metro estimates against Census Table C-16 and its margins of error. The AHS Top 15 use the February 2013 OMB CBSA geography held constant through 2023; build a matching-vintage spatial crosswalk before associating a selected current city with one of those metro summaries.
 6. Compare selected municipal permit datasets against AHS estimates. Do not use Miami-Dade `SquareFootage` as roof area until the County confirms its meaning or a record-level audit proves it. Document data refresh cadence, fallback behavior and attribution for every source.
