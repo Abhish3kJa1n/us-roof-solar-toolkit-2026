@@ -98,7 +98,7 @@ globalThis.fetch = async (url, options) => {
   if (layer === '28') return jsonResponse({ features: [{ attributes: {
     BASENAME: 'Austin', STATE: '48', INTPTLAT: '30.2672', INTPTLON: '-97.7431', GEOID: '4805000', LSADC: '25',
   } }] });
-  if (layer === '30') return jsonResponse({ features: isSuggestionQuery ? [] : [{ attributes: {
+  if (layer === '30') return jsonResponse({ features: isSuggestionQuery || requestedFips === '66' ? [] : [{ attributes: {
     BASENAME: 'Example CDP', STATE: requestedFips || '48', INTPTLAT: '30.1', INTPTLON: '-97.9', GEOID: '4899999', LSADC: '57',
   } }] });
   throw new Error('Unexpected Census layer URL: ' + url);
