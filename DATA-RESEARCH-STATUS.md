@@ -184,7 +184,7 @@ Sources:
 
 ## Current release decision
 
-**No local roof-price or solar-price number is approved for public display from these datasets yet.** The live solar estimator can use PVWatts after the owner configures a key. The research pipeline is ready to evaluate LBNL city-level solar price distributions, but the real CSV and a commercial-reuse licence clearance are still missing. The live roof cost estimator remains based on visitor-entered comparable prices/quotes; selected-city permit data may become a separately labelled local benchmark after each jurisdiction is validated. Do not create city pages with invented multipliers or thin text.
+**No local roof-price or solar-price number is approved for public display from these datasets yet.** The live solar estimator now uses a working Preview PVWatts integration, verified by a real Austin smoke test; the Production key is not configured. The LBNL research script is implemented and synthetic-tested, but the real 2026 CSV, file-level schema validation and commercial-reuse clearance are still missing. The AHS script is likewise synthetic-tested only; the numeric roofing `JOBTYPE`, exact C-16 universe, weight choice, real PUF output and Table C-16 reconciliation remain unverified. The live roof cost estimator therefore remains based on visitor-entered comparable prices/quotes and clearly labelled national context references. Selected-city permit data may become a separately labelled local permit-value indicator only after each jurisdiction's field definitions, scope, sample and reuse terms are validated. Do not create city pages with invented multipliers or thin text.
 
 
 ## November 1 publication gate implementation
