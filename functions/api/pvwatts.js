@@ -17,6 +17,17 @@ const numberParam = (params, name, min, max) => {
   return { value };
 };
 
+const isSupportedUsCoordinate = (lat, lon, state) => {
+  // Western longitudes cover the contiguous states, Alaska, Hawaii, Puerto Rico,
+  // U.S. Virgin Islands and American Samoa. Guam and the Northern Mariana Islands
+  // use positive longitudes and are admitted only inside their rough territory
+  // envelopes, with the selected Census state/territory code present.
+  const westernUsEnvelope = lat >= -15 && lat <= 72 && lon >= -180 && lon <= -60;
+  const guamEnvelope = state === 'GU' && lat >= 13 && lat <= 14.5 && lon >= 144 && lon <= 145.5;
+  const marianaEnvelope = state === 'MP' && lat >= 14 && lat <= 21.5 && lon >= 144 && lon <= 147;
+  return westernUsEnvelope || guamEnvelope || marianaEnvelope;
+};
+
 // Keep the NLR key below its published 1,000-request rolling-hour ceiling.
 // 180 per fixed 15-minute bucket means at most 900 across any rolling hour.
 const WINDOW_LIMIT = 180;
@@ -33,13 +44,17 @@ export async function onRequestGet({ request, env }) {
     // The public estimator only supports broad US/territory coordinates returned
     // by the Census city/place resolver. Prevent unrelated direct API calls from
     // consuming the owner's NLR key.
-    lat: [-15, 72], lon: [-180, 180], capacity: [0.05, 100], tilt: [0, 90], azimuth: [0, 359.99], losses: [0, 99],
+    lat: [-90, 90], lon: [-180, 180], capacity: [0.05, 100], tilt: [0, 90], azimuth: [0, 359.99], losses: [0, 99],
   };
   const values = {};
   for (const [name, [min, max]] of Object.entries(specs)) {
     const parsed = numberParam(params, name, min, max);
     if (parsed.error) return json({ error: parsed.error }, 400);
     values[name] = parsed.value;
+  }
+  const state = (params.get('state') || '').trim().toUpperCase();
+  if (!isSupportedUsCoordinate(values.lat, values.lon, state)) {
+    return json({ error: 'Coordinates must be within a supported U.S. state or territory location. For Guam or the Northern Mariana Islands, select the corresponding Census place first.' }, 400);
   }
 
   // Fail closed: never send an upstream request when the shared quota guard is
