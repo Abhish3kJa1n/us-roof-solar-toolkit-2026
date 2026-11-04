@@ -206,6 +206,7 @@ assert.equal(goodQuotaDb.values[5], 15000);
 assert.match(calls[0].url, /pvwatts\/v8\.json/);
 assert.match(calls[0].url, /radius=100/, 'PVWatts must not use an unrestricted nearest-climate-station search');
 assert.match(calls[0].url, /api_key=test-secret/);
+calls = [];
 globalThis.fetch = async (url) => { calls.push({ url: String(url) }); return jsonResponse({
   errors: [], warnings: [], outputs: { ac_annual: 6200, ac_monthly: [400,420,500,530,590,610,630,600,520,490,450,460], capacity_factor: 11.79 },
   station_info: { distance: 20.5, weather_data_source: 'NSRDB Himawari TMY' },
