@@ -11,8 +11,8 @@ Last updated: November 4, 2026
 - Build command: `sh scripts/prepare_deploy.sh`
 - Build output: `dist`
 - Pages Functions: enabled; routes are limited to `/api/*`
-- Latest documented branch head at this audit: `cd983680b571954199a0f217e640a0fd0f042f06`
-- Latest confirmed successful Preview deployment at 2026-11-04 16:50:31 UTC: https://d766e401.roof-solar-toolkit-2026.pages.dev
+- Latest documented branch head at this audit: `e05283bf52440795b5a33b04d0730adc4a60a8d6`
+- Latest confirmed successful Preview deployment at 2026-11-04 17:18:41 UTC: https://3a3b5b84.roof-solar-toolkit-2026.pages.dev
 - Branch alias: https://audit-stage1-20261103.roof-solar-toolkit-2026.pages.dev
 - Deployment build and deploy stages: successful
 - Production deployment automation: disabled
@@ -34,6 +34,8 @@ The following server-side Cloudflare Preview secrets are configured:
 - `PVWATTS_API_KEY`
 - `OPENEI_API_KEY`
 
+The exact Census city/state route signs its representative point with a 24-hour HMAC token. The token is bound to the returned latitude, longitude and state. PVWatts and OpenEI require it; a caller cannot send arbitrary or altered coordinates directly to either provider proxy. The signing key is derived from an existing server-side secret; no additional API key is required.
+
 Cloudflare masks secret values in its configuration response. Their presence in the configuration is not, by itself, proof that they work. The November 4, 2026 live Preview smoke test supplied that proof:
 
 - Census ACS2026 autocomplete: PASS; returned Austin, TX.
@@ -42,7 +44,7 @@ Cloudflare masks secret values in its configuration response. Their presence in 
 - OpenEI URDB: PASS; returned 49 nearby residential tariff candidate records for the Austin test location.
 - The OpenEI records are candidates for manual verification, not proof of the homeowner's utility, service territory, active tariff or applicable rate. No candidate is applied automatically to savings.
 
-GitHub Actions run #180 (commit `cd983680b571954199a0f217e640a0fd0f042f06`) completed successfully. The 20-check local QA job passed, followed by a fresh live Preview smoke test against the audit-branch alias. Results: Census ACS2026 autocomplete returned Austin, TX; exact lookup returned 30.2986219, -97.7541339; PVWatts V8 returned 1,483 kWh/year for the 1 kW DC scenario (station ID 677404); OpenEI returned 49 nearby residential candidate records. The log printed `LIVE PREVIEW SMOKE TEST COMPLETED.`. OpenEI candidates are not confirmed household tariffs. The preceding UI fix commits also passed branch and PR QA: runs #167, #168 and #169 include the regression test for incomplete Census suggestion counts. This confirms the latest Preview secrets and live API routes work; it does not certify multi-region accuracy, actual tariffs, browser/accessibility behavior or Production.
+GitHub Actions run #180 (commit `cd983680b571954199a0f217e640a0fd0f042f06`) completed successfully with all 20 local checks and a live Census/PVWatts/OpenEI smoke. Runs #167–#169 covered the incomplete Census suggestion-count regression. The signed-location-proof hardening was added afterward: exact Census city/state verification issues a 24-hour HMAC token, and PVWatts/OpenEI reject missing, altered or mismatched coordinate proofs before D1 quota reservation and upstream calls. The full 20-check QA passed on commit `e05283bf52440795b5a33b04d0730adc4a60a8d6` (GitHub Actions run #264, success); the new live proof flow is now being retested separately. The baseline Austin results above do not certify multi-region accuracy, actual tariffs, browser/accessibility behavior or Production.
 
 ## Existing custom-domain project — separate from the Git-connected Preview
 
