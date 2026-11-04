@@ -149,7 +149,26 @@ def main() -> int:
         source_path = root / "lbnl-2026-public-data.download"
         download("2026_user_guide", GUIDE_URL, guide_path)
         guide_text = inspect_guide(guide_path)
-        download("2026_public_data", CSV_URL, source_path)
+        _, _, csv_final_url = download("2026_public_data", CSV_URL, source_path)
+        with source_path.open("rb") as probe:
+            prefix = probe.read(4096).lstrip()
+        if prefix.startswith(b"<!DOCTYPE html") or prefix.startswith(b"<html") or b"Google Drive" in prefix:
+            match = re.search(r"/file/d/([A-Za-z0-9_-]+)", csv_final_url)
+            if not match:
+                raise RuntimeError("The LBNL public-data short link redirected to HTML, but no public Google Drive file ID was detected.")
+            file_id = match.group(1)
+            print(f"CSV_REDIRECT: Google Drive file ID detected ({file_id}); retrying through the public file download endpoint.")
+            source_path.unlink(missing_ok=True)
+            try:
+                import gdown
+            except ImportError as exc:
+                raise RuntimeError("gdown is required to retrieve the public LBNL Google Drive file.") from exc
+            downloaded = gdown.download(id=file_id, output=str(source_path), quiet=False, fuzzy=True)
+            if not downloaded or not source_path.exists() or source_path.stat().st_size < 1024:
+                raise RuntimeError("Google Drive public CSV download did not return a plausible file.")
+            with source_path.open("rb") as probe:
+                file_magic = probe.read(8)
+            print(f"CSV_GOOGLE_DRIVE_DOWNLOAD: bytes={source_path.stat().st_size:,}; magic={file_magic!r}")
         csv_path = locate_data_file(source_path, root)
         print(f"PUBLIC_CSV size_bytes={csv_path.stat().st_size:,}; suffix={csv_path.suffix}")
 
