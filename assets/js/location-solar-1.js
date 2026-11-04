@@ -404,7 +404,7 @@
     placeField.hidden = true;
     invalidateLocationContext();
     try {
-      const query = params({ city, state });
+      const query = params({ city, state, locationProofVersion: '1' });
       const response = await fetch(`../api/location?${query.toString()}`, { headers: { Accept: 'application/json' } });
       const data = await response.json();
       if (lookupId !== locationSequence) return;
@@ -477,9 +477,15 @@
     setStatus(modelStatus, 'Requesting NLR PVWatts V8 model…');
     resetResult('Calculating…', 'The representative location and explicit system assumptions are being sent to this site’s server endpoint.');
     updateActions();
-    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation, locationToken: selectedPlace.locationToken, capacity, tilt, azimuth, losses });
+    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation, capacity, tilt, azimuth, losses });
+    if (!selectedPlace.locationToken) {
+      modelPending = false;
+      setStatus(modelStatus, 'The Census location proof is missing. Verify the selected city again before running the solar model.');
+      updateActions();
+      return;
+    }
     try {
-      const response = await fetch(`../api/pvwatts?${query.toString()}`, { headers: { Accept: 'application/json' } });
+      const response = await fetch(`../api/pvwatts?${query.toString()}`, { headers: { Accept: 'application/json', 'X-Location-Proof': selectedPlace.locationToken } });
       const data = await response.json();
       if (seq !== requestSequence) return;
       if (!response.ok) throw new Error(data.error || 'PVWatts could not return a model.');
@@ -582,9 +588,15 @@
     updateActions();
     setStatus(tariffStatus, 'Searching nearby residential rate records…');
     tariffResults.replaceChildren();
-    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation, locationToken: selectedPlace.locationToken });
+    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation });
+    if (!selectedPlace.locationToken) {
+      tariffPending = false;
+      setStatus(tariffStatus, 'The Census location proof is missing. Verify the selected city again before searching for tariff candidates.');
+      updateActions();
+      return;
+    }
     try {
-      const response = await fetch(`../api/tariffs?${query.toString()}`, { headers: { Accept: 'application/json' } });
+      const response = await fetch(`../api/tariffs?${query.toString()}`, { headers: { Accept: 'application/json', 'X-Location-Proof': selectedPlace.locationToken } });
       const data = await response.json();
       if (seq !== tariffSequence) return;
       if (!response.ok) throw new Error(data.error || 'Tariff discovery failed.');
