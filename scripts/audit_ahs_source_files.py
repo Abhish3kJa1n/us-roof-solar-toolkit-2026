@@ -24,6 +24,7 @@ from pathlib import Path
 BASE = "https://www2.census.gov/programs-surveys/ahs/2023/"
 SOURCES = {
     "national_puf": BASE + "AHS%202023%20National%20PUF%20v1.1%20CSV.zip",
+    "metro_puf": BASE + "AHS%202023%20Metropolitan%20PUF%20v1.1%20CSV.zip",
     "value_labels": BASE + "AHS%202023%20Value%20Labels%20Package.zip",
     "table_specs": BASE + "AHS%202023%20Table%20Specifications%20and%20PUF%20Estimates%20for%20User%20Verification.xlsx",
 }
@@ -96,7 +97,12 @@ def csv_header(archive: zipfile.ZipFile, name: str) -> list[str]:
         return next(reader, [])
 
 
-def locate_relational_csvs(puf_zip: Path) -> tuple[str, str, list[str], list[str]]:
+def locate_relational_csvs(puf_zip: Path, require_omb13cbsa: bool = True) -> tuple[str, str, list[str], list[str]]:
+    """Identify relational PROJECT/HOUSEHOLD files by their observed headers.
+
+    The National PUF is expected to include OMB13CBSA. Do not assume the
+    separate Metropolitan PUF uses the same geography field name.
+    """
     with zipfile.ZipFile(puf_zip) as archive:
         candidates = [n for n in archive.namelist() if n.lower().endswith(".csv")]
         project = None
@@ -108,7 +114,10 @@ def locate_relational_csvs(puf_zip: Path) -> tuple[str, str, list[str], list[str
             fields = {x.strip().strip('"').upper() for x in header}
             if {"CONTROL", "JOBTYPE", "JOBCOST", "JOBDIY"} <= fields:
                 project, project_header = name, header
-            if {"CONTROL", "TENURE", "INTSTATUS", "WEIGHT", "OMB13CBSA"} <= fields:
+            required_household = {"CONTROL", "TENURE", "INTSTATUS", "WEIGHT"}
+            if require_omb13cbsa:
+                required_household.add("OMB13CBSA")
+            if required_household <= fields:
                 replicate_count = sum(
                     1 for field in fields if re.fullmatch(r"REPWEIGHT\d{1,3}", field)
                 )
@@ -164,7 +173,10 @@ def inspect_household(puf_zip: Path, household_name: str, header: list[str]) -> 
         key=lambda x: int(re.search(r"\d+", x).group(0)),  # type: ignore[union-attr]
     )
     print("HOUSEHOLD schema checks:")
-    print(f"  Required base fields present: {all(x in fields for x in ['CONTROL','TENURE','INTSTATUS','WEIGHT','OMB13CBSA'])}")
+    print(f"  Required base fields present: {all(x in fields for x in ['CONTROL','TENURE','INTSTATUS','WEIGHT'])}")
+    print(f"  OMB13CBSA field present: {'OMB13CBSA' in fields}")
+    geography_fields = sorted(field for field in fields if re.search(r"METRO|CBSA|AREA|SMSA|MSA", field))
+    print(f"  Candidate geography fields: {geography_fields or 'none identified by field name'}")
     print(f"  Replicate-weight fields found: {len(replicates)}")
     print(f"  Replicate field range: {replicates[0] if replicates else 'none'} .. {replicates[-1] if replicates else 'none'}")
     print(f"  Split-sample weights present: SP1WEIGHT={'SP1WEIGHT' in fields}, SP2WEIGHT={'SP2WEIGHT' in fields}")
@@ -174,6 +186,26 @@ def inspect_household(puf_zip: Path, household_name: str, header: list[str]) -> 
         for _ in csv.DictReader(text):
             count += 1
     print(f"HOUSEHOLD rows: {count:,}")
+
+
+def inspect_geography_distributions(puf_zip: Path, household_name: str, header: list[str]) -> None:
+    """Print only aggregate frequencies for likely metro/geography identifiers."""
+    fields = [x.strip().strip('"') for x in header]
+    candidates = [field for field in fields if re.search(r"METRO|CBSA|AREA|SMSA|MSA", field, re.I)]
+    if not candidates:
+        print("METROPOLITAN GEOGRAPHY: no likely geography field name found; inspect the codebook and labels.")
+        return
+    counters = {field: Counter() for field in candidates}
+    with zipfile.ZipFile(puf_zip) as archive, archive.open(household_name) as binary:
+        text = io.TextIOWrapper(binary, encoding="utf-8-sig", newline="")
+        for row in csv.DictReader(text):
+            for field in candidates:
+                value = (row.get(field) or "").strip().strip("'\"")
+                if value:
+                    counters[field][value] += 1
+    print("METROPOLITAN GEOGRAPHY IDENTIFIER DISTRIBUTIONS (aggregate only):")
+    for field, counts in counters.items():
+        print(f"  {field}: distinct_nonblank={len(counts):,}; values={counts.most_common(60)}")
 
 
 def inspect_value_labels(labels_zip: Path) -> None:
@@ -191,7 +223,7 @@ def inspect_value_labels(labels_zip: Path) -> None:
             lines = text.splitlines()
             hit_indexes = [
                 i for i, line in enumerate(lines)
-                if re.search(r"JOBTYPE|JOB.?TYPE|ROOF(?:ING)?", line, re.I)
+                if re.search(r"JOBTYPE|JOB.?TYPE|ROOF(?:ING)?|METRO|CBSA|SMSA|MSA", line, re.I)
             ]
             if not hit_indexes:
                 continue
@@ -273,6 +305,7 @@ def main() -> int:
             files[name] = target
 
         puf_names = zip_entries(files["national_puf"], "National PUF")
+        metro_puf_names = zip_entries(files["metro_puf"], "Metropolitan PUF")
         label_names = zip_entries(files["value_labels"], "Value Labels")
         print(f"Table Specifications workbook size: {files['table_specs'].stat().st_size:,} bytes")
         project_name, household_name, project_header, household_header = locate_relational_csvs(files["national_puf"])
@@ -282,6 +315,21 @@ def main() -> int:
         print(f"HOUSEHOLD schema fields: {len(household_header)}")
         inspect_household(files["national_puf"], household_name, household_header)
         project_jobtype_counts(files["national_puf"], project_name)
+
+        # The Metropolitan PUF is a separate package. Inspect its own
+        # relational files and geography fields instead of reusing the National
+        # PUF's OMB13CBSA assumptions or treating its Top-15 groups as exhaustive.
+        metro_project_name, metro_household_name, metro_project_header, metro_household_header = locate_relational_csvs(
+            files["metro_puf"], require_omb13cbsa=False
+        )
+        print("\nIdentified relational METROPOLITAN PROJECT CSV: " + metro_project_name)
+        print("METRO PROJECT schema: " + ", ".join(metro_project_header[:80]))
+        print("Identified relational METROPOLITAN HOUSEHOLD CSV: " + metro_household_name)
+        print("METRO HOUSEHOLD schema fields: " + str(len(metro_household_header)))
+        inspect_household(files["metro_puf"], metro_household_name, metro_household_header)
+        inspect_geography_distributions(files["metro_puf"], metro_household_name, metro_household_header)
+        project_jobtype_counts(files["metro_puf"], metro_project_name)
+
         inspect_value_labels(files["value_labels"])
         inspect_table_specs(files["table_specs"])
 
@@ -367,7 +415,7 @@ def main() -> int:
                     f"p25 USD {float(row['p25_nominal_survey_usd']):,.0f}; "
                     f"p75 USD {float(row['p75_nominal_survey_usd']):,.0f}"
                 )
-        print("\nAHS SOURCE AUDIT AND REAL-PUF RESEARCH CALCULATION COMPLETED. No raw files or record-level data were uploaded.")
+        print("\nAHS NATIONAL PUF RECONCILIATION AND SEPARATE METROPOLITAN PUF SOURCE/SCHEMA AUDIT COMPLETED. The Metropolitan PUF has not yet been converted into published estimates. No raw files or record-level data were uploaded.")
     return 0
 
 
