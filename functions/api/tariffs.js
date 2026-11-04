@@ -27,7 +27,7 @@ export async function onRequestGet({ request, env }) {
   if (!westernUsEnvelope && !guamEnvelope && !marianaEnvelope) {
     return json({ error: 'Valid coordinates within a supported U.S. state or territory are required. Guam and Northern Mariana Islands require the matching selected Census location.' }, 400);
   }
-  const locationProof = await verifyLocationToken(params.get('locationToken'), env, { latitude: lat, longitude: lon, state });
+  const locationProof = await verifyLocationToken(request.headers.get('X-Location-Proof'), env, { latitude: lat, longitude: lon, state });
   if (!locationProof) {
     return json({ error: 'Select and verify a city/state through the Census location search before requesting tariff candidates. Arbitrary coordinates are not accepted.' }, 400);
   }
