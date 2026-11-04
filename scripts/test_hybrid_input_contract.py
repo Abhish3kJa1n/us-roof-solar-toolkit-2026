@@ -60,7 +60,7 @@ if 'site owner has configured its free server-side API key' not in loc:
 home=(ROOT/'index.html').read_text(encoding='utf-8')
 home_js=(ROOT/'assets/js/homepage-1.js').read_text(encoding='utf-8')
 location_js=(ROOT/'assets/js/location-solar-1.js').read_text(encoding='utf-8')
-for phrase in ('City-based solar data','It is not inserted into your tariff field','Every returned value remains editable'):
+for phrase in ('City-based solar data','It is not inserted into your tariff field','may deliberately apply it as an illustrative scenario'):
     if phrase.lower() not in home.lower(): fail(f'homepage lacks hybrid-data disclosure: {phrase}')
 for token in ("handoff.get('productionPerKw')", "handoff.get('stateAverageRate')", "useEiaStateAverage", "addEventListener('click'", "PVWatts V8", "FieldValidation.refresh", "loadNationalRoofReference();", "loadNationalSolarReference();", "Berkeley Lab Tracking the Sun 2026"):
     if token not in home_js: fail(f'homepage hybrid handoff is missing {token}')
