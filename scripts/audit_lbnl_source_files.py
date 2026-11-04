@@ -124,7 +124,9 @@ def locate_data_file(path: Path, root: Path) -> Path:
                     target.write(block)
             print(f"CSV_ARCHIVE_ENTRY: {candidates[0]}")
             return extracted
-    if path.suffix.lower() == ".gz" or path.read_bytes()[:2] == b"\x1f\x8b":
+    with path.open("rb") as probe:
+        magic = probe.read(2)
+    if path.suffix.lower() == ".gz" or magic == b"\x1f\x8b":
         extracted = root / "public-data.csv"
         with gzip.open(path, "rb") as source, extracted.open("wb") as target:
             while True:
@@ -193,6 +195,8 @@ def main() -> int:
                         year_match = re.match(r"^(19\d{2}|20\d{2})", date)
                         year = year_match.group(1) if year_match else "<missing>"
                         year_counts[year] += 1
+                    else:
+                        year = "<missing-state>"
                         if city:
                             city_state_counts[(state, city)] += 1
                     for field in NEEDED:
@@ -244,11 +248,41 @@ def main() -> int:
         print("GUIDE_CONTAINS_FIELD_NAMES:")
         for field in sorted(NEEDED):
             print(f"  {field}: {'YES' if re.search(re.escape(field), guide_text) else 'NO'}")
-        print("FIRST ROWS OMITTED: raw project records are not printed.")
+        print("RAW PROJECT RECORDS OMITTED: no row-level data are printed or retained as workflow artifacts.")
         if required_missing:
             print("LBNL SOURCE AUDIT INCOMPATIBLE WITH EXISTING ANALYZER; do not process prices.")
             return 2
-        print("LBNL 2026 SOURCE AUDIT COMPLETED. No source data or price aggregates were uploaded.")
+
+        # Run the established research filter on the actual CSV only after the
+        # required 2026 schema has been confirmed. Outputs stay in this temp dir.
+        city_out = root / "berkeley-city-research.csv"
+        state_out = root / "berkeley-state-research.csv"
+        coverage_out = root / "berkeley-city-coverage.csv"
+        analyzer = Path(__file__).with_name("analyze_berkeley_solar.py")
+        completed = subprocess.run([
+            sys.executable, str(analyzer), "--input", str(csv_path),
+            "--output", str(city_out), "--state-output", str(state_out),
+            "--coverage-output", str(coverage_out),
+        ], check=True, capture_output=True, text=True)
+        print("EXISTING COHORT ANALYZER OUTPUT:")
+        for line in completed.stdout.splitlines():
+            print("  " + line)
+
+        with city_out.open(encoding="utf-8", newline="") as stream:
+            city_rows = list(csv.DictReader(stream))
+        with state_out.open(encoding="utf-8", newline="") as stream:
+            state_rows = list(csv.DictReader(stream))
+        with coverage_out.open(encoding="utf-8", newline="") as stream:
+            coverage_rows = list(csv.DictReader(stream))
+        eligible_city_n = [int(row["n"]) for row in city_rows]
+        eligible_state_n = [int(row["n"]) for row in state_rows]
+        print(f"COHORT_OUTPUT city_rows_meeting_n100={len(city_rows):,}; state_rows_meeting_n500={len(state_rows):,}; city-coverage-rows={len(coverage_rows):,}")
+        if eligible_city_n:
+            print(f"COHORT_OUTPUT largest_city_sample={max(eligible_city_n):,}; median_city_sample={sorted(eligible_city_n)[len(eligible_city_n)//2]:,}")
+        if eligible_state_n:
+            print(f"COHORT_OUTPUT smallest_published_state_sample={min(eligible_state_n):,}; largest_state_sample={max(eligible_state_n):,}")
+
+        print("LBNL 2026 SOURCE AUDIT AND TEMPORARY COHORT ANALYSIS COMPLETED. No source data or price aggregates were uploaded.")
     return 0
 
 
