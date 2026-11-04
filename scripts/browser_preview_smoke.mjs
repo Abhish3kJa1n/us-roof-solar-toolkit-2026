@@ -106,6 +106,11 @@ try {
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
 
+  // The next-step gate must reject blank required roof inputs before moving on.
+  await page.locator('button[data-next="2"]').click();
+  assert.ok((await page.locator('#error1').innerText()).trim().length > 0, 'blank required roof inputs should be blocked before results');
+  assert.match(await page.locator('#stepCount').innerText(), /STEP 1 OF 3/i);
+
   await page.locator('#roofType').selectOption('asphalt');
   await page.locator('#roofArea').fill('1800');
   await page.locator('#roofRateLow').fill('5');
@@ -122,7 +127,8 @@ try {
   await page.locator('#calculateButton').click();
   await page.locator('#results.show').waitFor({ state: 'visible', timeout: 15000 });
   const combinedResults = await page.locator('#results').innerText();
-  assert.match(combinedResults, /18\.0 kW|Estimated solar system/i);
+  const systemSize = (await page.locator('#systemSize').innerText()).trim();
+  assert.match(systemSize, /^\d+\.\d+ kW$/i, 'combined calculator must output a calculated system size');
   assert.match(combinedResults, /Roof replacement range|Roof replacement/i);
   results.push('combined calculator: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png'), fullPage: true });
