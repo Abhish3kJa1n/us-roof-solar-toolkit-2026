@@ -61,7 +61,7 @@ for phrase in ('City-based solar data','state average is not your household tari
     if phrase.lower() not in home.lower(): fail(f'homepage lacks hybrid-data disclosure: {phrase}')
 for token in ("handoff.get('productionPerKw')", "handoff.get('stateAverageRate')", "PVWatts V8", "FieldValidation.refresh", "loadNationalRoofReference();", "loadNationalSolarReference();", "Berkeley Lab Tracking the Sun 2026"):
     if token not in home_js: fail(f'homepage hybrid handoff is missing {token}')
-for token in ('productionPerKw', 'stateAverageRate', 'cityModelSource', 'combinedLink.href', 'roofsolar:solar-price-benchmark'):
+for token in ('productionPerKw', 'stateAverageRate', 'cityModelSource', 'combinedLink.href', 'roofsolar:solar-price-benchmark', 'useEiaStateAverage'):
     if token not in location_js: fail(f'city estimator handoff is missing {token}')
 
 registry=(ROOT/'data/price-benchmarks.json').read_text(encoding='utf-8')
