@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import io
+import os
 import re
 import subprocess
 import sys
@@ -97,14 +98,23 @@ def inspect_guide(path: Path) -> str:
             start = max(0, match.start() - 200)
             end = min(len(compact), match.end() + 650)
             print("  " + compact[start:end])
-    # Render selected pages when Poppler is available. Images are temporary and
-    # deliberately not uploaded as workflow artifacts.
+    # Render the first three pages with PyMuPDF. The workflow retains only
+    # these small public guide-page images for visual preflight; the PDF itself,
+    # the public CSV and all price outputs remain in the temporary directory.
     try:
-        subprocess.run(["pdftoppm", "-f", "1", "-l", "3", "-scale-to", "1400", "-png", str(path), str(path.parent / "guide-page")],
-                       check=True, capture_output=True, text=True)
-        print("GUIDE_RENDER: first three pages rendered in temporary runner for visual preflight.")
-    except (FileNotFoundError, subprocess.CalledProcessError):
-        print("GUIDE_RENDER: Poppler unavailable; text extraction completed.")
+        import fitz
+        render_dir = Path(os.environ.get("GITHUB_WORKSPACE", ".")) / ".lbnl-guide-renders"
+        render_dir.mkdir(parents=True, exist_ok=True)
+        visual_doc = fitz.open(str(path))
+        for page_index in range(min(3, len(visual_doc))):
+            page = visual_doc[page_index]
+            pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
+            image_path = render_dir / f"guide-page-{page_index + 1}.png"
+            pix.save(str(image_path))
+            print(f"GUIDE_RENDER page={page_index + 1}; width={pix.width}; height={pix.height}; bytes={image_path.stat().st_size:,}")
+        visual_doc.close()
+    except Exception as error:
+        print(f"GUIDE_RENDER unavailable: {type(error).__name__}: {error}")
     return text
 
 
