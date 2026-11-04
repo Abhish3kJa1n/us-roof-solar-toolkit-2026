@@ -153,7 +153,7 @@ with tempfile.TemporaryDirectory() as tmp:
     assert all_rows["nonnegative_cost_unweighted_n"] == "61"
     assert all_rows["mean_nominal_survey_usd"] == "39500.0"
     assert all_rows["median_nominal_survey_usd"] == "39000.0", "zero-cost jobs must not enter the C-16 median"
-    assert all_rows["total_expenditure_nominal_survey_usd"] == "2370000.0", "total must include nonnegative-cost jobs"
+    assert float(all_rows["total_expenditure_nominal_survey_usd"]) == 2370000, "total must include nonnegative-cost jobs"
     assert all(row["publication_status"] == "RESEARCH_ONLY_C16_RECONCILIATION_AND_VARIANCE_REVIEW_PENDING" for row in rows)
     assert all(float(row["median_replicate_se_usd"]) == 0 for row in rows)
     assert all(float(row["mean_replicate_se_usd"]) == 0 for row in rows)
