@@ -17,3 +17,6 @@ A temporary-runner audit also downloads the official August 2026 Berkeley Lab us
 
 
 The LBNL 2026 source audit now follows the public Google Drive download redirect with a temporary-runner downloader and then validates the downloaded file signature before reading it.
+
+
+The latest source audit uses gdown's ID-based public-file retrieval and PyMuPDF rendering of the first three official guide pages; only guide-page PNG previews are retained briefly as a workflow artifact.
