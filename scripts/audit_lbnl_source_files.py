@@ -163,7 +163,7 @@ def main() -> int:
                 import gdown
             except ImportError as exc:
                 raise RuntimeError("gdown is required to retrieve the public LBNL Google Drive file.") from exc
-            downloaded = gdown.download(id=file_id, output=str(source_path), quiet=False, fuzzy=True)
+            downloaded = gdown.download(id=file_id, output=str(source_path), quiet=False)
             if not downloaded or not source_path.exists() or source_path.stat().st_size < 1024:
                 raise RuntimeError("Google Drive public CSV download did not return a plausible file.")
             with source_path.open("rb") as probe:
