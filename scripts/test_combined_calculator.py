@@ -108,13 +108,13 @@ def main():
   raise SystemExit(f'FAIL city-based hybrid values: EIA average must not auto-fill the marginal rate: {city}')
  if 'Berkeley Lab' not in city['solarStatus'] or '140 records' not in city['solarStatus']:
   raise SystemExit(f'FAIL city-price provenance not preserved: {city}')
- eia_button=next((el for el in all.values() if el.get('id')=='useEiaStateAverage'),None)
- if eia_button is None or not callable(eia_button['handlers'].get('click')):
+ eia_button=next((el for el in all.values() if el.id=='useEiaStateAverage'),None)
+ if eia_button is None or not callable(eia_button.handlers.get('click')):
   raise SystemExit('FAIL explicit EIA illustrative-scenario opt-in button was not created')
- eia_button['handlers']['click']()
+ eia_button.handlers['click']()
  if makeEl('rate').value != '0.1651':
   raise SystemExit('FAIL EIA value should only enter marginal-rate field after explicit visitor click')
- applied=next((el for el in all.values() if el.get('id')=='eiaScenarioApplied'),None)
+ applied=next((el for el in all.values() if el.id=='eiaScenarioApplied'),None)
  if applied is None or applied.hidden or 'illustrative scenario' not in applied.textContent:
   raise SystemExit('FAIL explicit EIA application provenance was not shown')
  print('PASS city-based PVWatts/LBNL prefill leaves tariff blank until visitor explicitly applies EIA scenario')
