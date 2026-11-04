@@ -48,7 +48,7 @@ const suggestionPayload = {
   search: 'Aust', totalMatches: 1, suggestions: [{ placeName: 'Austin', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', geographyTypes: ['Incorporated place'], geoid: '4805000' }],
 };
 const locationPayload = {
-  city: 'Austin', state: 'TX', places: [{ placeName: 'Austin', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', latitude: 30.2672, longitude: -97.7431 }],
+  city: 'Austin', state: 'TX', places: [{ placeName: 'Austin', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', latitude: 30.2672, longitude: -97.7431, locationToken: 'signed-location-token' }],
 };
 const modelPayload = {
   model: 'NLR PVWatts V8',
@@ -176,7 +176,9 @@ assert.match(nodes.combinedLink.href, /state=TX/);
 assert.match(nodes.combinedLink.href, /stateAverageRate=0.1651/);
 assert.match(nodes.combinedLink.href, /stateAverageSource=EIA/);
 assert.match(calls.find((call) => call.includes('/api/pvwatts?')), /state=TX/);
+assert.match(calls.find((call) => call.includes('/api/pvwatts?')), /locationToken=signed-location-token/, 'PVWatts handoff must include the signed Census proof');
 assert.match(calls.find((call) => call.includes('/api/tariffs?')) || '', /state=TX/);
+assert.match(calls.find((call) => call.includes('/api/tariffs?')) || '', /locationToken=signed-location-token/, 'OpenEI handoff must include the signed Census proof');
 assert.match(nodes.combinedLink.href, /pvwattsFetchedAt=2026-11-01/);
 assert.match(nodes.combinedLink.href, /solarPricePerWatt=2.75/);
 assert.match(nodes.combinedLink.href, /solarPriceSource=Berkeley\+Lab\+Tracking\+the\+Sun\+2026/);
