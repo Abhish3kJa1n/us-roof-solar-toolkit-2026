@@ -142,7 +142,7 @@ The repository now contains a root-level `functions/` directory:
 The Census place resolver needs no provider secret, but all three API routes fail closed until the shared D1 quota binding is available. PVWatts and OpenEI additionally return a not-configured response until their respective provider key is supplied. The current separate `roof-solar-toolkit-2026` Pages project already has the D1 binding and PVWatts key in Preview; its OpenEI key is still absent. Production deployments remain disabled and neither provider key is configured in Production. The numbered steps below describe a new/manual setup, not outstanding work for the current Preview. Complete them in this order only when creating another environment:
 
 1. Create a D1 database named `roof-solar-quota` in **Workers & Pages → D1**. Because the site targets U.S. visitors but the owner may create it from India, set a U.S. primary-location hint (start with `ENAM` as a provisional default) rather than blindly accepting a creator-nearby location. Cloudflare says location hints are best-effort and should reflect where most database writes originate; they cannot guarantee the chosen region. D1 has a free allowance; check current pricing/limits before use.
-2. Open the new database's SQL console and execute the contents of `migrations/0001_create_api_quota.sql`. This creates a small table for per-endpoint aggregate counters; it does not store IP addresses, city names, coordinates or visitor identifiers.
+2. Open the new database's SQL console and execute `migrations/0001_create_api_quota.sql`, then `migrations/0002_add_census_suggest_quota.sql` in that order. The second migration adds the separate autocomplete scope while preserving the earlier counters. The table stores aggregate counters only; it does not store IP addresses, city names, coordinates or visitor identifiers.
 3. In **Workers & Pages → your Pages project → Settings → Bindings → Add → D1 database binding**, set the variable name to exactly `API_QUOTA_DB`, select `roof-solar-quota`, and save. Configure both Preview and Production environments as applicable, then redeploy for the binding to take effect.
 4. Only after the D1 binding is present, add `PVWATTS_API_KEY` as a server-side **secret** in the Preview environment. Add `OPENEI_API_KEY` only if tariff-candidate discovery is wanted. Do not expose either key as a public variable.
 5. Never place a real key in HTML, browser JavaScript, Git, this ZIP, or a public issue. `.dev.vars.example` contains placeholders only. For local development, create a local D1 binding named `API_QUOTA_DB`, apply the same migration to that local database, copy `.dev.vars.example` to `.dev.vars`, and add the test keys. Cloudflare documents Pages local D1 bindings through a Wrangler configuration file; local D1 is separate from the remote database.
@@ -169,7 +169,20 @@ A local static web server such as `python -m http.server` will **not** execute P
 - Re-test all endpoints, error paths, cache behavior and privacy disclosures after deployment.
 
 
-## API quota hardening — mandatory before adding the NLR key
+## Current Pages Preview configuration — November 4, 2026
+
+The repository is connected to a separate Cloudflare Pages project named `roof-solar-toolkit-2026`, building the `audit/stage1-20261103` branch from Git integration. The project is preview-only:
+- Production deployment automation is disabled.
+- No custom domain is attached to this separate project.
+- The existing Pages projects and their domain associations were left untouched.
+- `API_QUOTA_DB` is bound in Preview and Production; the live D1 database has migrations `0001` and `0002` applied.
+- `PVWATTS_API_KEY` is configured as a Preview secret only. Production has no PVWatts key.
+- `OPENEI_API_KEY` is not configured in Preview or Production. The optional tariff route therefore returns a clear 503 configuration message until the owner adds a free OpenEI key as a Cloudflare Preview secret.
+- The Preview remains noindex. Do not enable production deployments, attach the domain, or change DNS without owner approval.
+
+The `.github/workflows/qa.yml` workflow runs the 20-check local suite on audit-branch pushes and PRs. A separate live Preview smoke job runs only when a push commit message contains `[live-smoke]`; it tests real ACS2026 Census autocomplete/exact lookup and NLR PVWatts, then reports OpenEI as skipped when its key is absent. This is a network smoke test, not browser, mobile, screen-reader, pricing or production certification.
+
+## API quota hardening — implemented for provider proxies
 
 NLR documents a default limit of 1,000 requests per API key per rolling hour. A public PVWatts proxy must not rely on a per-IP rate rule alone: Cloudflare Free rate-limit counters are IP-based and local to data centers, so many different visitors can still collectively consume the same upstream key. The project therefore reserves each PVWatts request in a shared D1 counter **before** contacting NLR and fails closed if the database is missing, unavailable or at its cap. The same table applies separate site-side caps to Census place lookups and OpenEI tariff-candidate requests.
 
