@@ -11,6 +11,7 @@ import csv
 import hashlib
 import io
 import re
+import subprocess
 import sys
 import tempfile
 import time
@@ -212,6 +213,16 @@ def inspect_table_specs(path: Path) -> None:
         raise RuntimeError("openpyxl is required to inspect the Census Table Specifications workbook") from exc
     workbook = load_workbook(path, read_only=True, data_only=True)
     print(f"Table Specifications sheets: {workbook.sheetnames}")
+    if "Home Improvement Costs" in workbook.sheetnames:
+        c16_sheet = workbook["Home Improvement Costs"]
+        for row_number in range(1, 16):
+            values = [str(value).strip() for value in next(c16_sheet.iter_rows(min_row=row_number, max_row=row_number, values_only=True)) if value is not None]
+            if values:
+                print(f"  C-16 header/context row {row_number}: {' | '.join(values)[:900]}")
+        for row_number in range(100, 105):
+            values = [str(value).strip() for value in next(c16_sheet.iter_rows(min_row=row_number, max_row=row_number, values_only=True)) if value is not None]
+            if values:
+                print(f"  C-16 roofing row {row_number}: {' | '.join(values)[:900]}")
     total_matches = 0
     for sheet in workbook.worksheets:
         rows_to_print: list[tuple[int, str]] = []
@@ -254,7 +265,43 @@ def main() -> int:
         project_jobtype_counts(files["national_puf"], project_name)
         inspect_value_labels(files["value_labels"])
         inspect_table_specs(files["table_specs"])
-        print("\nAHS SOURCE AUDIT COMPLETED. No raw files or record-level data were uploaded.")
+
+        # Run the existing estimator on the real public PUF while source files
+        # remain in this temporary runner. Only aggregate output rows are logged;
+        # no raw microdata is uploaded or retained as an Actions artifact.
+        puf_dir = root / "national-puf"
+        puf_dir.mkdir()
+        with zipfile.ZipFile(files["national_puf"]) as archive:
+            project_path = Path(archive.extract(project_name, puf_dir))
+            household_path = Path(archive.extract(household_name, puf_dir))
+        national_output = root / "ahs-roof-national-research.csv"
+        metro_output = root / "ahs-roof-metro-research.csv"
+        analyzer = Path(__file__).with_name("analyze_ahs_roof.py")
+        command = [
+            sys.executable, str(analyzer),
+            "--project-input", str(project_path),
+            "--household-input", str(household_path),
+            "--output", str(national_output),
+            "--metro-output", str(metro_output),
+            "--roof-job-type-code", "16",
+        ]
+        print("\nRunning the corrected AHS research estimator against the actual National PUF...")
+        completed = subprocess.run(command, check=True, text=True, capture_output=True)
+        print(completed.stdout)
+        with national_output.open(encoding="utf-8", newline="") as stream:
+            national_rows = list(csv.DictReader(stream))
+        all_roofing = next((row for row in national_rows if row["group"] == "all_roofing_projects"), None)
+        if all_roofing is None:
+            raise RuntimeError("Actual PUF estimator produced no national all-roofing row.")
+        for field in (
+            "unweighted_n", "weighted_project_count", "positive_cost_unweighted_n",
+            "zero_cost_unweighted_n", "nonnegative_cost_unweighted_n",
+            "mean_nominal_survey_usd", "median_nominal_survey_usd",
+            "mean_replicate_se_usd", "median_replicate_se_usd",
+            "total_expenditure_nominal_survey_usd", "total_expenditure_replicate_se_usd",
+        ):
+            print(f"ACTUAL PUF NATIONAL {field}: {all_roofing.get(field, '')}")
+        print("\nAHS SOURCE AUDIT AND REAL-PUF RESEARCH CALCULATION COMPLETED. No raw files or record-level data were uploaded.")
     return 0
 
 
