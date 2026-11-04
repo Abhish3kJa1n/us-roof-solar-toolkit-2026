@@ -1,10 +1,18 @@
 import assert from 'node:assert/strict';
+import { webcrypto } from 'node:crypto';
+
+// Cloudflare Pages Functions expose Web Crypto globally. Node 22 test runners
+// may not enable globalThis.crypto by default, so polyfill only the test process.
+if (!globalThis.crypto?.subtle) {
+  Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true, writable: true });
+}
+
 import { onRequestGet as locationGet } from '../functions/api/location.js';
 import { onRequestGet as pvGet } from '../functions/api/pvwatts.js';
 import { onRequestGet as tariffsGet } from '../functions/api/tariffs.js';
 import { createLocationToken } from '../functions/_shared/location-token.js';
 
-const request = (path) => new Request(`https://example.test${path}`);
+const request = (path, init = {}) => new Request(`https://example.test${path}`, init);
 const jsonResponse = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 const read = async (response) => ({ status: response.status, body: await response.json() });
 const blockedQuotaDb = { prepare() { return { bind() { return { async first() { return null; } }; } }; } };
