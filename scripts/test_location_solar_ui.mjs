@@ -42,6 +42,7 @@ nodes.manualState.options = [{ textContent: 'Texas' }];
 nodes.citySuggestions.hidden = true;
 nodes.lookup.disabled = true;
 const calls = [];
+const requestMetadata = [];
 let pendingResolve;
 let useDeferredModel = false;
 const suggestionPayload = {
@@ -83,8 +84,9 @@ const context = {
   setTimeout,
   clearTimeout,
   encodeURIComponent,
-  fetch: async (url) => {
+  fetch: async (url, options = {}) => {
     calls.push(String(url));
+    requestMetadata.push({ url: String(url), headers: options.headers || {} });
     if (String(url).includes('/api/location?search=')) {
       const search = new URL(String(url), 'https://example.test').searchParams.get('search') || '';
       return { ok: true, json: async () => search.toLowerCase().startsWith('aus') ? suggestionPayload : search.toLowerCase().startsWith('par') ? { suggestions: [{ placeName: 'Partialville', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', geographyTypes: ['Incorporated place'], geoid: '4899998' }], totalMatches: null, partialSourceWarning: 'One Census layer was unavailable.' } : { suggestions: [] } };
@@ -175,10 +177,14 @@ assert.match(nodes.combinedLink.href, /city=Austin/);
 assert.match(nodes.combinedLink.href, /state=TX/);
 assert.match(nodes.combinedLink.href, /stateAverageRate=0.1651/);
 assert.match(nodes.combinedLink.href, /stateAverageSource=EIA/);
-assert.match(calls.find((call) => call.includes('/api/pvwatts?')), /state=TX/);
-assert.match(calls.find((call) => call.includes('/api/pvwatts?')), /locationToken=signed-location-token/, 'PVWatts handoff must include the signed Census proof');
-assert.match(calls.find((call) => call.includes('/api/tariffs?')) || '', /state=TX/);
-assert.match(calls.find((call) => call.includes('/api/tariffs?')) || '', /locationToken=signed-location-token/, 'OpenEI handoff must include the signed Census proof');
+const pvRequest = requestMetadata.find((call) => call.url.includes('/api/pvwatts?'));
+const tariffRequest = requestMetadata.find((call) => call.url.includes('/api/tariffs?'));
+assert.match(pvRequest?.url || '', /state=TX/);
+assert.equal(new URL(pvRequest.url, 'https://example.test').searchParams.has('locationToken'), false, 'PVWatts proof must not be placed in the URL');
+assert.equal(pvRequest?.headers?.['X-Location-Proof'], 'signed-location-token', 'PVWatts must send the signed Census proof in a request header');
+assert.match(tariffRequest?.url || '', /state=TX/);
+assert.equal(new URL(tariffRequest.url, 'https://example.test').searchParams.has('locationToken'), false, 'OpenEI proof must not be placed in the URL');
+assert.equal(tariffRequest?.headers?.['X-Location-Proof'], 'signed-location-token', 'OpenEI must send the signed Census proof in a request header');
 assert.match(nodes.combinedLink.href, /pvwattsFetchedAt=2026-11-01/);
 assert.match(nodes.combinedLink.href, /solarPricePerWatt=2.75/);
 assert.match(nodes.combinedLink.href, /solarPriceSource=Berkeley\+Lab\+Tracking\+the\+Sun\+2026/);
