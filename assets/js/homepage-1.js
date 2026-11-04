@@ -177,6 +177,10 @@
       source.rel = 'noopener noreferrer';
       source.textContent = ' Source';
       note.append(source);
+      const appliedNote = document.createElement('small');
+      appliedNote.className = 'field-import-note';
+      appliedNote.id = 'eiaScenarioApplied';
+      appliedNote.hidden = true;
       const useButton = document.createElement('button');
       useButton.type = 'button';
       useButton.className = 'btn btn-outline eia-opt-in';
@@ -185,12 +189,13 @@
       useButton.addEventListener('click', () => {
         importRateInput.value = incomingStateRate.toFixed(4);
         importRateBasis = `EIA state-average residential price used by explicit visitor choice for ${stateLabel}; illustrative scenario only, not the household marginal tariff.`;
-        note.firstChild.textContent = `Applied ${incomingStateRate.toFixed(4)} $/kWh EIA state average for ${stateLabel}. This remains an illustrative scenario, not your household tariff.`;
+        appliedNote.textContent = `Applied ${incomingStateRate.toFixed(4)} $/kWh EIA state average for ${stateLabel}. This remains an illustrative scenario, not your household tariff.`;
+        appliedNote.hidden = false;
         useButton.disabled = true;
         useButton.textContent = 'EIA scenario value applied';
         refreshField(importRateInput);
       });
-      importRateInput.closest('.field').append(note, useButton);
+      importRateInput.closest('.field').append(note, useButton, appliedNote);
     }
 
     function loadNationalRoofReference() {
