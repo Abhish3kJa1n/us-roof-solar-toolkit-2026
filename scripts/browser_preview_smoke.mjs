@@ -109,7 +109,7 @@ try {
   // The next-step gate must reject blank required roof inputs before moving on.
   await page.locator('button[data-next="2"]').click();
   assert.ok((await page.locator('#error1').innerText()).trim().length > 0, 'blank required roof inputs should be blocked before results');
-  assert.match(await page.locator('#stepCount').innerText(), /STEP 1 OF 3/i);
+  assert.equal(await page.locator('[data-panel="2"]').isVisible(), false, 'invalid roof inputs must not advance to energy details');
 
   await page.locator('#roofType').selectOption('asphalt');
   await page.locator('#roofArea').fill('1800');
@@ -129,7 +129,8 @@ try {
   const combinedResults = await page.locator('#results').innerText();
   const systemSize = (await page.locator('#systemSize').innerText()).trim();
   assert.match(systemSize, /^\d+\.\d+ kW$/i, 'combined calculator must output a calculated system size');
-  assert.match(combinedResults, /Roof replacement range|Roof replacement/i);
+  assert.match(await page.locator('#roofCost').innerText(), /\$/, 'combined calculator must output a roof-cost scenario');
+  assert.match(combinedResults, /kWh|solar/i);
   results.push('combined calculator: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png'), fullPage: true });
 
