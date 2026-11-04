@@ -1,5 +1,7 @@
-# Preview deployment trigger
+# Preview smoke-test trigger
 
-This file exists only to generate a harmless new commit on the isolated audit branch after Cloudflare Preview environment settings were updated.
+Updated November 4, 2026 after the current branch passed local QA and the latest Cloudflare Preview deployment succeeded.
 
-It does not change runtime code, calculator behaviour, secrets, data, or production settings. The new preview deployment is expected to pick up the current Preview-only environment bindings and secrets so the live API smoke test can verify them.
+This harmless documentation-only commit requests a fresh live Census ACS2026, NLR PVWatts V8 and OpenEI URDB smoke test against the isolated audit-branch Pages alias. It does not change runtime code, calculator behaviour, API secrets, price data, production settings, DNS or custom-domain routing.
+
+Expected result: prove the Preview secrets and API routes still work after the latest source/documentation updates. OpenEI results remain candidate records only, not verified household tariffs.
