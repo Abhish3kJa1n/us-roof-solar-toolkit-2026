@@ -90,6 +90,7 @@ const context = {
       return { ok: true, json: async () => search.toLowerCase().startsWith('aus') ? suggestionPayload : { suggestions: [] } };
     }
     if (String(url).includes('/api/location?city=')) return { ok: true, json: async () => locationPayload };
+    if (String(url).includes('/api/tariffs?')) return { ok: true, json: async () => ({ rates: [], returned: 0, searchRadiusMiles: 10 }) };
     if (String(url).includes('eia-residential-electricity-prices-2026-08-ytd.csv')) {
       return { ok: true, text: async () => 'area,code,jan_aug_2026_ytd_cents_per_kwh,jan_aug_2025_ytd_cents_per_kwh,yoy_change_percent,source,data_release_date\nTexas,TX,16.51,16.01,3.12,EIA Electric Power Monthly Table 5.6.B,2026-10-23\n' };
     }
@@ -123,6 +124,9 @@ await nodes.lookup.emit('click');
 await new Promise((resolve) => setTimeout(resolve, 0));
 assert.equal(nodes.estimate.disabled, false);
 assert.match(nodes.locationStatus.textContent, /Representative coordinates loaded/);
+await nodes.tariffs.emit('click');
+await new Promise((resolve) => setTimeout(resolve, 0));
+assert.ok(calls.some((call) => call.includes('/api/tariffs?lat=30.2672&lon=-97.7431&state=TX')), 'OpenEI lookup must include the selected Census state code');
 assert.match(calls.find((call) => call.includes('/api/location?city=')), /city=Austin/);
 assert.match(calls.find((call) => call.includes('/api/location?city=')), /state=TX/);
 assert.ok(calls.some((call) => call.includes('/api/location?search=Austin')), 'city typing should call the nationwide suggestion route');
