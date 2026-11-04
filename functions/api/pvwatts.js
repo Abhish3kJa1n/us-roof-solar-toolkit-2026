@@ -59,7 +59,7 @@ export async function onRequestGet({ request, env }) {
   if (!isSupportedUsCoordinate(values.lat, values.lon, state)) {
     return json({ error: 'Coordinates must be within a supported U.S. state or territory location. For Guam or the Northern Mariana Islands, select the corresponding Census place first.' }, 400);
   }
-  const locationProof = await verifyLocationToken(params.get('locationToken'), env, {
+  const locationProof = await verifyLocationToken(request.headers.get('X-Location-Proof'), env, {
     latitude: values.lat,
     longitude: values.lon,
     state,
