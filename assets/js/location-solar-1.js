@@ -235,8 +235,9 @@
     setStatus(locationStatus, candidate.placeName + ', ' + candidate.stateAbbreviation + ' selected. Verify it with Census to load the representative location.');
   }
 
-  function renderCitySuggestions(suggestions, partialWarning = '') {
+  function renderCitySuggestions(suggestions, partialWarning = '', totalMatches = null) {
     currentSuggestions = Array.isArray(suggestions) ? suggestions : [];
+    const matchCount = Number.isFinite(Number(totalMatches)) ? Number(totalMatches) : currentSuggestions.length;
     suggestionsEl.replaceChildren();
     activeSuggestionIndex = -1;
     if (!currentSuggestions.length) {
@@ -262,7 +263,10 @@
     });
     suggestionsEl.hidden = false;
     cityEl.setAttribute('aria-expanded', 'true');
-    setStatus(locationStatus, currentSuggestions.length + ' Census place/state-or-territory matches. Select the correct location.' + (partialWarning ? ' ' + partialWarning : ''));
+    const countMessage = matchCount > currentSuggestions.length
+      ? 'Showing the first ' + currentSuggestions.length + ' of ' + matchCount + ' Census matches. Type more letters to narrow the list.'
+      : matchCount + ' Census place/state-or-territory matches. Select the correct location.';
+    setStatus(locationStatus, countMessage + (partialWarning ? ' ' + partialWarning : ''));
   }
 
   function scheduleCitySuggestions() {
@@ -277,7 +281,7 @@
     const cacheKey = search.toLocaleLowerCase('en-US');
     if (suggestionCache.has(cacheKey)) {
       const cached = suggestionCache.get(cacheKey);
-      renderCitySuggestions(cached.suggestions, cached.partialSourceWarning || '');
+      renderCitySuggestions(cached.suggestions, cached.partialSourceWarning || '', cached.totalMatches);
       return;
     }
     setStatus(locationStatus, 'Searching US Census city records…');
@@ -288,10 +292,10 @@
         const data = await response.json();
         if (sequence !== suggestionSequence) return;
         if (!response.ok) throw new Error(data.error || 'City suggestions are unavailable.');
-        const cached = { suggestions: Array.isArray(data.suggestions) ? data.suggestions : [], partialSourceWarning: data.partialSourceWarning || '' };
+        const cached = { suggestions: Array.isArray(data.suggestions) ? data.suggestions : [], totalMatches: Number(data.totalMatches), partialSourceWarning: data.partialSourceWarning || '' };
         if (suggestionCache.size >= 30) suggestionCache.delete(suggestionCache.keys().next().value);
         suggestionCache.set(cacheKey, cached);
-        renderCitySuggestions(cached.suggestions, cached.partialSourceWarning);
+        renderCitySuggestions(cached.suggestions, cached.partialSourceWarning, cached.totalMatches);
       } catch (error) {
         if (sequence === suggestionSequence) {
           hideCitySuggestions();
