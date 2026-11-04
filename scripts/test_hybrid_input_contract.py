@@ -54,6 +54,9 @@ for marker in ('not facts inferred from your city','reference configuration','Re
     if marker.lower() not in loc.lower():
         fail('city estimator reference assumptions are not adequately disclosed')
 
+if 'site owner has configured its free server-side API key' not in loc:
+    fail('OpenEI page must disclose its required server-side API key configuration')
+
 home=(ROOT/'index.html').read_text(encoding='utf-8')
 home_js=(ROOT/'assets/js/homepage-1.js').read_text(encoding='utf-8')
 location_js=(ROOT/'assets/js/location-solar-1.js').read_text(encoding='utf-8')
