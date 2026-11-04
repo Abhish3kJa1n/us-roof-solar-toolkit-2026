@@ -7,10 +7,12 @@ if (!globalThis.crypto?.subtle) {
   Object.defineProperty(globalThis, 'crypto', { value: webcrypto, configurable: true, writable: true });
 }
 
-import { onRequestGet as locationGet } from '../functions/api/location.js';
-import { onRequestGet as pvGet } from '../functions/api/pvwatts.js';
-import { onRequestGet as tariffsGet } from '../functions/api/tariffs.js';
-import { createLocationToken } from '../functions/_shared/location-token.js';
+// Import Web-Crypto-dependent modules only after the Node test runtime is
+// initialized; static ESM imports execute before the polyfill above.
+const { onRequestGet: locationGet } = await import('../functions/api/location.js');
+const { onRequestGet: pvGet } = await import('../functions/api/pvwatts.js');
+const { onRequestGet: tariffsGet } = await import('../functions/api/tariffs.js');
+const { createLocationToken } = await import('../functions/_shared/location-token.js');
 
 const request = (path, init = {}) => new Request(`https://example.test${path}`, init);
 const jsonResponse = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
