@@ -75,6 +75,22 @@ assert.ok(calls.some((call) => new URL(call.url).searchParams.get('resultOffset'
 assert.equal(calls.length, 3, 'one broad prefix should page the first layer and query the second layer once');
 
 calls = [];
+globalThis.fetch = async (url) => {
+  calls.push({ url: String(url) });
+  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
+  if (layer === '28') return jsonResponse({ features: [{ attributes: {
+    BASENAME: 'San Example', STATE: '48', INTPTLAT: '29.8', INTPTLON: '-98.0', GEOID: '4800001', LSADC: '25',
+  } }], exceededTransferLimit: true });
+  if (layer === '30') return jsonResponse({ features: [] });
+  throw new Error('Unexpected Census layer URL: ' + url);
+};
+let truncationResult = await read(await locationGet({ request: request('/api/location?search=san'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(truncationResult.status, 200);
+assert.equal(truncationResult.body.totalMatches, null, 'an exceeded Census result limit must not be reported as an exact total');
+assert.match(truncationResult.body.partialSourceWarning, /more than 5,000 records/i);
+assert.equal(calls.filter((call) => new URL(call.url).searchParams.get('resultOffset') !== null).length, 10, 'each of two layers must stop after the bounded 5-page window');
+
+calls = [];
 suggestionResult = await read(await locationGet({ request: request('/api/location?search=au'), env: { API_QUOTA_DB: quotaDb() } }));
 assert.equal(suggestionResult.status, 400, 'city suggestions must require at least three characters');
 assert.equal(calls.length, 0);
