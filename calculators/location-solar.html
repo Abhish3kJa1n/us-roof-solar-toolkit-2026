@@ -31,7 +31,7 @@
     <small id="cityHelp">Type at least 3 letters. Select the matching city and state from the Census suggestions; the state is filled automatically. Capitalization does not matter. Do not enter a street address.</small>
   </div>
   <div class="field" id="stateField" hidden>
-    <label for="stateDisplay">State (selected automatically)</label>
+    <label for="stateDisplay">State or territory (selected automatically)</label>
     <input id="stateDisplay" type="text" readonly aria-readonly="true" tabindex="-1"/>
     <label for="state" class="visually-hidden">Selected state code</label>
     <input id="state" type="hidden"/>
@@ -75,7 +75,7 @@
 </section>
 <section class="toolbox" style="margin-top:20px">
 <div class="kicker">Step 3 · Utility tariff (optional)</div><h2 style="color:#10243b;margin:6px 0 8px">Look for nearby residential tariff records</h2>
-<p>OpenEI can return residential utility-rate records near the selected place. These are candidates only. City-centroid proximity does not establish which utility serves your property or which rate plan is on your bill. A separate state-average residential electricity-price benchmark is shown after place selection; it is not your marginal rate or a substitute for your bill.</p>
+<p>OpenEI can return residential utility-rate records near the selected place when the site owner has configured its free server-side API key. If that key is missing, the lookup returns a configuration notice. Returned records are candidates only. City-centroid proximity does not establish which utility serves your property or which rate plan is on your bill. A separate state-average residential electricity-price benchmark is shown after place selection; it is not your marginal rate or a substitute for your bill.</p>
 <div class="btnrow"><button class="btn" id="tariffs" type="button" disabled>Find nearby tariff records</button><span id="tariffStatus" class="byline" role="status" aria-live="polite"></span></div>
 <div id="tariffResults" aria-live="polite"></div>
 <p class="note">Do not use a candidate tariff in a savings calculation until the utility, customer class, effective dates, import charges, fixed charges, export compensation and rate-plan name match your current utility bill and official tariff document.</p>
