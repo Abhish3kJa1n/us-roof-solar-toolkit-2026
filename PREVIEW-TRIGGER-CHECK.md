@@ -1,7 +1,11 @@
-# Preview smoke-test trigger
+# Preview and AHS source audit trigger
 
-Updated November 4, 2026 after the current branch passed local QA and the latest Cloudflare Preview deployment succeeded.
+Updated November 4, 2026.
 
-This harmless documentation-only commit requests a fresh live Census ACS2026, NLR PVWatts V8 and OpenEI URDB smoke test against the isolated audit-branch Pages alias. It does not change runtime code, calculator behaviour, API secrets, price data, production settings, DNS or custom-domain routing.
+This documentation-only change requests:
+- a fresh live Census ACS2026, NLR PVWatts V8 and OpenEI URDB Preview smoke test; and
+- a research-only run of the official 2023 AHS National PUF roofing analysis against the source Value Labels and C-16 Table Specifications.
 
-Expected result: prove the Preview secrets and API routes still work after the latest source/documentation updates. OpenEI results remain candidate records only, not verified household tariffs.
+The AHS audit downloads official Census files to a temporary GitHub Actions runner, prints only schemas and aggregate statistics, and removes temporary files when the job exits. No raw records, ZIP archives or generated price registry rows are committed or uploaded as workflow artifacts.
+
+It does not change runtime code, calculator behavior, provider secrets, Production settings, DNS or custom-domain routing.
