@@ -20,3 +20,14 @@ The LBNL 2026 source audit now follows the public Google Drive download redirect
 
 
 The latest source audit uses gdown's ID-based public-file retrieval and PyMuPDF rendering of the first three official guide pages; only guide-page PNG previews are retained briefly as a workflow artifact.
+
+
+## Full final audit trigger
+
+This documentation-only commit requests fresh runs of all independent verification workflows on the latest branch:
+- [live-smoke]: Census ACS2026, PVWatts V8 and OpenEI live Preview test using signed location-proof headers
+- [browser-qa]: Playwright Chromium desktop/tablet/mobile layout, calculator flows and axe accessibility smoke
+- [ahs-source-audit]: repeat the real National PUF/C-16 point-estimate and metro diagnostic audit
+- [lbnl-source-audit]: retry official Berkeley Lab 2026 guide/public CSV download, verify schema and run the cohort only if the exact file is available
+
+No application behavior, data registry, secrets, Production settings, DNS or custom domains are changed by this file.
