@@ -2,9 +2,11 @@
 """Test data research scripts against small synthetic CSV fixtures (not source data)."""
 from __future__ import annotations
 import csv
+import runpy
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -163,4 +165,26 @@ with tempfile.TemporaryDirectory() as tmp:
     assert "owner_occupancy_or_interview_excluded: 2" in stdout
     assert "unmatched_household: 1" in stdout
 
-print("PASS: Berkeley and AHS research scripts on synthetic fixtures; city/state and metro grouping, weighted quantiles and research-only flags verified.")
+
+# The source audit must identify National and Metropolitan PUF relational files
+# independently. The Metro PUF geography field must not be assumed to be OMB13CBSA.
+audit = runpy.run_path(str(ROOT / "scripts/audit_ahs_source_files.py"))
+locate_relational_csvs = audit["locate_relational_csvs"]
+replicate_fields = [f"REPWEIGHT{i}" for i in range(1, 161)]
+project_csv = "CONTROL,JOBTYPE,JOBCOST,JOBDIY\\nh1,16,10000,2\\n"
+for filename, geography_field, require_omb in [
+    ("national-source.zip", "OMB13CBSA", True),
+    ("metro-source.zip", "METRO", False),
+]:
+    source_zip = Path(tempfile.gettempdir()) / filename
+    household_fields = ["CONTROL", "TENURE", "INTSTATUS", "WEIGHT", geography_field, *replicate_fields]
+    household_csv = ",".join(household_fields) + "\\nh1,1,1,1,12060," + ",".join(["1"] * 160) + "\\n"
+    with zipfile.ZipFile(source_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("PROJECT.csv", project_csv)
+        archive.writestr("HOUSEHOLD.csv", household_csv)
+    project_name, household_name, project_header, household_header = locate_relational_csvs(source_zip, require_omb13cbsa=require_omb)
+    assert project_name == "PROJECT.csv" and household_name == "HOUSEHOLD.csv"
+    assert geography_field in household_header
+    source_zip.unlink()
+
+print("PASS: Berkeley/AHS research scripts on synthetic fixtures, including separate National/Metro PUF schema discovery.")
