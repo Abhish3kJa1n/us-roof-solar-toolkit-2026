@@ -13,6 +13,8 @@ import io
 import re
 import sys
 import tempfile
+import time
+import urllib.error
 import urllib.request
 import zipfile
 from collections import Counter, defaultdict
@@ -35,21 +37,42 @@ def download(name: str, url: str, target: Path) -> tuple[int, str]:
             "Accept": "*/*",
         },
     )
-    digest = hashlib.sha256()
-    total = 0
-    with urllib.request.urlopen(request, timeout=120) as response, target.open("wb") as out:
-        status = getattr(response, "status", 200)
-        if status != 200:
-            raise RuntimeError(f"{name}: Census returned HTTP {status}")
-        while True:
-            block = response.read(CHUNK)
-            if not block:
-                break
-            out.write(block)
-            digest.update(block)
-            total += len(block)
-    print(f"DOWNLOAD {name}: {total:,} bytes; sha256={digest.hexdigest()}")
-    return total, digest.hexdigest()
+    last_error: Exception | None = None
+    for attempt in range(6):
+        digest = hashlib.sha256()
+        total = 0
+        try:
+            with urllib.request.urlopen(request, timeout=180) as response, target.open("wb") as out:
+                status = getattr(response, "status", 200)
+                if status != 200:
+                    raise RuntimeError(f"{name}: Census returned HTTP {status}")
+                while True:
+                    block = response.read(CHUNK)
+                    if not block:
+                        break
+                    out.write(block)
+                    digest.update(block)
+                    total += len(block)
+            print(f"DOWNLOAD {name}: {total:,} bytes; sha256={digest.hexdigest()}")
+            return total, digest.hexdigest()
+        except urllib.error.HTTPError as error:
+            last_error = error
+            if error.code not in {429, 500, 502, 503, 504} or attempt == 5:
+                raise
+            retry_after = error.headers.get("Retry-After") if error.headers else None
+            delay = min(30, int(retry_after)) if retry_after and retry_after.isdigit() else min(20, 2 ** attempt)
+            print(f"RETRY {name}: transient HTTP {error.code}; attempt {attempt + 1}/6 in {delay}s")
+            target.unlink(missing_ok=True)
+            time.sleep(delay)
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as error:
+            last_error = error
+            if attempt == 5:
+                raise
+            delay = min(20, 2 ** attempt)
+            print(f"RETRY {name}: transient connection error; attempt {attempt + 1}/6 in {delay}s")
+            target.unlink(missing_ok=True)
+            time.sleep(delay)
+    raise RuntimeError(f"{name}: download failed after retries") from last_error
 
 
 def zip_entries(path: Path, label: str) -> list[str]:
