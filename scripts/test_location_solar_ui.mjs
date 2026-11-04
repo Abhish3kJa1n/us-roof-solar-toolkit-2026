@@ -87,7 +87,7 @@ const context = {
     calls.push(String(url));
     if (String(url).includes('/api/location?search=')) {
       const search = new URL(String(url), 'https://example.test').searchParams.get('search') || '';
-      return { ok: true, json: async () => search.toLowerCase().startsWith('aus') ? suggestionPayload : { suggestions: [] } };
+      return { ok: true, json: async () => search.toLowerCase().startsWith('aus') ? suggestionPayload : search.toLowerCase().startsWith('par') ? { suggestions: [{ placeName: 'Partialville', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', geographyTypes: ['Incorporated place'], geoid: '4899998' }], totalMatches: null, partialSourceWarning: 'One Census layer was unavailable.' } : { suggestions: [] } };
     }
     if (String(url).includes('/api/location?city=')) return { ok: true, json: async () => locationPayload };
     if (String(url).includes('/api/tariffs?')) return { ok: true, json: async () => ({ rates: [], returned: 0, searchRadiusMiles: 10 }) };
@@ -248,4 +248,15 @@ assert.equal(nodes.combinedLink.hidden, true, 'a stale secondary wait must not r
 assert.equal(nodes.combinedLink.href, '');
 assert.match(nodes.result.children.map((n) => n.textContent).join(' '), /Model needs updating/);
 
-console.log('PASS: location estimator validation, PVWatts output units, editable handoffs, invalidation, stale PVWatts response protection, and stale secondary-benchmark race protection.');
+// A partial Census response can include usable suggestions without an exact total.
+// A null total must remain unknown; Number(null) must never become a false zero.
+nodes.city.value = 'Par';
+await nodes.city.emit('input');
+await new Promise((resolve) => setTimeout(resolve, 475));
+assert.equal(nodes.citySuggestions.hidden, false);
+assert.equal(nodes.citySuggestions.children.length, 1);
+assert.match(nodes.locationStatus.textContent, /complete total is unavailable/i);
+assert.match(nodes.locationStatus.textContent, /One Census layer was unavailable/i);
+assert.doesNotMatch(nodes.locationStatus.textContent, /^0 Census place/i);
+
+console.log('PASS: location estimator validation, PVWatts output units, editable handoffs, invalidation, stale-response protection, and partial Census-count handling.');
