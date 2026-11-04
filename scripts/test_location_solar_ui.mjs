@@ -45,7 +45,7 @@ const calls = [];
 let pendingResolve;
 let useDeferredModel = false;
 const suggestionPayload = {
-  search: 'Aust', suggestions: [{ placeName: 'Austin', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', geographyTypes: ['Incorporated place'], geoid: '4805000' }],
+  search: 'Aust', totalMatches: 1, suggestions: [{ placeName: 'Austin', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', geographyTypes: ['Incorporated place'], geoid: '4805000' }],
 };
 const locationPayload = {
   city: 'Austin', state: 'TX', places: [{ placeName: 'Austin', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', latitude: 30.2672, longitude: -97.7431 }],
@@ -160,6 +160,7 @@ assert.equal(nodes.savingsLink.hidden, false);
 assert.match(nodes.savingsLink.href, /production=1550\.0/);
 assert.match(nodes.savingsLink.href, /city=Austin/);
 assert.match(nodes.savingsLink.href, /state=TX/);
+assert.match(nodes.savingsLink.href, /stateAverageSource=EIA/);
 assert.equal(nodes.panelCountLink.hidden, false);
 assert.match(nodes.panelCountLink.href, /production=1550\.0/);
 assert.match(nodes.panelCountLink.href, /location=Austin%2C\+TX/);
@@ -169,6 +170,8 @@ assert.match(nodes.combinedLink.href, /city=Austin/);
 assert.match(nodes.combinedLink.href, /state=TX/);
 assert.match(nodes.combinedLink.href, /stateAverageRate=0.1651/);
 assert.match(nodes.combinedLink.href, /stateAverageSource=EIA/);
+assert.match(calls.find((call) => call.includes('/api/pvwatts?')), /state=TX/);
+assert.match(calls.find((call) => call.includes('/api/tariffs?')) || '', /state=TX/);
 assert.match(nodes.combinedLink.href, /pvwattsFetchedAt=2026-11-01/);
 assert.match(nodes.combinedLink.href, /solarPricePerWatt=2.75/);
 assert.match(nodes.combinedLink.href, /solarPriceSource=Berkeley\+Lab\+Tracking\+the\+Sun\+2026/);
