@@ -45,12 +45,22 @@ const exact = await jsonRequest('/api/location?city=Austin&state=TX');
 if (!exact.response.ok) throw new Error('Exact Census location lookup failed: HTTP ' + exact.response.status + ' ' + JSON.stringify(exact.body));
 const place = (exact.body.places || []).find((item) => item.stateAbbreviation === 'TX' && Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude)));
 if (!place) throw new Error('Exact Census lookup returned no usable Austin, TX coordinates.');
-console.log('PASS live Census exact lookup: ' + place.placeName + ', TX (' + place.latitude + ', ' + place.longitude + ').');
+if (typeof place.locationToken !== 'string' || place.locationToken.length < 40) throw new Error('Exact Census lookup did not return a usable signed location proof.');
+console.log('PASS live Census exact lookup: ' + place.placeName + ', TX (' + place.latitude + ', ' + place.longitude + '); signed location proof returned.');
+
+// Verify the public provider proxy rejects raw, caller-invented coordinates.
+const rawCoordinateProbe = await jsonRequest('/api/pvwatts?' + new URLSearchParams({
+  lat: String(place.latitude), lon: String(place.longitude), state: 'TX',
+  capacity: '1', tilt: '20', azimuth: '180', losses: '14',
+}).toString());
+if (rawCoordinateProbe.response.status !== 400) throw new Error('PVWatts accepted coordinates without a signed Census proof (expected HTTP 400).');
+console.log('PASS live provider boundary: raw coordinates rejected without signed Census proof.');
 
 const pvQuery = new URLSearchParams({
   lat: String(place.latitude),
   lon: String(place.longitude),
   state: 'TX',
+  locationToken: place.locationToken,
   capacity: '1',
   tilt: '20',
   azimuth: '180',
@@ -70,6 +80,7 @@ const tariffQuery = new URLSearchParams({
   lat: String(place.latitude),
   lon: String(place.longitude),
   state: 'TX',
+  locationToken: place.locationToken,
 });
 const tariff = await jsonRequest('/api/tariffs?' + tariffQuery.toString());
 if (tariff.response.status === 503 && /OpenEI API key|OPENEI_API_KEY|not configured/i.test(String(tariff.body.error || ''))) {
