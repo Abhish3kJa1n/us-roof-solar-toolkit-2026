@@ -1,6 +1,6 @@
 # Preview and AHS source audit trigger
 
-Updated November 4, 2026.
+Updated November 4, 2026 for national C-16 point-estimate reconciliation and Top 15 metro diagnostics.
 
 This documentation-only change requests:
 - a fresh live Census ACS2026, NLR PVWatts V8 and OpenEI URDB Preview smoke test; and
