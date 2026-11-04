@@ -9,3 +9,8 @@ This documentation-only change requests:
 The AHS audit downloads official Census files to a temporary GitHub Actions runner, prints only schemas and aggregate statistics, and removes temporary files when the job exits. No raw records, ZIP archives or generated price registry rows are committed or uploaded as workflow artifacts.
 
 It does not change runtime code, calculator behavior, provider secrets, Production settings, DNS or custom-domain routing.
+
+
+## Berkeley Lab source audit
+
+A temporary-runner audit also downloads the official August 2026 Berkeley Lab user guide and the linked public CSV, checks the actual public-file row count and field schema, and runs the existing strict residential rooftop cohort only if the required fields match. It emits only aggregate diagnostics. Commercial reuse rights remain unverified; no derived price rows are published.
