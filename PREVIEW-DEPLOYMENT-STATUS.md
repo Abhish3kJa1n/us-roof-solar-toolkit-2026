@@ -11,8 +11,8 @@ Last updated: November 4, 2026
 - Build command: `sh scripts/prepare_deploy.sh`
 - Build output: `dist`
 - Pages Functions: enabled; routes are limited to `/api/*`
-- Latest Preview commit: `d39a24ec874460322d583c7a6468c3764a098b05`
-- Latest deployment: https://685c6521.roof-solar-toolkit-2026.pages.dev
+- Latest Preview commit: `2cf2672581316dcfe7a1269250a2f9a73dace9c2`
+- Latest deployment: https://ec6a8222.roof-solar-toolkit-2026.pages.dev
 - Branch alias: https://audit-stage1-20261103.roof-solar-toolkit-2026.pages.dev
 - Deployment build and deploy stages: successful
 - Production deployment automation: disabled
@@ -42,7 +42,7 @@ Cloudflare masks secret values in its configuration response. Their presence in 
 - OpenEI URDB: PASS; returned 49 nearby residential tariff candidate records for the Austin test location.
 - The OpenEI records are candidates for manual verification, not proof of the homeowner's utility, service territory, active tariff or applicable rate. No candidate is applied automatically to savings.
 
-The live smoke script printed `LIVE PREVIEW SMOKE TEST COMPLETED.` The GitHub Actions job steps and logs show successful completion, and the local QA job printed `ALL LOCAL QA CHECKS PASSED.` At the time this document was updated, the GitHub workflow API still reported run #147 as `in_progress` with no final run conclusion despite all listed steps having completed successfully. Do not describe the workflow as formally completed until GitHub records its final conclusion.
+The live smoke script for run #147 printed `LIVE PREVIEW SMOKE TEST COMPLETED.` with Census, PVWatts and OpenEI all passing. GitHub's API had not recorded a final conclusion for that run at the last check, despite all job steps completing and the log showing successful results. Separately, the latest branch push QA run #160 (commit `2cf2672581316dcfe7a1269250a2f9a73dace9c2`) completed with conclusion `success`; the later pull-request-triggered run #161 was still queued at the last check. Run #160's live-smoke job was skipped because the commit did not contain the `[live-smoke]` marker.
 
 ## Existing custom-domain project — separate from the Git-connected Preview
 
