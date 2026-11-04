@@ -88,7 +88,8 @@ let truncationResult = await read(await locationGet({ request: request('/api/loc
 assert.equal(truncationResult.status, 200);
 assert.equal(truncationResult.body.totalMatches, null, 'an exceeded Census result limit must not be reported as an exact total');
 assert.match(truncationResult.body.partialSourceWarning, /more than 5,000 records/i);
-assert.equal(calls.filter((call) => new URL(call.url).searchParams.get('resultOffset') !== null).length, 10, 'each of two layers must stop after the bounded 5-page window');
+assert.equal(calls.filter((call) => /MapServer\/28\/query/.test(call.url)).length, 5, 'the truncated layer must stop after the bounded 5-page window');
+assert.equal(calls.filter((call) => /MapServer\/30\/query/.test(call.url)).length, 1, 'the complete layer should stop after its first page');
 
 calls = [];
 suggestionResult = await read(await locationGet({ request: request('/api/location?search=au'), env: { API_QUOTA_DB: quotaDb() } }));
