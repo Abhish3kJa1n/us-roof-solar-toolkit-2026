@@ -14,7 +14,7 @@ import { createLocationToken } from '../functions/_shared/location-token.js';
 
 const request = (path, init = {}) => new Request(`https://example.test${path}`, init);
 const jsonResponse = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
-const read = async (response) => ({ status: response.status, body: await response.json() });
+const read = async (response) => ({ status: response.status, body: await response.json(), headers: response.headers });
 const blockedQuotaDb = { prepare() { return { bind() { return { async first() { return null; } }; } }; } };
 const quotaDb = (row = { windowCount: 1, dayCount: 1 }) => {
   const db = {
