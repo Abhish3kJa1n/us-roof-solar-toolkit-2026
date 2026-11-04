@@ -11,7 +11,7 @@ This project is intended to become a free, U.S.-focused informational website fu
 
 ## Next development phase
 
-Read [`PHASE-1-DATA-AND-PRODUCT-PLAN.md`](PHASE-1-DATA-AND-PRODUCT-PLAN.md), [`DATA-RESEARCH-STATUS.md`](DATA-RESEARCH-STATUS.md), [`CITY-PRICE-ESTIMATION-METHOD.md`](CITY-PRICE-ESTIMATION-METHOD.md) and [`KEYWORD-DEMAND-VALIDATION.md`](KEYWORD-DEMAND-VALIDATION.md) before extending the prototype. The location-aware solar MVP is implemented in source and deployed to an isolated Cloudflare Pages Preview. D1 and the Preview PVWatts secret are configured; the OpenEI key is still missing. A real live Census/PVWatts smoke test is being added. Browser/device QA, production configuration, domain decision, legal review and launch gates remain open. This does not authorize deployment, indexing, DNS changes, paid services or ad activation.
+Read [`PHASE-1-DATA-AND-PRODUCT-PLAN.md`](PHASE-1-DATA-AND-PRODUCT-PLAN.md), [`DATA-RESEARCH-STATUS.md`](DATA-RESEARCH-STATUS.md), [`CITY-PRICE-ESTIMATION-METHOD.md`](CITY-PRICE-ESTIMATION-METHOD.md) and [`KEYWORD-DEMAND-VALIDATION.md`](KEYWORD-DEMAND-VALIDATION.md) before extending the prototype. The location-aware solar MVP is implemented in source and deployed to an isolated Cloudflare Pages Preview. D1 and the Preview PVWatts secret are configured; the OpenEI key is still missing. A real live Census and NLR PVWatts smoke test passed on November 4, 2026; OpenEI was skipped because its key is missing. Browser/device QA, production configuration, domain decision, legal review and launch gates remain open. This does not authorize deployment, indexing, DNS changes, paid services or ad activation.
 
 ## Site inventory
 
