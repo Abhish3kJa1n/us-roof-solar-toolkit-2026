@@ -18,7 +18,7 @@
 - API key is read from server-side `PVWATTS_API_KEY`; it is not included in the client response.
 - Response is reduced to the annual/monthly results, selected station metadata, inputs, warnings, source and retrieval timestamp.
 - The calculator uses the visitor-entered representative coordinates, DC capacity, tilt, azimuth and losses.
-- The location workflow can hand the modeled `kWh per kW DC` into the combined and dedicated savings calculators. The combined calculator can also receive an EIA state-average scenario rate and, only when an installed-price record has passed the current publication gates, a city/state PV price distribution. Household annual usage, self-use, actual marginal tariff, export compensation and property-specific quote values remain user-specific. The runtime registry currently has zero approved solar-price rows.
+- The location workflow can hand the modeled `kWh per kW DC` into the combined and dedicated savings calculators. An EIA state-average rate is passed only as separate context and is never automatically inserted into the marginal import-rate field; a visitor must explicitly opt in to use it as an illustrative scenario. An approved city/state PV price distribution can be passed only when an installed-price record has passed the current publication gates. Household annual usage, self-use, actual marginal tariff, export compensation and property-specific quote values remain user-specific. The runtime registry currently has zero approved solar-price rows.
 
 **Not yet verified**
 
@@ -32,7 +32,7 @@ NLR documentation: https://developer.nlr.gov/docs/solar/pvwatts/v8/
 
 **Verified from US Census Bureau TIGERweb service documentation and current layer schema**
 
-The location endpoint queries the Census TIGERweb Current (2026) MapServer, using the Incorporated Places layer (28) and Census Designated Places layer (30). It filters by exact place basename and state FIPS, and returns `INTPTLAT` / `INTPTLON`, `GEOID`, place name and type. These coordinates are Census internal representative points, not roof, parcel or necessarily city-centre coordinates. The visitor selects a city and state; ZIP is not required.
+The location endpoint queries the Census TIGERweb ACS2026 MapServer (January 1, 2026 vintage), using the Incorporated Places layer (28) and Census Designated Places layer (30). It filters by exact place basename and state FIPS, and returns `INTPTLAT` / `INTPTLON`, `GEOID`, place name and type. These coordinates are Census internal representative points, not roof, parcel or necessarily city-centre coordinates. The visitor selects a city and state; ZIP is not required.
 
 **Implemented**
 
