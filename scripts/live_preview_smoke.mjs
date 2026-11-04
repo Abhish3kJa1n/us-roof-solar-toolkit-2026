@@ -8,9 +8,9 @@ const base = (process.env.PREVIEW_BASE_URL || '').replace(/\/$/, '');
 if (!base) throw new Error('PREVIEW_BASE_URL is required.');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-async function jsonRequest(path) {
+async function jsonRequest(path, extraHeaders = {}) {
   const response = await fetch(base + path, {
-    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache' },
+    headers: { Accept: 'application/json', 'Cache-Control': 'no-cache', ...extraHeaders },
     redirect: 'error',
   });
   let body;
@@ -41,7 +41,7 @@ const austin = (suggestions.suggestions || []).find((place) =>
 if (!austin) throw new Error('Live ACS2026 autocomplete did not return Austin, TX.');
 console.log('PASS live Census autocomplete: Austin, TX; ' + suggestions.source);
 
-const exact = await jsonRequest('/api/location?city=Austin&state=TX');
+const exact = await jsonRequest('/api/location?city=Austin&state=TX&locationProofVersion=1');
 if (!exact.response.ok) throw new Error('Exact Census location lookup failed: HTTP ' + exact.response.status + ' ' + JSON.stringify(exact.body));
 const place = (exact.body.places || []).find((item) => item.stateAbbreviation === 'TX' && Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude)));
 if (!place) throw new Error('Exact Census lookup returned no usable Austin, TX coordinates.');
@@ -60,13 +60,12 @@ const pvQuery = new URLSearchParams({
   lat: String(place.latitude),
   lon: String(place.longitude),
   state: 'TX',
-  locationToken: place.locationToken,
   capacity: '1',
   tilt: '20',
   azimuth: '180',
   losses: '14',
 });
-const pv = await jsonRequest('/api/pvwatts?' + pvQuery.toString());
+const pv = await jsonRequest('/api/pvwatts?' + pvQuery.toString(), { 'X-Location-Proof': place.locationToken });
 if (!pv.response.ok) throw new Error('Live PVWatts failed: HTTP ' + pv.response.status + ' ' + JSON.stringify(pv.body));
 const annual = Number(pv.body.outputs?.annualAcKwh);
 const monthly = pv.body.outputs?.monthlyAcKwh;
@@ -80,9 +79,8 @@ const tariffQuery = new URLSearchParams({
   lat: String(place.latitude),
   lon: String(place.longitude),
   state: 'TX',
-  locationToken: place.locationToken,
 });
-const tariff = await jsonRequest('/api/tariffs?' + tariffQuery.toString());
+const tariff = await jsonRequest('/api/tariffs?' + tariffQuery.toString(), { 'X-Location-Proof': place.locationToken });
 if (tariff.response.status === 503 && /OpenEI API key|OPENEI_API_KEY|not configured/i.test(String(tariff.body.error || ''))) {
   console.log('SKIP live OpenEI: site owner has not configured OPENEI_API_KEY in Cloudflare Preview.');
 } else if (tariff.response.ok && Array.isArray(tariff.body.rates)) {
