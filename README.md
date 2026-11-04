@@ -190,6 +190,10 @@ A city-based solar production estimator is now included at `calculators/location
 
 See `CLOUDFLARE-DEPLOYMENT.md` for configuration, cost limits, local testing and launch cautions.
 
+## Live Preview smoke verification
+
+The local QA suite uses mocked upstream responses. For a real network check, `.github/workflows/qa.yml` has an opt-in `live-preview-smoke` job. It runs after the local suite only when a push commit message contains `[live-smoke]`. It waits for the audit-branch Pages alias to expose the ACS2026 Census build, checks live city autocomplete and exact Census coordinates, then requests one real NLR PVWatts V8 calculation. It checks OpenEI too when configured; when `OPENEI_API_KEY` is absent, it records an explicit skip rather than a pass. The test consumes one PVWatts quota reservation and a small number of Census reservations. A passing smoke test does not replace browser, accessibility, privacy, tariff or production testing.
+
 ## Data research scripts
 
 Two optional local analysis scripts are included:
