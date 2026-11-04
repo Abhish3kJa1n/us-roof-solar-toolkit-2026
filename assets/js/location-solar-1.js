@@ -477,7 +477,7 @@
     setStatus(modelStatus, 'Requesting NLR PVWatts V8 model…');
     resetResult('Calculating…', 'The representative location and explicit system assumptions are being sent to this site’s server endpoint.');
     updateActions();
-    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation, capacity, tilt, azimuth, losses });
+    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation, locationToken: selectedPlace.locationToken, capacity, tilt, azimuth, losses });
     try {
       const response = await fetch(`../api/pvwatts?${query.toString()}`, { headers: { Accept: 'application/json' } });
       const data = await response.json();
@@ -582,7 +582,7 @@
     updateActions();
     setStatus(tariffStatus, 'Searching nearby residential rate records…');
     tariffResults.replaceChildren();
-    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation });
+    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation, locationToken: selectedPlace.locationToken });
     try {
       const response = await fetch(`../api/tariffs?${query.toString()}`, { headers: { Accept: 'application/json' } });
       const data = await response.json();
