@@ -154,6 +154,8 @@ assert.equal(result.body.places.length, 2);
 assert.equal(result.body.places[0].placeName, 'Austin');
 assert.equal(result.body.places[0].stateAbbreviation, 'TX');
 assert.equal(typeof result.body.places[0].locationToken, 'string', 'exact Census verification must return a signed location proof when a provider key is configured');
+assert.match(result.body.places[0].locationToken, /^[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+$/);
+assert.match(result.headers.get('Cache-Control') || '', /private,\s*no-store/i, 'exact Census results carrying bearer proofs must not be cached');
 assert.equal(result.body.places[0].geographyType, 'Incorporated place');
 assert.equal(result.body.places[1].geographyType, 'Census-designated place');
 assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) = UPPER\('Austin'\)/, 'Census city-name matching must be case-insensitive');
@@ -207,13 +209,13 @@ calls = [];
 result = await read(await pvGet({ request: request('/api/pvwatts?lat=30.2672&lon=-97.7431&state=TX&capacity=4&tilt=20&azimuth=180&losses=14'), env: { PVWATTS_API_KEY: 'test-secret-value-long-enough', API_QUOTA_DB: quotaDb() } }));
 assert.equal(result.status, 400, 'PVWatts must reject raw coordinates without a signed Census proof');
 assert.equal(calls.length, 0);
-result = await read(await pvGet({ request: request('/api/pvwatts?lat=30.2673&lon=-97.7431&state=TX&locationToken=' + encodeURIComponent(austinLocationToken) + '&capacity=4&tilt=20&azimuth=180&losses=14'), env: { PVWATTS_API_KEY: 'test-secret-value-long-enough', API_QUOTA_DB: quotaDb() } }));
+result = await read(await pvGet({ request: request('/api/pvwatts?lat=30.2673&lon=-97.7431&state=TX&capacity=4&tilt=20&azimuth=180&losses=14', { headers: { 'X-Location-Proof': austinLocationToken } }), env: { PVWATTS_API_KEY: 'test-secret-value-long-enough', API_QUOTA_DB: quotaDb() } }));
 assert.equal(result.status, 400, 'a valid token must not authorize altered coordinates');
 assert.equal(calls.length, 0);
 
 // Global D1 quota guard is mandatory and must fail closed.
-const validPath = request('/api/pvwatts?lat=30.2672&lon=-97.7431&state=TX&locationToken=' + encodeURIComponent(austinLocationToken) + '&capacity=4&tilt=20&azimuth=180&losses=14');
-const guamPath = request('/api/pvwatts?lat=13.4745&lon=144.7504&state=GU&locationToken=' + encodeURIComponent(guamLocationToken) + '&capacity=4&tilt=20&azimuth=180&losses=14');
+const validPath = request('/api/pvwatts?lat=30.2672&lon=-97.7431&state=TX&capacity=4&tilt=20&azimuth=180&losses=14', { headers: { 'X-Location-Proof': austinLocationToken } });
+const guamPath = request('/api/pvwatts?lat=13.4745&lon=144.7504&state=GU&capacity=4&tilt=20&azimuth=180&losses=14', { headers: { 'X-Location-Proof': guamLocationToken } });
 result = await read(await pvGet({ request: validPath, env: { PVWATTS_API_KEY: 'test-secret-value-long-enough' } }));
 assert.equal(result.status, 503);
 assert.equal(calls.length, 0, 'missing D1 quota guard must not call NLR');
@@ -281,7 +283,7 @@ globalThis.fetch = async (url) => {
   calls.push(String(url));
   return jsonResponse({ items: [{ label: 'abc123', utility: 'Example Utility', name: 'Residential Basic', sector: 'Residential', approved: true, is_default: true, startdate: 1767225600, enddate: 1798675200, uri: 'https://apps.openei.org/USURDB/rate/view/abc123' }] });
 };
-const validTariffPath = request('/api/tariffs?lat=30.2672&lon=-97.7431&state=TX&locationToken=' + encodeURIComponent(austinLocationToken));
+const validTariffPath = request('/api/tariffs?lat=30.2672&lon=-97.7431&state=TX', { headers: { 'X-Location-Proof': austinLocationToken } });
 result = await read(await tariffsGet({ request: validTariffPath, env: { OPENEI_API_KEY: 'test-secret-value-long-enough' } }));
 assert.equal(result.status, 503, 'OpenEI must fail closed if its shared quota binding is missing');
 assert.equal(calls.length, 0);
