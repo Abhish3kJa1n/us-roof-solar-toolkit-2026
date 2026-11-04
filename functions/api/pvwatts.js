@@ -33,7 +33,7 @@ export async function onRequestGet({ request, env }) {
     // The public estimator only supports broad US/territory coordinates returned
     // by the Census city/place resolver. Prevent unrelated direct API calls from
     // consuming the owner's NLR key.
-    lat: [-15, 72], lon: [-180, -60], capacity: [0.05, 100], tilt: [0, 90], azimuth: [0, 359.99], losses: [0, 99],
+    lat: [-15, 72], lon: [-180, 180], capacity: [0.05, 100], tilt: [0, 90], azimuth: [0, 359.99], losses: [0, 99],
   };
   const values = {};
   for (const [name, [min, max]] of Object.entries(specs)) {
