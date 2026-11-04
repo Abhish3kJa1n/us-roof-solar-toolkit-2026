@@ -180,7 +180,7 @@ The repository is connected to a separate Cloudflare Pages project named `roof-s
 - `OPENEI_API_KEY` is not configured in Preview or Production. The optional tariff route therefore returns a clear 503 configuration message until the owner adds a free OpenEI key as a Cloudflare Preview secret.
 - The Preview remains noindex. Do not enable production deployments, attach the domain, or change DNS without owner approval.
 
-The `.github/workflows/qa.yml` workflow runs the 20-check local suite on audit-branch pushes and PRs. A separate live Preview smoke job runs only when a push commit message contains `[live-smoke]`; it tests real ACS2026 Census autocomplete/exact lookup and NLR PVWatts, then reports OpenEI as skipped when its key is absent. This is a network smoke test, not browser, mobile, screen-reader, pricing or production certification.
+The `.github/workflows/qa.yml` workflow runs the 20-check local suite on audit-branch pushes and PRs. A separate live Preview smoke job runs only when a push commit message contains `[live-smoke]`; the November 4, 2026 run passed real ACS2026 Census autocomplete/exact lookup and NLR PVWatts (1,483 kWh/year in the 1 kW DC Austin test scenario), and reported OpenEI as skipped because its key is absent. This is a network smoke test, not browser, mobile, screen-reader, pricing or production certification.
 
 ## API quota hardening — implemented for provider proxies
 
