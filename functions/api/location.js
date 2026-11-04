@@ -170,13 +170,15 @@ async function getSuggestions(search, env) {
     .slice(0, 60);
 
   const warnings = [];
+  const truncated = successful.some(({ item }) => item.value.truncated);
   if (successful.length < 2) warnings.push('One Census place layer was unavailable; suggestions may be incomplete.');
-  if (successful.some(({ item }) => item.value.truncated)) warnings.push('This city prefix matches more than 5,000 records in at least one Census layer. Results are incomplete; type more letters to narrow the search.');
+  if (truncated) warnings.push('This city prefix matches more than 5,000 records in at least one Census layer. Results are incomplete; type more letters to narrow the search.');
+  const hasCompleteCount = successful.length === 2 && !truncated;
 
   return json({
     search,
     suggestions,
-    totalMatches: byPlaceAndState.size,
+    totalMatches: hasCompleteCount ? byPlaceAndState.size : null,
     source: 'US Census Bureau TIGERweb ACS2026 (January 1, 2026 vintage), Incorporated Places and Census Designated Places',
     partialSourceWarning: warnings.length ? warnings.join(' ') : null,
   }, 200, { 'Cache-Control': 'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400' });
