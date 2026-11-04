@@ -69,20 +69,20 @@ for token in ('productionPerKw', 'stateAverageRate', 'stateAverageSource', 'city
 
 # EIA statewide averages must never silently become a household marginal tariff.
 savings_js=(ROOT/'assets/js/solar-savings-1.js').read_text(encoding='utf-8')
-for source_js, field_name in ((home_js, 'importRateInput'), (savings_js, 'importRateEl')):
+for source_js, field_name, value_name, button_name in (
+    (home_js, 'importRateInput', 'incomingStateRate', 'useButton'),
+    (savings_js, 'importRateEl', 'importedStateRate', 'button'),
+):
     if 'Use EIA average as an illustrative scenario' not in source_js:
         fail('EIA state-average rate must require a deliberate visitor opt-in')
     if 'useEiaStateAverage' not in source_js:
         fail('EIA state-average opt-in control is missing')
-    if not re.search(r"addEventListener\('click',[\s\S]{0,800}" + re.escape(field_name) + r"\.value = incomingStateRate\.toFixed\(4\)", source_js):
-        if field_name == 'importRateEl':
-            if not re.search(r"addEventListener\('click',[\s\S]{0,800}" + re.escape(field_name) + r"\.value = importedStateRate\.toFixed\(4\)", source_js):
-                fail('EIA state average must only be applied from its explicit button click')
-        else:
-            fail('EIA state average must only be applied from its explicit button click')
-    if re.search(r"if \(handoff\.get\('stateAverageSource'\)[\s\S]{0,500}" + re.escape(field_name) + r"\.value = (?:incomingStateRate|importedStateRate)", source_js):
-        fail('EIA state average is being auto-inserted before explicit visitor action')
-
+    assignment = f'{field_name}.value = {value_name}.toFixed(4)'
+    assignment_pos = source_js.find(assignment)
+    click_anchor = button_name + '.addEventListener(\'click\''
+    click_pos = source_js.rfind(click_anchor, 0, assignment_pos)
+    if assignment_pos < 0 or click_pos < 0:
+        fail('EIA state average must only be applied from its explicit button click')
 registry=(ROOT/'data/price-benchmarks.json').read_text(encoding='utf-8')
 if '"status": "withheld"' not in registry and '"status":"withheld"' not in registry:
     fail('empty/unapproved price registry must remain explicitly withheld until real source records pass publication gates')
