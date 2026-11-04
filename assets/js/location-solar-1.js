@@ -295,7 +295,9 @@
         const data = await response.json();
         if (sequence !== suggestionSequence) return;
         if (!response.ok) throw new Error(data.error || 'City suggestions are unavailable.');
-        const cached = { suggestions: Array.isArray(data.suggestions) ? data.suggestions : [], totalMatches: Number(data.totalMatches), partialSourceWarning: data.partialSourceWarning || '' };
+        const rawTotalMatches = data.totalMatches;
+        const parsedTotalMatches = rawTotalMatches === null || rawTotalMatches === undefined || rawTotalMatches === '' ? null : Number(rawTotalMatches);
+        const cached = { suggestions: Array.isArray(data.suggestions) ? data.suggestions : [], totalMatches: Number.isFinite(parsedTotalMatches) && parsedTotalMatches >= 0 ? parsedTotalMatches : null, partialSourceWarning: data.partialSourceWarning || '' };
         if (suggestionCache.size >= 30) suggestionCache.delete(suggestionCache.keys().next().value);
         suggestionCache.set(cacheKey, cached);
         renderCitySuggestions(cached.suggestions, cached.partialSourceWarning, cached.totalMatches);
