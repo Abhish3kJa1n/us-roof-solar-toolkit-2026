@@ -98,7 +98,7 @@ def main():
 
  # An approved city-level historical solar record must replace the national reference and retain its provenance.
  city_query='?productionPerKw=1575.0&city=Austin&state=TX&cityModelSource=PVWatts+V8&stateAverageRate=0.1651&stateAverageSource=EIA+Electric+Power+Monthly+Table+5.6.B&stateAverageRelease=2026-10-23&solarPricePerWatt=2.75&solarPriceSource=Berkeley+Lab+Tracking+the+Sun+2026&solarPriceGeography=city&solarPriceP25=2.35&solarPriceP75=3.08&solarPriceSampleN=140&solarPriceYearMin=2024&solarPriceYearMax=2025'
- code=HARNESS.replace("search:''", f"search:'{city_query}'")+JS+"\nconsole.log(JSON.stringify({production:makeEl('productionPerKw').value,rate:makeEl('rate').value,solarPrice:makeEl('solarPricePerWatt').value,city:makeEl('resultsLocation').textContent,solarStatus:makeEl('solarReferenceStatus').textContent}));"
+ code=HARNESS.replace("search:''", f"search:'{city_query}'")+JS+"\nconst eiaButton=Object.values(all).find(el=>el.id==='useEiaStateAverage'); const rateBefore=makeEl('rate').value; if(eiaButton&&eiaButton.handlers.click)eiaButton.handlers.click(); const applied=Object.values(all).find(el=>el.id==='eiaScenarioApplied'); console.log(JSON.stringify({production:makeEl('productionPerKw').value,rate:rateBefore,rateAfter:makeEl('rate').value,solarPrice:makeEl('solarPricePerWatt').value,city:makeEl('resultsLocation').textContent,solarStatus:makeEl('solarReferenceStatus').textContent,buttonExists:Boolean(eiaButton&&eiaButton.handlers.click),appliedVisible:Boolean(applied&&!applied.hidden),appliedText:applied?.textContent||''}));"
  with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(code);temp=Path(f.name)
  try:r=subprocess.run(['node',str(temp)],capture_output=True,text=True)
  finally:temp.unlink(missing_ok=True)
@@ -108,14 +108,11 @@ def main():
   raise SystemExit(f'FAIL city-based hybrid values: EIA average must not auto-fill the marginal rate: {city}')
  if 'Berkeley Lab' not in city['solarStatus'] or '140 records' not in city['solarStatus']:
   raise SystemExit(f'FAIL city-price provenance not preserved: {city}')
- eia_button=next((el for el in all.values() if el.id=='useEiaStateAverage'),None)
- if eia_button is None or not callable(eia_button.handlers.get('click')):
+ if not city['buttonExists']:
   raise SystemExit('FAIL explicit EIA illustrative-scenario opt-in button was not created')
- eia_button.handlers['click']()
- if makeEl('rate').value != '0.1651':
+ if city['rateAfter'] != '0.1651':
   raise SystemExit('FAIL EIA value should only enter marginal-rate field after explicit visitor click')
- applied=next((el for el in all.values() if el.id=='eiaScenarioApplied'),None)
- if applied is None or applied.hidden or 'illustrative scenario' not in applied.textContent:
+ if not city['appliedVisible'] or 'illustrative scenario' not in city['appliedText']:
   raise SystemExit('FAIL explicit EIA application provenance was not shown')
  print('PASS city-based PVWatts/LBNL prefill leaves tariff blank until visitor explicitly applies EIA scenario')
 
