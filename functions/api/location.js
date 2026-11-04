@@ -264,9 +264,9 @@ export async function onRequestGet({ request, env }) {
     }
   }
 
-  const responseHeaders = hasSigningSecret
-    ? { 'Cache-Control': 'public, max-age=300, s-maxage=43200' }
-    : {};
+  // Exact lookup responses may contain a short-lived bearer proof. Do not edge-
+  // cache or store these responses; type-ahead suggestions use their own cache.
+  const responseHeaders = { 'Cache-Control': 'private, no-store' };
 
   return json({
     city,
