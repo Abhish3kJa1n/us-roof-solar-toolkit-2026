@@ -57,12 +57,28 @@ for marker in ('not facts inferred from your city','reference configuration','Re
 home=(ROOT/'index.html').read_text(encoding='utf-8')
 home_js=(ROOT/'assets/js/homepage-1.js').read_text(encoding='utf-8')
 location_js=(ROOT/'assets/js/location-solar-1.js').read_text(encoding='utf-8')
-for phrase in ('City-based solar data','state average is not your household tariff','Every returned value remains editable'):
+for phrase in ('City-based solar data','It is not inserted into your tariff field','Every returned value remains editable'):
     if phrase.lower() not in home.lower(): fail(f'homepage lacks hybrid-data disclosure: {phrase}')
-for token in ("handoff.get('productionPerKw')", "handoff.get('stateAverageRate')", "PVWatts V8", "FieldValidation.refresh", "loadNationalRoofReference();", "loadNationalSolarReference();", "Berkeley Lab Tracking the Sun 2026"):
+for token in ("handoff.get('productionPerKw')", "handoff.get('stateAverageRate')", "useEiaStateAverage", "addEventListener('click'", "PVWatts V8", "FieldValidation.refresh", "loadNationalRoofReference();", "loadNationalSolarReference();", "Berkeley Lab Tracking the Sun 2026"):
     if token not in home_js: fail(f'homepage hybrid handoff is missing {token}')
-for token in ('productionPerKw', 'stateAverageRate', 'cityModelSource', 'combinedLink.href', 'roofsolar:solar-price-benchmark', 'useEiaStateAverage'):
+for token in ('productionPerKw', 'stateAverageRate', 'stateAverageSource', 'cityModelSource', 'combinedLink.href', 'roofsolar:solar-price-benchmark'):
     if token not in location_js: fail(f'city estimator handoff is missing {token}')
+
+# EIA statewide averages must never silently become a household marginal tariff.
+savings_js=(ROOT/'assets/js/solar-savings-1.js').read_text(encoding='utf-8')
+for source_js, field_name in ((home_js, 'importRateInput'), (savings_js, 'importRateEl')):
+    if 'Use EIA average as an illustrative scenario' not in source_js:
+        fail('EIA state-average rate must require a deliberate visitor opt-in')
+    if 'useEiaStateAverage' not in source_js:
+        fail('EIA state-average opt-in control is missing')
+    if not re.search(r"addEventListener\('click',[\s\S]{0,800}" + re.escape(field_name) + r"\.value = incomingStateRate\.toFixed\(4\)", source_js):
+        if field_name == 'importRateEl':
+            if not re.search(r"addEventListener\('click',[\s\S]{0,800}" + re.escape(field_name) + r"\.value = importedStateRate\.toFixed\(4\)", source_js):
+                fail('EIA state average must only be applied from its explicit button click')
+        else:
+            fail('EIA state average must only be applied from its explicit button click')
+    if re.search(r"if \(handoff\.get\('stateAverageSource'\)[\s\S]{0,500}" + re.escape(field_name) + r"\.value = (?:incomingStateRate|importedStateRate)", source_js):
+        fail('EIA state average is being auto-inserted before explicit visitor action')
 
 registry=(ROOT/'data/price-benchmarks.json').read_text(encoding='utf-8')
 if '"status": "withheld"' not in registry and '"status":"withheld"' not in registry:
@@ -95,5 +111,5 @@ for relative_path, expected_ids in currency_fields.items():
 
 print(f'PASS: {len(interactive_pages)} calculator/data-entry pages load shared field validation; all numeric fields define hard bounds and precision.')
 print('PASS: solar cash price, loan principal, down payment and PV quote fields accept ordinary whole-dollar values without $100-step rejection.')
-print('PASS: city + state PVWatts/EIA scenario values hand off to editable combined-calculator fields; source-labelled national roof/solar fallbacks load only as broad references when local solar price data are not approved.')
+print('PASS: city-based PVWatts and EIA state-average context are handed off; the EIA rate remains unused until a visitor explicitly applies it as an illustrative scenario.')
 print('PASS: only approval-gated, sufficiently sampled city/state solar records can replace the national solar reference; the current registry remains withheld and no city/metro prices are fabricated.')
