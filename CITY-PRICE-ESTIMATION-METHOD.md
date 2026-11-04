@@ -1,6 +1,6 @@
 # City-level price estimation policy
 
-**Version:** November 1, 2026  
+**Version:** November 4, 2026  
 **Product objective:** Give homeowners a useful *planning estimate* without presenting a weak proxy as an observed local market price.  
 **Commercial model:** Free tools and independently useful content, primarily funded by display ads. No contractor leads or quote-selling.
 
@@ -19,7 +19,7 @@ Do not combine these categories or make them look equally reliable.
 
 ### Best candidate source
 
-Berkeley Lab's August 7, 2026 Tracking the Sun public file documents approximately 4.0 million grid-connected PV projects through year-end 2025. It includes city, state, system DC size, installation date, total installed price, customer segment, ground-mounted status, PV vs storage technology, third-party ownership and self-installation flags. The guide says most fields are incomplete, city names are not standardized, and reported prices can include self-reported or intermediate/appraised values.
+Berkeley Lab's official August 2026 publication record states that the update contains roughly 5.3 million individual distributed solar and solar-plus-storage systems installed through year-end 2025, with project-level technical characteristics and installed-price data. That is the overall update count—not a verified row count for the downloadable non-confidential public CSV. The Tracking the Sun landing page retains some stale prior-update text; the 2026 publication record is the current release reference. The 2026 user guide and CSV could not be downloaded and inspected in this audit, so field names, missing-value codes, file row count and the existing cohort filters must be revalidated against the 2026 guide before real analysis. The dataset is not exclusively residential rooftop PV; it includes residential, roof-mounted non-residential and qualifying ground-mounted projects.
 
 ### Current research cohort
 
@@ -38,7 +38,7 @@ These filters create a cleaner *host-owned residential rooftop* cohort, not a re
 
 ### Proposed live-estimator use (not yet implemented or approved)
 
-After LBNL confirms written commercial reuse rights, the owner supplies the CSV, and a reviewer verifies filters against the guide and real records:
+After LBNL confirms written commercial reuse rights, the owner supplies the 2026 CSV, and a reviewer verifies every field and filter against the **2026** guide and real records (the current analysis script has not yet been validated against that release):
 
 - City + state historical median and p25/p75 may be displayed as a historical local-price reference, with visible `n`, installation years, nominal-dollar basis, cohort filters and date.
 - A DOE/NREL national residential system benchmark may be shown as a separate national planning anchor. Do not imply it is a city quote.
@@ -89,7 +89,7 @@ The Census TIGERweb city/state resolver supplies a representative place coordina
 |---|---|
 | City/state Census lookup | Implemented; API tests mocked; live request not executed from this environment |
 | PVWatts city-point production model | Implemented; requires NLR key and Cloudflare D1 quota binding; live API not tested |
-| LBNL city/state solar-price aggregation script | Implemented and synthetic-test passed; real data absent; licensing gate open |
+| LBNL city/state solar-price aggregation script | Implemented and synthetic-test passed; not yet validated against the downloadable 2026 CSV/guide; exact public-file row count unknown; real data absent; commercial reuse gate open |
 | Roof local-permit research | San Francisco PermitSF metadata and Miami-Dade ArcGIS schema inspected; no row-level cohort, price distribution or commercial estimator validated |
 | Live city installed-price estimates | Not enabled; solar data licence/real CSV review is outstanding; roofing has no city price dataset |
 | City-to-AHS metro crosswalk | Not implemented; must use the AHS-matching February 2013 CBSA geography and disclose metro—not city—scope |
@@ -102,7 +102,9 @@ A city page should exist only when it adds genuinely distinct local information:
 ## Source links
 
 - [LBNL Tracking the Sun](https://emp.lbl.gov/tracking-the-sun)
-- [LBNL 2026 public-data user guide](https://emp.lbl.gov/sites/default/files/2026-08/LBNL_PublicDataFile_UserGuide_8.07.26.pdf)
+- [Official Berkeley Lab 2026 update record](https://emp.lbl.gov/publications/us-distributed-solar-and-storage-0)
+- [2026 public-data user guide listed with the official 2026 record](https://eta-publications.lbl.gov/sites/default/files/2026-08/lbnl_publicdatafile_userguide_8.07.26.pdf)
+- [2026 public CSV link listed in the guide](https://bit.ly/trackingthesun2026)
 - [NLR PVWatts V8](https://developer.nlr.gov/docs/solar/pvwatts/v8/)
 - [US Census TIGERweb](https://tigerweb.geo.census.gov/tigerweb/)
 - [Miami-Dade County ArcGIS permit layer](https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/arcgis/rest/services/miamidade_permit_data/FeatureServer/0)
