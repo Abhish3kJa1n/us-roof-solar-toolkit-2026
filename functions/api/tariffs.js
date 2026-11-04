@@ -17,8 +17,8 @@ export async function onRequestGet({ request, env }) {
   const params = new URL(request.url).searchParams;
   const lat = Number(params.get('lat'));
   const lon = Number(params.get('lon'));
-  if (!Number.isFinite(lat) || lat < -15 || lat > 72 || !Number.isFinite(lon) || lon < -180 || lon > -60) {
-    return json({ error: 'Valid US latitude and longitude are required.' }, 400);
+  if (!Number.isFinite(lat) || lat < -15 || lat > 72 || !Number.isFinite(lon) || lon < -180 || lon > 180) {
+    return json({ error: 'Valid US state or territory latitude and longitude are required.' }, 400);
   }
 
   // OpenEI's reviewed public API documentation does not state a numeric
