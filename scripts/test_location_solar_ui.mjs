@@ -120,6 +120,7 @@ assert.equal(nodes.state.value, 'TX');
 assert.equal(nodes.stateDisplay.value, 'Texas (TX)');
 assert.equal(nodes.stateField.hidden, false);
 assert.equal(nodes.lookup.disabled, false);
+assert.match(nodes.locationStatus.textContent, /1 Census place\/state-or-territory matches/i);
 await nodes.lookup.emit('click');
 await new Promise((resolve) => setTimeout(resolve, 0));
 assert.equal(nodes.estimate.disabled, false);
