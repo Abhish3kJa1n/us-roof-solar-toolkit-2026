@@ -79,7 +79,7 @@ OpenEI docs: https://apps.openei.org/services/doc/rest/util_rates/
 - The Census documentation states that `JOBCOST` is hot-deck imputed for some records and `JOBDIY` is imputed using a logistic-regression model. AHS PUF data also use edit/imputation flags. Thus PUF-derived estimates must be described as including Census-edited/imputed values unless a correctly coded sensitivity analysis excludes them.
 - The AHS home-improvement module is for owner-occupied units and covers projects in the two years before interview. The data are nominal survey dollars for roughly 2021–2023; the published infographic's $10,000 median is a primary-source anchor, not a 2026 quote.
 - The AHS does not provide a roof-size denominator, a consistent material/scope breakdown, or a clean $/roofing-square rate. It cannot support local $/sq-ft estimates.
-- The 2023 National PUF includes the 2013 OMB CBSA identifier for the 15 largest metropolitan areas; the 2023 National and Metropolitan PUFs are separate releases. For the Top 15, AHS holds the February 2013 OMB CBSA definitions constant through the 2023 survey. This supports metro—not city—benchmarking. A selected current city can only inherit a metro reference after a defensible spatial crosswalk to those 2013 CBSA boundaries; city-name matching or a current-2026 CBSA code is not sufficient. The national PUF point estimates have now been reconciled against the C-16 PUF estimate column; metro-level summaries and their publication eligibility still need separate validation.
+- The 2023 National PUF includes the 2013 OMB CBSA identifier for the 15 largest metropolitan areas; the National and Metropolitan PUFs are separate releases. The Top 15 use February 2013 OMB CBSA boundaries. The current Top 15 aggregates are grouped from the National PUF; they are not the separately published Metropolitan PUF. A selected city may inherit a metro-wide reference only after a defensible point-in-polygon crosswalk to the matching 2013 CBSA geography. City-name matching or a current-2026 CBSA code is not sufficient. Metro outputs remain diagnostics until compared with the corresponding Census metro PUF/Table Creator estimate and its uncertainty.
 
 **Implemented research script (corrected PUF schema)**
 
@@ -108,11 +108,11 @@ Sources:
 
 **Additional primary-source file and table checks — November 4, 2026**
 
-- Census publishes separate 2023 National and Metropolitan relational PUFs. The National PUF v1.1 CSV archive is listed at 124 MB; the Metropolitan PUF v1.1 CSV archive is listed at 20 MB. The current roof analysis script is designed for the **National** relational PROJECT and HOUSEHOLD files, not the Metropolitan PUF.
-- The official National and Metropolitan mini-codebooks list `OMB13CBSA`, `WEIGHT` and `REPWEIGHTXXX` fields and the project-level `JOBTYPE`, `JOBCOST` and `JOBDIY` fields. This confirms the variables exist; the Table Specifications and PUF Estimates workbook must still establish the exact C-16 selection, weights and universe.
+- Census publishes separate 2023 National and Metropolitan relational PUFs. The National PUF v1.1 archive downloaded in the temporary runner at 129,491,194 bytes and contained `project.csv` and `household.csv`; the actual files contained 44,689 and 55,669 rows respectively. The current estimator uses the **National** PROJECT and HOUSEHOLD files and the National household file's `OMB13CBSA` field for research-only Top 15 subgroup diagnostics; this is not the same as analyzing the separate Metropolitan PUF.
+- The official 2023 National PUF Value Labels package confirms `JOBTYPE='16'` means **Added or replaced roofing**. C-16-OO uses interviewed owner-occupied households (`INTSTATUS='1'` and `TENURE='1'`) and separates `JOBDIY='1'` (Do-It-Yourself) from `JOBDIY='2'` (Professional). The Table Specifications define different cost conditions: project counts include eligible projects, median/mean costs require `JOBCOST>0`, and total expenditures use `JOBCOST>=0`.
 - Census describes Table C-16 as job/project-level: it counts each home-improvement project and includes the professional/do-it-yourself variable, whereas C-15 is housing-unit-level and counts improvement types once per housing unit. This supports analyzing project records rather than household-level counts.
-- The real 2023 Value Labels package was downloaded and confirms `JOBTYPE='16'` is Added or replaced roofing. The test fixture now includes zero and negative-cost edge cases and verifies the separate C-16 count, positive-cost and nonnegative-total universes.
-- The temporary-runner calculation using standard `WEIGHT` plus 160 `REPWEIGHT` fields reproduced the C-16 PUF point estimates to published precision, which supports the point-estimate weight/universe choice. This does not validate the exact Table Creator variance/MOE procedure; the current Fay-BRR 90% margins differ modestly and require reconciliation.
+- The actual National PUF calculation returned 2,641 eligible owner-occupied/interviewed roofing jobs: 2,559 had positive `JOBCOST`, 82 had zero cost, and none had missing/negative cost or an out-of-scope `JOBDIY` value. Synthetic regression tests also prove that zero-cost jobs affect project counts but not median/mean, while nonnegative costs feed total expenditure.
+- Using standard `WEIGHT` plus `REPWEIGHT1..160`, the real National PUF calculation matched the C-16 PUF estimate column at displayed precision: weighted project count 8,300,625 (C-16: 8,301,000 rounded to nearest thousand), median $10,000, mean $11,610, and total expenditure $93,525,579,921 (C-16: $93,525,580,000). This supports the point-estimate universe/weight choice. The current Fay-BRR 90% margins differ from the workbook Table Creator margins: median $670 vs $661 (+1.4%), mean $396 vs $423 (-6.4%), and total $5.17bn vs $5.36bn (-3.7%). Do not publish calculated confidence intervals until the variance procedure is reconciled.
 
 Sources:
 
@@ -127,12 +127,12 @@ Sources:
 
 ## Solar installed-price context: Berkeley Lab Tracking the Sun
 
-**Verified from Berkeley Lab's official August 2026 publication record; current file-level details still need inspection**
+**Verified from Berkeley Lab's official August 2026 publication record and 2026 user guide; public CSV remains under audit**
 
 - The official 2026 update record says Berkeley Lab's dataset contains roughly **5.3 million individual systems installed through year-end 2025** and includes project-level technical characteristics, installed prices, financing and customer-segment fields. This is the overall dataset count, not a confirmed row count for the downloadable public CSV.
 - The Tracking the Sun landing page still contains older update text in places. Use the August 2026 publication record as the current release reference; do not repeat the prior claim that the current public CSV has exactly 4.0 million rows or 81 fields until the actual 2026 file is counted and its guide is checked.
 - Berkeley Lab defines distributed solar to include residential systems, roof-mounted non-residential systems and qualifying ground-mounted systems. The homeowner benchmark therefore requires a strict residential, rooftop, PV-only host-owned cohort rather than using the full dataset indiscriminately.
-- The current 2026 user-guide link is listed in Berkeley Lab's 2026 publication record, but the PDF and public CSV were not successfully downloaded and inspected in this audit environment. Prior-year guide field names, missing-value codes and price semantics must be revalidated against the 2026 guide before processing.
+- The official 2026 user guide has now been downloaded successfully to a temporary GitHub runner (926,394 bytes; SHA-256 `1a287692b6abe5532c53b6a8117d9be4dece4edf66978f88b1a2ea20c29da298`) and its extracted text confirms the current guide documents the cohort's core field names. The public CSV shortlink redirects to a Google Drive preview page; the first attempt retrieved HTML, not data. A Google Drive-aware downloader is in the latest temporary-runner workflow, but the actual CSV row count, exact field schema/value codes and cohort compatibility are not yet verified.
 
 **Implemented research pipeline**
 
@@ -142,7 +142,7 @@ Sources:
 
 **Not yet verified**
 
-- The 2026 public CSV was not downloaded in this environment and no statistics have been computed. Count the downloaded file and verify every field, filter and missing-value rule against the 2026 guide before using the existing analysis script. The 2024–2025 installation window reduces stale-price mixing but does not inflation-adjust values or make the dataset a representative census of every local installation.
+- No solar price statistics have been computed from the 2026 public CSV. Count the actual data file, validate every filter/value convention against the 2026 guide, and run the strict cohort only if the file matches. The 2024–2025 installation window reduces stale-price mixing but does not inflation-adjust values or make the dataset a representative census of every local installation.
 - Licence caution: the older Data.gov CC BY 4.0 catalogue record does not establish the licence for the August 2026 public CSV. Berkeley Lab's general copyright terms reserve rights unless a different licence is expressly designated. Obtain written confirmation from LBNL or a clear current dataset licence before commercial reuse of the file or derived commercial price tables.
 - Even with permission, the dataset is not a probability sample of every installed system and self-reported pricing is heterogeneous. City descriptive percentiles may support a labelled historical installed-price reference only when sample count, period, filters and limitations are visible; they must not be portrayed as guaranteed quotes or a complete census of the local cash market.
 
@@ -169,7 +169,7 @@ Sources:
 
 - Municipal permit data can support selected-city, clearly labelled *declared permit valuation* indicators if their jurisdiction-specific schema, licence, sample count and record status pass review.
 - They are not sufficient by themselves to state the homeowner's expected installed roof price. Do not divide permit valuation by a generic roof area, combine incomplete jurisdictions, or call it an average contractor quote.
-- The live roof estimator therefore remains a transparent scenario model with user-entered comparable installed rates/quotes. The best next authoritative reference is AHS metro-level data for the 15 major metro areas, but it must be validated first; outside that geography it remains national/context-only. Unsupported cities must not be assigned fake local prices.
+- The live roof estimator remains a transparent scenario model with user-entered comparable installed rates/quotes. AHS national whole-project cost point estimates are validated against the PUF column of Table C-16, but they are not city rates, not $/sq-ft prices, and not local quotes. Metro-level AHS rows remain withheld pending metro-output and variance reconciliation plus a 2013 CBSA crosswalk. Unsupported cities must not be assigned fake local prices.
 
 Sources:
 
