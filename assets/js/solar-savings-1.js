@@ -70,12 +70,28 @@ if (importedProduction !== null) {
   }
 }
 const importedStateRate = Number(handoff.get('stateAverageRate'));
-if (Number.isFinite(importedStateRate) && importedStateRate > 0 && importedStateRate <= 5 && importRateEl.value.trim() === '') {
-  importRateEl.value = importedStateRate.toFixed(4);
+if (
+  handoff.get('stateAverageSource') === 'EIA Electric Power Monthly Table 5.6.B' &&
+  Number.isFinite(importedStateRate) && importedStateRate > 0 && importedStateRate <= 5
+) {
+  const stateLabel = handoff.get('state') || 'the selected state';
+  const field = importRateEl.closest('.field');
   const note = document.createElement('small');
   note.className = 'field-import-note';
-  note.textContent = 'Prefilled from the EIA state-average residential price for scenario use only. This is not your marginal utility tariff; replace it with the rate on your bill. The value is editable.';
-  importRateEl.closest('.field').append(note);
+  note.id = 'eiaStateAverageNote';
+  note.textContent = `EIA state-average residential electricity price for ${stateLabel}: ${importedStateRate.toFixed(4)} $/kWh. This is not your marginal utility tariff and has not been applied.`;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'btn btn-outline eia-opt-in';
+  button.id = 'useEiaStateAverage';
+  button.textContent = 'Use EIA average as an illustrative scenario';
+  button.addEventListener('click', () => {
+    importRateEl.value = importedStateRate.toFixed(4);
+    note.textContent = `Applied ${importedStateRate.toFixed(4)} $/kWh EIA state average for ${stateLabel}. This remains an illustrative scenario, not your household tariff.`;
+    button.disabled = true;
+    button.textContent = 'EIA scenario value applied';
+  });
+  field.append(note, button);
 }
 
 const showError=message=>{resultEl.innerHTML=`<div class="big">Check inputs</div><p>${message}</p>`;};
