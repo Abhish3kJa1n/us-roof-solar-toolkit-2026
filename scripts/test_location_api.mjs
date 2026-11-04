@@ -60,7 +60,10 @@ const austinLocationToken = await createLocationToken({
 const guamLocationToken = await createLocationToken({
   placeName: 'Hagåtña', stateAbbreviation: 'GU', geoid: '6600000', latitude: 13.4745, longitude: 144.7504,
 }, signingEnv);
-assert.ok(austinLocationToken && guamLocationToken, 'Census location proof tokens must be generated with a server-side provider secret');
+const expiredLocationToken = await createLocationToken({
+  placeName: 'Austin', stateAbbreviation: 'TX', geoid: '4805000', latitude: 30.2672, longitude: -97.7431,
+}, signingEnv, Date.now() - 25 * 60 * 60 * 1000);
+assert.ok(austinLocationToken && guamLocationToken && expiredLocationToken, 'Census location proof tokens must be generated with a server-side provider secret');
 
 // Nationwide city suggestions require at least three characters and no state input.
 let calls = [];
@@ -209,6 +212,12 @@ calls = [];
 result = await read(await pvGet({ request: request('/api/pvwatts?lat=30.2672&lon=-97.7431&state=TX&capacity=4&tilt=20&azimuth=180&losses=14'), env: { PVWATTS_API_KEY: 'test-secret-value-long-enough', API_QUOTA_DB: quotaDb() } }));
 assert.equal(result.status, 400, 'PVWatts must reject raw coordinates without a signed Census proof');
 assert.equal(calls.length, 0);
+result = await read(await pvGet({ request: request('/api/pvwatts?lat=30.2672&lon=-97.7431&state=TX&locationToken=' + encodeURIComponent(austinLocationToken) + '&capacity=4&tilt=20&azimuth=180&losses=14'), env: { PVWATTS_API_KEY: 'test-secret-value-long-enough', API_QUOTA_DB: quotaDb() } }));
+assert.equal(result.status, 400, 'a proof in the URL must not authorize a provider request');
+assert.equal(calls.length, 0);
+result = await read(await pvGet({ request: request('/api/pvwatts?lat=30.2672&lon=-97.7431&state=TX&capacity=4&tilt=20&azimuth=180&losses=14', { headers: { 'X-Location-Proof': expiredLocationToken } }), env: { PVWATTS_API_KEY: 'test-secret-value-long-enough', API_QUOTA_DB: quotaDb() } }));
+assert.equal(result.status, 400, 'expired Census location proofs must be rejected');
+assert.equal(calls.length, 0);
 result = await read(await pvGet({ request: request('/api/pvwatts?lat=30.2673&lon=-97.7431&state=TX&capacity=4&tilt=20&azimuth=180&losses=14', { headers: { 'X-Location-Proof': austinLocationToken } }), env: { PVWATTS_API_KEY: 'test-secret-value-long-enough', API_QUOTA_DB: quotaDb() } }));
 assert.equal(result.status, 400, 'a valid token must not authorize altered coordinates');
 assert.equal(calls.length, 0);
@@ -253,6 +262,7 @@ assert.equal(goodQuotaDb.calls, 1, 'global D1 quota reservation must be checked 
 assert.equal(goodQuotaDb.values[0], 'pvwatts');
 assert.equal(goodQuotaDb.values[4], 180);
 assert.equal(goodQuotaDb.values[5], 15000);
+assert.match(result.headers.get('Cache-Control') || '', /private,\\s*no-store/i, 'PVWatts authorized responses must not be shared-cached without their proof header');
 assert.match(calls[0].url, /pvwatts\/v8\.json/);
 assert.match(calls[0].url, /radius=100/, 'PVWatts must not use an unrestricted nearest-climate-station search');
 assert.match(calls[0].url, /api_key=test-secret/);
@@ -300,6 +310,7 @@ assert.equal(result.body.rates[0].endDate, '2026-12-31');
 assert.equal(result.body.rates[0].approved, true);
 assert.match(result.body.limitation, /not confirmation/i);
 assert.equal(JSON.stringify(result.body).includes('test-secret-value-long-enough'), false);
+assert.match(result.headers.get('Cache-Control') || '', /private,\\s*no-store/i, 'OpenEI authorized responses must not be shared-cached without their proof header');
 assert.match(calls[0], /sector=Residential/);
 assert.match(calls[0], /detail=minimal/);
 
