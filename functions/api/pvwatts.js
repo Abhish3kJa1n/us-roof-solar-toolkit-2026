@@ -1,5 +1,6 @@
 /** Cloudflare Pages Function: server-side proxy for NLR PVWatts V8. */
 import { reserveApiQuota } from '../_shared/quota.js';
+import { verifyLocationToken } from '../_shared/location-token.js';
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: {
@@ -55,6 +56,14 @@ export async function onRequestGet({ request, env }) {
   const state = (params.get('state') || '').trim().toUpperCase();
   if (!isSupportedUsCoordinate(values.lat, values.lon, state)) {
     return json({ error: 'Coordinates must be within a supported U.S. state or territory location. For Guam or the Northern Mariana Islands, select the corresponding Census place first.' }, 400);
+  }
+  const locationProof = await verifyLocationToken(params.get('locationToken'), env, {
+    latitude: values.lat,
+    longitude: values.lon,
+    state,
+  });
+  if (!locationProof) {
+    return json({ error: 'Select and verify a city/state through the Census location search before requesting solar production. Arbitrary coordinates are not accepted.' }, 400);
   }
 
   // Fail closed: never send an upstream request when the shared quota guard is
