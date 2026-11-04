@@ -3,7 +3,7 @@
 **Prepared:** November 1, 2026  
 **Project:** Roof & Solar Toolkit  
 **Business model:** U.S.-focused free homeowner tools, primarily monetized through display advertising  
-**Status:** Research/architecture gate; no deployment, DNS change, indexing, ad activation, or paid service is authorized.
+**Status:** The isolated Cloudflare Preview is deployed and its Census, PVWatts and OpenEI routes have passed a live smoke test. Production deployment, custom-domain cutover, indexing, ad activation and paid services are not authorized.
 
 ## Executive decision
 
@@ -98,8 +98,8 @@ Track, once legally and technically ready: U.S. organic clicks, U.S. share of se
 
 ### Gate B — location-aware MVP
 1. City/state-to-Census representative-place lookup is implemented; keep the disclosure that place points do not identify the property, utility or permit jurisdiction.
-2. A server-side PVWatts proxy now exists with key protection, bounds validation, caching, a 100-mile weather-station search radius and upstream 429 handling. A shared D1 counter is mandatory and fails closed for all three public API routes. Exact Census place lookup is capped at 60 reservations per 15-minute bucket and 10,000 per UTC day; nationwide Census autocomplete has a separate 120 per bucket / 20,000 per day cap; PVWatts is capped at 180 per bucket (at most 900 in any rolling hour) and 15,000 per day; OpenEI is separately capped at 60 per bucket and 5,000 per day pending provider-limit confirmation. The owner must create the D1 database, apply the included migration and bind it as `API_QUOTA_DB` before configuring either provider key. Optional per-IP WAF throttling is secondary only.
-3. Nearby OpenEI residential rate-candidate discovery is implemented as optional research only. Exact rate confirmation against a customer bill and tariff sheet is still required; no automatic tariff application is permitted.
+2. The server-side Census, PVWatts and OpenEI routes are deployed in the isolated Cloudflare Preview. They use key protection, input bounds, caching where applicable and a shared D1 counter that is required for all three public API routes. The live database has migrations `0001` and `0002` applied and is bound as `API_QUOTA_DB`. Preview secrets `PVWATTS_API_KEY` and `OPENEI_API_KEY` are configured. The November 4, 2026 smoke test passed live Census, PVWatts and OpenEI calls. Exact Census lookup is capped at 60 reservations per 15-minute bucket and 10,000 per UTC day; nationwide Census autocomplete has a separate 120 per bucket / 20,000 per day cap; PVWatts is capped at 180 per bucket (at most 900 in any rolling hour) and 15,000 per day; OpenEI is separately capped at 60 per bucket and 5,000 per day pending provider-limit confirmation. Production still has no provider secrets and production deployment remains disabled. Optional per-IP WAF throttling is secondary only.
+3. Nearby OpenEI residential rate-candidate discovery is implemented and live-tested. The November 4, 2026 Austin Preview request returned 49 candidate records. This is a connectivity test, not a utility/service-territory accuracy study; exact rate confirmation against a customer bill and the utility's current tariff sheet is still required. No automatic tariff application is permitted.
 4. Connect modelled production to the existing calculator without changing the existing validated calculation path until regression tests pass.
 5. Add test fixtures for multiple climates, utility tariffs, export rules, missing data and upstream API failure.
 
