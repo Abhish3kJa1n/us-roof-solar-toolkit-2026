@@ -472,7 +472,7 @@
     setStatus(modelStatus, 'Requesting NLR PVWatts V8 model…');
     resetResult('Calculating…', 'The representative location and explicit system assumptions are being sent to this site’s server endpoint.');
     updateActions();
-    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, capacity, tilt, azimuth, losses });
+    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation, capacity, tilt, azimuth, losses });
     try {
       const response = await fetch(`../api/pvwatts?${query.toString()}`, { headers: { Accept: 'application/json' } });
       const data = await response.json();
@@ -487,7 +487,11 @@
       const priceBenchmark = await waitForSolarPriceBenchmark(selectedPlace);
       if (seq !== requestSequence) return;
       const savingsHandoff = { production: kwhPerKw.toFixed(1), location: placeLabel, city: selectedPlace.placeName, state: selectedPlace.stateAbbreviation };
-      if (Number.isFinite(stateAverageRate) && stateAverageRate > 0 && stateAverageRate <= 5) savingsHandoff.stateAverageRate = stateAverageRate.toFixed(4);
+      if (Number.isFinite(stateAverageRate) && stateAverageRate > 0 && stateAverageRate <= 5) {
+        savingsHandoff.stateAverageRate = stateAverageRate.toFixed(4);
+        savingsHandoff.stateAverageSource = 'EIA Electric Power Monthly Table 5.6.B';
+        savingsHandoff.stateAverageRelease = '2026-10-23';
+      }
       savingsLink.href = `solar-savings.html?${params(savingsHandoff).toString()}`;
       savingsLink.textContent = `Use ${format(kwhPerKw, 0)} kWh/kW in savings calculator`;
       savingsLink.hidden = false;
@@ -573,7 +577,7 @@
     updateActions();
     setStatus(tariffStatus, 'Searching nearby residential rate records…');
     tariffResults.replaceChildren();
-    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude });
+    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation });
     try {
       const response = await fetch(`../api/tariffs?${query.toString()}`, { headers: { Accept: 'application/json' } });
       const data = await response.json();
