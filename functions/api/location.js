@@ -1,4 +1,5 @@
 import { reserveApiQuota } from '../_shared/quota.js';
+import { createLocationToken } from '../_shared/location-token.js';
 /**
  * Cloudflare Pages Function: nationwide Census place suggestions and exact
  * city/state -> representative place-point verification.
@@ -252,6 +253,21 @@ export async function onRequestGet({ request, env }) {
     return json({ error: 'No exact Census place named “' + city + '” was found in ' + state + '. Check the city spelling and selected state.' }, 404);
   }
 
+  // Sign the exact Census representative point. Provider routes reject arbitrary
+  // coordinates unless they carry this short-lived server-verifiable proof.
+  const hasSigningSecret = Boolean(env?.LOCATION_TOKEN_SECRET || env?.PVWATTS_API_KEY || env?.OPENEI_API_KEY);
+  if (hasSigningSecret) {
+    const tokens = await Promise.all(places.map((place) => createLocationToken(place, env)));
+    places.forEach((place, index) => { place.locationToken = tokens[index]; });
+    if (tokens.some((token) => !token)) {
+      return json({ error: 'The location verification token could not be created. Please retry later.' }, 503);
+    }
+  }
+
+  const responseHeaders = hasSigningSecret
+    ? { 'Cache-Control': 'public, max-age=300, s-maxage=43200' }
+    : {};
+
   return json({
     city,
     state,
@@ -261,5 +277,5 @@ export async function onRequestGet({ request, env }) {
     geographyType: 'Census place internal representative point; not a citywide solar average or rooftop coordinate',
     limitation: 'The selected point is a representative point for the Census place. It does not identify a parcel, roof plane, utility service territory, electricity tariff, building-permit jurisdiction or exact weather conditions at a property. City boundaries and service territories do not necessarily align.',
     partialSourceWarning: successful.length < 2 ? 'One Census place layer was unavailable; the returned matches may be incomplete.' : null,
-  });
+  }, 200, responseHeaders);
 }
