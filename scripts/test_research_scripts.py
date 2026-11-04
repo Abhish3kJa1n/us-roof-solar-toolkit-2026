@@ -109,9 +109,10 @@ with tempfile.TemporaryDirectory() as tmp:
             "CONTROL": control, "TENURE": "'1'", "INTSTATUS": "'1'", "WEIGHT": "'1'", "OMB13CBSA": "'12060'",
             **{field: "'1'" for field in replicate_fields},
         })
-    # Edge cases: zero cost is retained by the Table C-16-OO PUF universe;
-    # non-roof type, invalid cost, unknown JOBDIY, renter, non-interview, and
-    # unmatched project records are excluded.
+    # C-16 counts eligible projects regardless of cost validity. Mean/median
+    # and quartiles use positive costs only; total expenditures use nonnegative
+    # costs. Give the zero-cost record a dominant weight to prove it cannot
+    # contaminate the positive-cost median/mean.
     project_rows.extend([
         {"CONTROL": "h060", "JOBTYPE": "16", "JOBCOST": "0", "JOBDIY": "2"},
         {"CONTROL": "h061", "JOBTYPE": "17", "JOBCOST": "5000", "JOBDIY": "2"},
@@ -122,7 +123,8 @@ with tempfile.TemporaryDirectory() as tmp:
         {"CONTROL": "unmatched", "JOBTYPE": "16", "JOBCOST": "25000", "JOBDIY": "2"},
     ])
     household_rows.extend([
-        {"CONTROL": "h060", "TENURE": "1", "INTSTATUS": "1", "WEIGHT": "1", "OMB13CBSA": "12060", **{field: "1" for field in replicate_fields}},
+        {"CONTROL": "h060", "TENURE": "1", "INTSTATUS": "1", "WEIGHT": "1000", "OMB13CBSA": "12060", **{field: "1000" for field in replicate_fields}},
+        {"CONTROL": "h062", "TENURE": "1", "INTSTATUS": "1", "WEIGHT": "1", "OMB13CBSA": "12060", **{field: "1" for field in replicate_fields}},
         {"CONTROL": "h064", "TENURE": "2", "INTSTATUS": "1", "WEIGHT": "1", **{field: "1" for field in replicate_fields}},
         {"CONTROL": "h065", "TENURE": "1", "INTSTATUS": "2", "WEIGHT": "1", **{field: "1" for field in replicate_fields}},
     ])
@@ -142,14 +144,22 @@ with tempfile.TemporaryDirectory() as tmp:
     metro_all = next(row for row in metro_rows if row["group"] == "all_roofing_projects")
     assert metro_all["metro_omb13cbsa"] == "12060"
     assert metro_all["metro_name"] == "Atlanta-Sandy Springs-Roswell, GA"
-    assert metro_all["unweighted_n"] == "61"
-    assert all(row["publication_status"] == "RESEARCH_ONLY_INCLUDES_CENSUS_EDITED_OR_IMPUTED_VALUES_NOT_RECONCILED" for row in rows)
-    assert all(float(row["median_nominal_survey_usd"]) > 0 for row in rows)
-    assert all(float(row["mean_nominal_survey_usd"]) > 0 for row in rows)
+    assert metro_all["unweighted_n"] == "62"
+    all_rows = next(row for row in rows if row["group"] == "all_roofing_projects")
+    assert all_rows["unweighted_n"] == "62"
+    assert all_rows["weighted_project_count"] == "1061"
+    assert all_rows["positive_cost_unweighted_n"] == "60"
+    assert all_rows["zero_cost_unweighted_n"] == "1"
+    assert all_rows["nonnegative_cost_unweighted_n"] == "61"
+    assert all_rows["mean_nominal_survey_usd"] == "39500.0"
+    assert all_rows["median_nominal_survey_usd"] == "39000.0", "zero-cost jobs must not enter the C-16 median"
+    assert all_rows["total_expenditure_nominal_survey_usd"] == "2370000.0", "total must include nonnegative-cost jobs"
+    assert all(row["publication_status"] == "RESEARCH_ONLY_C16_RECONCILIATION_AND_VARIANCE_REVIEW_PENDING" for row in rows)
     assert all(float(row["median_replicate_se_usd"]) == 0 for row in rows)
     assert all(float(row["mean_replicate_se_usd"]) == 0 for row in rows)
-    assert "JOBTYPE 16 eligible roofing jobs summarized: 61" in stdout
-    assert "Zero-cost projects included: 1" in stdout
+    assert "JOBTYPE 16 owner-occupied/interviewed projects: 62" in stdout
+    assert "zero-cost records retained in count/total: 1" in stdout
+    assert "missing/negative-cost records retained in count but excluded from cost stats: 1" in stdout
     assert "owner_occupancy_or_interview_excluded: 2" in stdout
     assert "unmatched_household: 1" in stdout
 
