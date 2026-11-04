@@ -262,14 +262,14 @@
     });
     suggestionsEl.hidden = false;
     cityEl.setAttribute('aria-expanded', 'true');
-    setStatus(locationStatus, currentSuggestions.length + ' Census city/state matches. Select the correct location.' + (partialWarning ? ' ' + partialWarning : ''));
+    setStatus(locationStatus, currentSuggestions.length + ' Census place/state-or-territory matches. Select the correct location.' + (partialWarning ? ' ' + partialWarning : ''));
   }
 
   function scheduleCitySuggestions() {
     const search = cityEl.value.trim().replace(/\s+/g, ' ');
     if (search.length < 3 || search.length > 80) {
       hideCitySuggestions();
-      setStatus(locationStatus, 'Type at least 3 letters of a city name to see matching cities and states.');
+      setStatus(locationStatus, 'Type at least 3 letters of a city name to see matching places and states/territories.');
       return;
     }
     const sequence = ++suggestionSequence;
@@ -324,7 +324,7 @@
     hideCitySuggestions();
     notifyInstalledPricePlace(null);
     invalidateLocationContext();
-    setStatus(locationStatus, 'Type at least 3 letters of a city name to see matching cities and states.');
+    setStatus(locationStatus, 'Type at least 3 letters of a city name to see matching places and states/territories.');
   };
   cityEl.addEventListener('input', () => {
     invalidatePlaceSearch();
