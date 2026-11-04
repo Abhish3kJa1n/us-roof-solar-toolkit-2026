@@ -2,7 +2,7 @@ import { reserveApiQuota } from '../_shared/quota.js';
 /**
  * Cloudflare Pages Function: nationwide Census place suggestions and exact
  * city/state -> representative place-point verification.
- * Primary source: US Census Bureau TIGERweb Current (2026) Incorporated Places
+ * Primary source: US Census Bureau TIGERweb ACS2026 Incorporated Places
  * and Census Designated Places. INTPTLAT/INTPTLON are representative interior
  * points, not property coordinates or utility service boundaries.
  */
