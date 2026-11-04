@@ -264,7 +264,7 @@ assert.equal(goodQuotaDb.calls, 1, 'global D1 quota reservation must be checked 
 assert.equal(goodQuotaDb.values[0], 'pvwatts');
 assert.equal(goodQuotaDb.values[4], 180);
 assert.equal(goodQuotaDb.values[5], 15000);
-assert.match(result.headers.get('Cache-Control') || '', /private,\\s*no-store/i, 'PVWatts authorized responses must not be shared-cached without their proof header');
+assert.match(result.headers.get('Cache-Control') || '', /private,\s*no-store/i, 'PVWatts authorized responses must not be shared-cached without their proof header');
 assert.match(calls[0].url, /pvwatts\/v8\.json/);
 assert.match(calls[0].url, /radius=100/, 'PVWatts must not use an unrestricted nearest-climate-station search');
 assert.match(calls[0].url, /api_key=test-secret/);
@@ -312,7 +312,7 @@ assert.equal(result.body.rates[0].endDate, '2026-12-31');
 assert.equal(result.body.rates[0].approved, true);
 assert.match(result.body.limitation, /not confirmation/i);
 assert.equal(JSON.stringify(result.body).includes('test-secret-value-long-enough'), false);
-assert.match(result.headers.get('Cache-Control') || '', /private,\\s*no-store/i, 'OpenEI authorized responses must not be shared-cached without their proof header');
+assert.match(result.headers.get('Cache-Control') || '', /private,\s*no-store/i, 'OpenEI authorized responses must not be shared-cached without their proof header');
 assert.match(calls[0], /sector=Residential/);
 assert.match(calls[0], /detail=minimal/);
 
