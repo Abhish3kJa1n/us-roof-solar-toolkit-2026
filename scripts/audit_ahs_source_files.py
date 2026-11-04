@@ -243,6 +243,25 @@ def inspect_table_specs(path: Path) -> None:
     workbook.close()
 
 
+def read_c16_puf_reference(path: Path) -> dict[str, float]:
+    from openpyxl import load_workbook
+    workbook = load_workbook(path, read_only=True, data_only=True)
+    sheet = workbook["Home Improvement Costs"]
+    # Official C-16-OO worksheet: PUF estimate is column E; Table Creator
+    # margin of error is column G. Rows 101-104 are the Roofing block.
+    output = {
+        "project_count_thousands": float(sheet.cell(row=101, column=5).value),
+        "median_usd": float(sheet.cell(row=102, column=5).value),
+        "median_moe_usd": float(sheet.cell(row=102, column=7).value),
+        "mean_usd": float(sheet.cell(row=103, column=5).value),
+        "mean_moe_usd": float(sheet.cell(row=103, column=7).value),
+        "total_expenditure_thousands": float(sheet.cell(row=104, column=5).value),
+        "total_expenditure_moe_thousands": float(sheet.cell(row=104, column=7).value),
+    }
+    workbook.close()
+    return output
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="ahs-audit-") as temp_dir:
         root = Path(temp_dir)
@@ -301,6 +320,53 @@ def main() -> int:
             "total_expenditure_nominal_survey_usd", "total_expenditure_replicate_se_usd",
         ):
             print(f"ACTUAL PUF NATIONAL {field}: {all_roofing.get(field, '')}")
+
+        reference = read_c16_puf_reference(files["table_specs"])
+        actual_count = float(all_roofing["weighted_project_count"])
+        actual_median = float(all_roofing["median_nominal_survey_usd"])
+        actual_mean = float(all_roofing["mean_nominal_survey_usd"])
+        actual_total = float(all_roofing["total_expenditure_nominal_survey_usd"])
+        count_reference = reference["project_count_thousands"] * 1000
+        total_reference = reference["total_expenditure_thousands"] * 1000
+        count_match = abs(actual_count - count_reference) <= 500
+        median_match = round(actual_median) == round(reference["median_usd"])
+        mean_match = round(actual_mean) == round(reference["mean_usd"])
+        total_match = abs(actual_total - total_reference) <= 500000
+        print("\nC-16 NATIONAL PUF POINT-ESTIMATE RECONCILIATION:")
+        print(f"  Weighted project count: actual={actual_count:,.0f}; C-16 PUF estimate={count_reference:,.0f}; nearest-1,000 rounding match={count_match}")
+        print(f"  Median whole-project cost: actual USD {actual_median:,.0f}; C-16 PUF estimate USD {reference['median_usd']:,.0f}; match={median_match}")
+        print(f"  Mean whole-project cost: actual USD {actual_mean:,.0f}; C-16 PUF estimate USD {reference['mean_usd']:,.0f}; match={mean_match}")
+        print(f"  Total whole-project expenditures: actual USD {actual_total:,.0f}; C-16 PUF estimate USD {total_reference:,.0f}; within USD 500,000 rounding tolerance={total_match}")
+        point_match = count_match and median_match and mean_match and total_match
+        print("  POINT ESTIMATES RECONCILE: " + ("PASS" if point_match else "FAIL"))
+
+        # Compare uncertainty margins separately. The Table Creator's published
+        # 90% margins are not the same thing as a point-estimate match.
+        margin_checks = [
+            ("Median", float(all_roofing["median_90ci_high_usd"]) - actual_median, reference["median_moe_usd"]),
+            ("Mean", float(all_roofing["mean_90ci_high_usd"]) - actual_mean, reference["mean_moe_usd"]),
+            ("Total", float(all_roofing["total_expenditure_90ci_high_usd"]) - actual_total, reference["total_expenditure_moe_thousands"] * 1000),
+        ]
+        print("C-16 TABLE CREATOR 90% MARGIN COMPARISON (variance review only):")
+        for label, actual_moe, reference_moe in margin_checks:
+            gap_pct = 100 * (actual_moe - reference_moe) / reference_moe if reference_moe else float("nan")
+            print(f"  {label}: Fay-BRR margin USD {actual_moe:,.0f}; Table Creator margin USD {reference_moe:,.0f}; difference={gap_pct:+.1f}%")
+        if not point_match:
+            raise RuntimeError("National PUF point estimates did not reconcile with C-16; investigate universe and weighting before proceeding.")
+
+        with metro_output.open(encoding="utf-8", newline="") as stream:
+            metro_rows = list(csv.DictReader(stream))
+        print("TOP-15 METRO RESEARCH-ONLY OUTPUTS (whole-project roofing costs; not city prices):")
+        for row in metro_rows:
+            if row["group"] == "all_roofing_projects":
+                print(
+                    f"  {row['metro_omb13cbsa']} {row['metro_name']}: "
+                    f"projects n={row['unweighted_n']}, weighted={row['weighted_project_count']}; "
+                    f"positive-cost n={row['positive_cost_unweighted_n']}; "
+                    f"median USD {float(row['median_nominal_survey_usd']):,.0f}; "
+                    f"p25 USD {float(row['p25_nominal_survey_usd']):,.0f}; "
+                    f"p75 USD {float(row['p75_nominal_survey_usd']):,.0f}"
+                )
         print("\nAHS SOURCE AUDIT AND REAL-PUF RESEARCH CALCULATION COMPLETED. No raw files or record-level data were uploaded.")
     return 0
 
