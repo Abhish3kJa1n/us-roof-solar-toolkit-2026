@@ -237,13 +237,14 @@
 
   function renderCitySuggestions(suggestions, partialWarning = '', totalMatches = null) {
     currentSuggestions = Array.isArray(suggestions) ? suggestions : [];
-    const matchCount = Number.isFinite(Number(totalMatches)) ? Number(totalMatches) : currentSuggestions.length;
+    const hasCompleteCount = totalMatches !== null && totalMatches !== undefined && Number.isFinite(Number(totalMatches));
+    const matchCount = hasCompleteCount ? Number(totalMatches) : null;
     suggestionsEl.replaceChildren();
     activeSuggestionIndex = -1;
     if (!currentSuggestions.length) {
       suggestionsEl.hidden = true;
       cityEl.setAttribute('aria-expanded', 'false');
-      setStatus(locationStatus, 'No matching Census places were returned. Try a longer or different city spelling.');
+      setStatus(locationStatus, 'No matching Census places were returned. Try a longer or different place spelling.' + (partialWarning ? ' ' + partialWarning : ''));
       return;
     }
     currentSuggestions.forEach((candidate, index) => {
@@ -263,9 +264,11 @@
     });
     suggestionsEl.hidden = false;
     cityEl.setAttribute('aria-expanded', 'true');
-    const countMessage = matchCount > currentSuggestions.length
-      ? 'Showing the first ' + currentSuggestions.length + ' of ' + matchCount + ' Census matches. Type more letters to narrow the list.'
-      : matchCount + ' Census place/state-or-territory matches. Select the correct location.';
+    const countMessage = matchCount === null
+      ? 'Showing up to ' + currentSuggestions.length + ' matches; the complete total is unavailable because a Census source is incomplete. Type more letters to narrow the list.'
+      : matchCount > currentSuggestions.length
+        ? 'Showing the first ' + currentSuggestions.length + ' of ' + matchCount + ' Census matches. Type more letters to narrow the list.'
+        : matchCount + ' Census place/state-or-territory matches. Select the correct location.';
     setStatus(locationStatus, countMessage + (partialWarning ? ' ' + partialWarning : ''));
   }
 
