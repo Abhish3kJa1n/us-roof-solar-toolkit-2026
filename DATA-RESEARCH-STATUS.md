@@ -1,6 +1,6 @@
 # Data research and validation status
 
-**Research source review: November 1, 2026. Runtime integration update: November 4, 2026.** This report records what has been verified from primary-source documentation, what has been implemented, and what remains blocked. No source microdata are bundled in the site and no local price outputs have been computed.
+**Research source review: November 4, 2026. Runtime integration update: November 4, 2026.** This report records what has been verified from primary-source documentation, what has been implemented, and what remains blocked. No raw source microdata are bundled in the site and no local price outputs have been computed. The current Cloudflare Preview has working live Census, PVWatts and OpenEI integrations; the local-price registry remains withheld.
 
 ## Solar production: NLR PVWatts V8
 
@@ -20,11 +20,11 @@
 - The calculator uses the visitor-entered representative coordinates, DC capacity, tilt, azimuth and losses.
 - The location workflow can hand the modeled `kWh per kW DC` into the combined and dedicated savings calculators. An EIA state-average rate is passed only as separate context and is never automatically inserted into the marginal import-rate field; a visitor must explicitly opt in to use it as an illustrative scenario. An approved city/state PV price distribution can be passed only when an installed-price record has passed the current publication gates. Household annual usage, self-use, actual marginal tariff, export compensation and property-specific quote values remain user-specific. The runtime registry currently has zero approved solar-price rows.
 
-**Not yet verified**
+**Live Preview test and remaining verification**
 
-- No live NLR request was executed from this build environment and no live comparison against the online PVWatts Calculator was completed. Network access and an owner-provided API key are not available here.
-- Before launch, compare at least several US locations and a grid of orientations/loss assumptions using identical settings in the official calculator and the API.
-- Confirm current key registration terms and usage limits when owner obtains the key.
+- A live Preview request succeeded on November 4, 2026: the Austin 1 kW DC smoke scenario returned 1,483 kWh/year, monthly output and weather-station ID 677404. This proves the Preview secret and route work; it does not validate model accuracy across the United States.
+- No controlled multi-location comparison against the official PVWatts Calculator has been completed. Before launch, compare several US climate regions and a grid of orientations/loss assumptions using identical settings.
+- Verify station distances and model/data coverage across representative regions. The current smoke log records station ID 677404 but not its distance. Production has no PVWatts secret configured; this is Preview-only verification.
 
 NLR documentation: https://developer.nlr.gov/docs/solar/pvwatts/v8/
 
@@ -79,21 +79,21 @@ OpenEI docs: https://apps.openei.org/services/doc/rest/util_rates/
 - The Census documentation states that `JOBCOST` is hot-deck imputed for some records and `JOBDIY` is imputed using a logistic-regression model. AHS PUF data also use edit/imputation flags. Thus PUF-derived estimates must be described as including Census-edited/imputed values unless a correctly coded sensitivity analysis excludes them.
 - The AHS home-improvement module is for owner-occupied units and covers projects in the two years before interview. The data are nominal survey dollars for roughly 2021–2023; the published infographic's $10,000 median is a primary-source anchor, not a 2026 quote.
 - The AHS does not provide a roof-size denominator, a consistent material/scope breakdown, or a clean $/roofing-square rate. It cannot support local $/sq-ft estimates.
-- The Census confirms that 2015–2023 national PUFs contain `OMB13CBSA` for the 15 largest metropolitan areas. For the Top 15, AHS holds the February 2013 OMB CBSA definitions constant across 2015–2023. The 2023 AHS Table Creator provides a Top 15 metro version of Table C-16 (Home Improvement Costs). This supports metro—not city—benchmarking. A selected current city can only inherit a metro reference after a defensible spatial crosswalk to those 2013 CBSA boundaries; city-name matching or a current-2026 metro code is not sufficient. The PUF summary still has to be reconciled against Census-published C-16 estimates and margins of error.
+- The 2023 National PUF includes the 2013 OMB CBSA identifier for the 15 largest metropolitan areas; the 2023 National and Metropolitan PUFs are separate releases. For the Top 15, AHS holds the February 2013 OMB CBSA definitions constant through the 2023 survey. This supports metro—not city—benchmarking. A selected current city can only inherit a metro reference after a defensible spatial crosswalk to those 2013 CBSA boundaries; city-name matching or a current-2026 CBSA code is not sufficient. The PUF summary still has to be reconciled against Census-published C-16 estimates and margins of error.
 
 **Implemented research script (corrected PUF schema)**
 
-- `scripts/analyze_ahs_roof.py` reads the relational 2023 National PUF PROJECT and HOUSEHOLD CSVs. It joins by `CONTROL`, filters owner-occupied interviewed households (`TENURE=1`, `INTSTATUS=1`), a user-supplied `JOBTYPE` code, `JOBDIY` in {1,2}, and nonnegative `JOBCOST`. The code is a required CLI argument and must be verified against the official 2023 Value Labels Package. The HOUSEHOLD file must also include `OMB13CBSA`; the script now emits exploratory national summaries and separate Top 15 metro summaries using the February 2013 CBSA codes documented by Census. These are historical metro definitions, not current-vintage city boundaries.
+- `scripts/analyze_ahs_roof.py` reads the relational 2023 **National** PUF PROJECT and HOUSEHOLD CSVs and joins them by `CONTROL`. The official National PUF mini-codebook lists `OMB13CBSA`, `WEIGHT` and `REPWEIGHTXXX` fields; the current script uses `WEIGHT` and `REPWEIGHT1..160` and emits exploratory national and Top 15 metro summaries. The script filters owner-occupied interviewed households (`TENURE=1`, `INTSTATUS=1`), a user-supplied `JOBTYPE` code, `JOBDIY` in {1,2}, and nonnegative `JOBCOST`. The numeric roofing `JOBTYPE` code must be verified from the official 2023 Value Labels Package. The codebook confirms field names exist; it does not by itself prove the selected weights and universe reproduce Table C-16.
 - It includes zero-cost and Census-edited/imputed PUF values under an intended broad AHS Table C-16-OO-style PUF universe; exact equivalence has not been proven. It reports overall roofing jobs plus the two `JOBDIY` groups. Those groups are **not** labelled contractor vs DIY because “household did not do most work” is not identical to a verified professional invoice, and the status itself is imputed for some cases.
 - It joins `WEIGHT` and `REPWEIGHT1`–`REPWEIGHT160`, then outputs weighted percentiles and exploratory Fay-BRR standard errors / approximate 90% intervals. The interval and quantile calculations still require independent reconciliation to Census's Table Specifications workbook before any publication.
 - The test suite now uses PUF-style `JOBTYPE` / `JOBCOST` / `JOBDIY` records, not questionnaire-only `ROOFAM` / `ROOFWK` / `ROOFYRCST` fields.
 
 **Not yet verified / launch blockers**
 
-- The official 124 MB relational PUF archive could not be downloaded in this environment. No real AHS PUF calculation has been executed here. Synthetic fixtures verify the script mechanics only. The selected-city-to-2013-CBSA crosswalk has not been implemented; until it is built and tested against the correct vintage, the live calculator must not display an AHS metro benchmark merely from a current city selection.
+- The official 124 MB National PUF relational archive could not be downloaded and processed in this environment. Census publishes separate 2023 National and Metropolitan PUFs; the current script is designed for the National PUF because it uses the National PUF's `OMB13CBSA` geography field. No real AHS PUF calculation has been executed here; synthetic fixtures verify script mechanics only. The selected-city-to-2013-CBSA crosswalk has not been implemented; the live calculator must not display an AHS metro benchmark merely from a current city selection.
 - The $10,000 Census infographic number is from the AHS Table Creator / Internal Use File; a PUF calculation is expected to differ slightly because the PUF applies confidentiality protection. The PUF output must be reconciled against the official Table Specifications and PUF Estimates workbook, not forced to match the infographic.
 - The AHS survey does not ensure the roof job was a full tear-off and replacement; it covers roof additions/replacements as described by the instrument. Costs can include different scope and household work. PUF-derived metro estimates are research-only until checked against the Census Table C-16 metro output and its margins of error. No individual-city, ZIP or cost-per-square-foot values are supported by this source. A city-to-metro association remains a separate spatial crosswalk task; the live city lookup does not currently select an AHS metro automatically.
-- The weighted quantile/replicate interval method remains research-only; reconcile with official AHS variance guidance and Census PUF check estimates before use. The exact roofing `JOBTYPE` value remains unverified because the Census Value Labels Package could not be downloaded in this environment.
+- The weighted quantile/replicate interval method remains research-only; reconcile the exact C-16 universe, final weight, replicate-weight treatment and variance method against the Table Specifications/PUF Estimates workbook and official AHS variance guidance before use. The codebook lists the standard and replicate-weight fields, but the correct C-16 selection has not been proven. The exact roofing `JOBTYPE` numeric value remains unverified because the 2023 Value Labels Package could not be downloaded in this environment. The test fixture's code `16` is synthetic only, not a confirmed roofing code.
 
 Sources:
 
@@ -105,16 +105,34 @@ Sources:
 - 2023 AHS items booklet (questionnaire labels, not PUF project-field names): https://www2.census.gov/programs-surveys/ahs/2023/2023__AHS_Items_Booklet.pdf
 - AHS replicate-weight variance guide: https://www2.census.gov/programs-surveys/ahs/tech-documentation/2015/Quick_Guide_to_Estimating_Variance_Using_Replicate_Weights_2009_to_Current.pdf
 
+
+**Additional primary-source file and table checks — November 4, 2026**
+
+- Census publishes separate 2023 National and Metropolitan relational PUFs. The National PUF v1.1 CSV archive is listed at 124 MB; the Metropolitan PUF v1.1 CSV archive is listed at 20 MB. The current roof analysis script is designed for the **National** relational PROJECT and HOUSEHOLD files, not the Metropolitan PUF.
+- The official National and Metropolitan mini-codebooks list `OMB13CBSA`, `WEIGHT` and `REPWEIGHTXXX` fields and the project-level `JOBTYPE`, `JOBCOST` and `JOBDIY` fields. This confirms the variables exist; the Table Specifications and PUF Estimates workbook must still establish the exact C-16 selection, weights and universe.
+- Census describes Table C-16 as job/project-level: it counts each home-improvement project and includes the professional/do-it-yourself variable, whereas C-15 is housing-unit-level and counts improvement types once per housing unit. This supports analyzing project records rather than household-level counts.
+- Do not treat the script's synthetic test value `JOBTYPE=16` as verified. The official Value Labels Package must be inspected to identify the roofing category and any relevant distinctions.
+- The standard and replicate-weight field presence does not prove the script's exact weight choice. AHS has separate weights for certain rotating topical modules; the correct weight for the Home Improvement C-16 table must be checked against the 2023 Table Specifications/PUF Estimates and methodology before publication.
+
+Sources:
+
+- 2023 National and Metropolitan PUF landing page: https://www.census.gov/programs-surveys/ahs/data/2023/ahs-2023-public-use-file--puf-.html
+- 2023 Metropolitan PUF details and file sizes: https://www.census.gov/programs-surveys/ahs/data/2023/ahs-2023-public-use-file--puf-/2023-ahs-metropolitan-puf-microdata.html
+- AHS 2023 National PUF mini-codebook: https://www.census.gov/data-tools/demo/data/uccb/ahsdict/minicodebooks/ahs_mini_2023National.pdf
+- AHS 2023 Metropolitan PUF mini-codebook: https://www.census.gov/data-tools/demo/data/uccb/ahsdict/minicodebooks/ahs_mini_2023Metro.pdf
+- 2023 Table Creator release notes (C-15 vs C-16 project-level distinction): https://www.census.gov/programs-surveys/ahs/tech-documentation/user-notes/ahs-table-creator-release-notes.html
+- AHS technical documentation and weighting references: https://www.census.gov/programs-surveys/ahs/tech-documentation.html
+- 2023 topical content variable reference file: https://www2.census.gov/programs-surveys/ahs/documentation/2023%20AHS%20Topical%20Content%20Variable%20Reference%20File.pdf
+- 2023 Metropolitan PUF Table Specifications and Value Labels Package are linked from the Metropolitan PUF page above.
+
 ## Solar installed-price context: Berkeley Lab Tracking the Sun
 
-**Verified from the August 7, 2026 public-data user guide**
+**Verified from Berkeley Lab's official August 2026 publication record; current file-level details still need inspection**
 
-- The public CSV is approximately 4.0 million systems through year-end 2025, across 81 fields; the broader 5.3-million figure is not the row count of the public file.
-- Missing values are coded `-1`.
-- `PV_system_size_DC` is DC kW; `total_installed_price` is nominal dollars before incentives.
-- Price can be reported by installer, host or another applicant; for third-party ownership it may be an intermediate contractor-to-owner sale price or appraised value. Self-reporting inconsistency and variable verification are explicitly noted.
-- `customer_segment` includes RES, RES_SF and RES_MF. `ground_mounted` identifies ground/mixed systems. `technology_type` distinguishes PV-only and PV+Storage.
-- City spellings and utility territory names are not standardized; ZIP+4 may appear. The file includes city and state fields, but no nationally standard city identifier; different spellings and city aliases can split the same real-world market.
+- The official 2026 update record says Berkeley Lab's dataset contains roughly **5.3 million individual systems installed through year-end 2025** and includes project-level technical characteristics, installed prices, financing and customer-segment fields. This is the overall dataset count, not a confirmed row count for the downloadable public CSV.
+- The Tracking the Sun landing page still contains older update text in places. Use the August 2026 publication record as the current release reference; do not repeat the prior claim that the current public CSV has exactly 4.0 million rows or 81 fields until the actual 2026 file is counted and its guide is checked.
+- Berkeley Lab defines distributed solar to include residential systems, roof-mounted non-residential systems and qualifying ground-mounted systems. The homeowner benchmark therefore requires a strict residential, rooftop, PV-only host-owned cohort rather than using the full dataset indiscriminately.
+- The current 2026 user-guide link is listed in Berkeley Lab's 2026 publication record, but the PDF and public CSV were not successfully downloaded and inspected in this audit environment. Prior-year guide field names, missing-value codes and price semantics must be revalidated against the 2026 guide before processing.
 
 **Implemented research pipeline**
 
@@ -124,16 +142,17 @@ Sources:
 
 **Not yet verified**
 
-- The CSV was not downloaded in this environment and no statistics have been computed. The 2024–2025 window reduces stale-price mixing but does not inflation-adjust values or make the dataset a representative census of every local installation.
-- License caution: the Data.gov catalog lists CC BY 4.0 for an older Tracking the Sun catalog record last updated in 2024, but that does not conclusively establish the license for the August 2026 public CSV. Berkeley Lab’s general copyright page says materials are reserved unless a different license is explicitly designated. Do not assume the 2026 CSV inherits the older CC BY listing; obtain written confirmation from LBNL or a clear current dataset license before commercial reuse.
+- The 2026 public CSV was not downloaded in this environment and no statistics have been computed. Count the downloaded file and verify every field, filter and missing-value rule against the 2026 guide before using the existing analysis script. The 2024–2025 installation window reduces stale-price mixing but does not inflation-adjust values or make the dataset a representative census of every local installation.
+- Licence caution: the older Data.gov CC BY 4.0 catalogue record does not establish the licence for the August 2026 public CSV. Berkeley Lab's general copyright terms reserve rights unless a different licence is expressly designated. Obtain written confirmation from LBNL or a clear current dataset licence before commercial reuse of the file or derived commercial price tables.
 - Even with permission, the dataset is not a probability sample of every installed system and self-reported pricing is heterogeneous. City descriptive percentiles may support a labelled historical installed-price reference only when sample count, period, filters and limitations are visible; they must not be portrayed as guaranteed quotes or a complete census of the local cash market.
 
 Sources:
 
-- Tracking the Sun: https://emp.lbl.gov/tracking-the-sun
-- 2026 user guide: https://emp.lbl.gov/sites/default/files/2026-08/LBNL_PublicDataFile_UserGuide_8.07.26.pdf
-- Public data CSV link in the guide: https://bit.ly/trackingthesun2026
-- Older Data.gov catalog record (CC BY 4.0; not proof of the 2026 file license): https://catalog.data.gov/dataset/tracking-the-sun
+- Tracking the Sun landing page: https://emp.lbl.gov/tracking-the-sun
+- Official 2026 update publication record: https://emp.lbl.gov/publications/us-distributed-solar-and-storage-0
+- 2026 user guide (listed with the official 2026 record): https://eta-publications.lbl.gov/sites/default/files/2026-08/lbnl_publicdatafile_userguide_8.07.26.pdf
+- 2026 public data-file link listed in the guide: https://bit.ly/trackingthesun2026
+- Older Data.gov catalogue record (CC BY 4.0; not proof of the 2026 file licence): https://catalog.data.gov/dataset/tracking-the-sun
 - Berkeley Lab general copyright terms: https://www.lbl.gov/terms-and-conditions/copyright/
 
 
