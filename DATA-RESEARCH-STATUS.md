@@ -1,6 +1,6 @@
 # Data research and validation status
 
-**Status as of November 1, 2026.** This report records what has been verified from primary-source documentation, what has been implemented, and what remains blocked. No source microdata are bundled in the site and no local price outputs have been computed.
+**Research source review: November 1, 2026. Runtime integration update: November 4, 2026.** This report records what has been verified from primary-source documentation, what has been implemented, and what remains blocked. No source microdata are bundled in the site and no local price outputs have been computed.
 
 ## Solar production: NLR PVWatts V8
 
@@ -60,9 +60,13 @@ Census TIGERweb service: https://tigerweb.geo.census.gov/tigerweb/
 - `/api/tariffs` is an optional same-origin discovery endpoint. It requests nearby residential rate records within 10 miles of the selected Census representative place coordinate and returns only candidate metadata and source links.
 - The page never chooses a candidate automatically, never applies an OpenEI rate to the savings result and instructs users to compare against their actual bill and current official tariff.
 
-**Not yet verified**
+**Live integration verified — November 4, 2026**
 
-No OpenEI API request was executed because no API key was configured in this environment. Record freshness, exact candidate completeness, details for each utility, API rate limits and the commercial reuse terms need to be confirmed before launch.
+- The current Cloudflare Pages Preview has `OPENEI_API_KEY` configured as a server-side secret.
+- A real request through the deployed `/api/tariffs` route succeeded for the Austin, Texas smoke-test location and returned 49 nearby residential tariff candidate records.
+- The same deployment also passed Census ACS2026 autocomplete/exact lookup and NLR PVWatts V8 live requests.
+- This verifies that the Preview secret is readable by the server-side Function and that the OpenEI route can authenticate and return records. It does **not** verify that any candidate is the homeowner's utility, service territory, active tariff or applicable marginal rate. Candidate selection remains manual and no rate is automatically applied to savings.
+- Record freshness, utility-by-utility completeness, overlapping service territories, tariff effective dates, provider limits and commercial reuse/redistribution terms remain unverified. Production has no OpenEI secret configured; this is Preview-only verification.
 
 OpenEI docs: https://apps.openei.org/services/doc/rest/util_rates/
 
