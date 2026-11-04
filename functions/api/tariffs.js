@@ -5,7 +5,9 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: {
     'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': status === 200 ? 'public, max-age=300, s-maxage=86400' : 'no-store',
+    // Authorization is carried in a signed Census proof header; never cache the
+    // whole endpoint response by URL because CDN keys do not vary by that header.
+    'Cache-Control': 'private, no-store',
     'X-Content-Type-Options': 'nosniff',
   },
 });
