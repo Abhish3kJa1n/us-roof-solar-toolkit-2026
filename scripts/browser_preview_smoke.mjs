@@ -205,7 +205,9 @@ try {
     assert.equal(await page.locator('#high').inputValue(), high, system + ' high reference');
     assert.match(await page.locator('#referenceStatus').innerText(), label);
     await page.locator('#run').click();
-    assert.match(await page.locator('#result').innerText(), /HomeGuide/);
+    const resultText = await page.locator('#result').innerText();
+    assert.match(resultText, /HomeGuide/);
+    assert.match(resultText, /Metal reference category:/, system + ' result must identify the selected reference category');
   }
   results.push('AHS empty state and all 13 metal style/material references: PASS');
 
