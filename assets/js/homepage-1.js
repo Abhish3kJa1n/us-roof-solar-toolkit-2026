@@ -128,7 +128,7 @@
     const productionInput = document.getElementById('productionPerKw');
     const roofReferenceStatus = document.getElementById('roofReferenceStatus');
     const solarReferenceStatus = document.getElementById('solarReferenceStatus');
-    let roofRateBasis = 'User-entered local comparison rates.';
+    let roofRateBasis = 'No roof-price reference loaded; roof cost is not estimated.';
     let solarPriceBasis = 'User-entered quote.';
     let importRateBasis = 'User-entered marginal tariff rate.';
     let importedCityLabel = '';
@@ -203,7 +203,7 @@
       roofHighInput.value = '11';
       roofRateBasis = 'Angi broad national reference range (updated October 22, 2026); not city-specific, material-specific or a contractor quote.';
       roofReferenceStatus.hidden = false;
-      roofReferenceStatus.textContent = `${roofRateBasis} It is prefilled only as a planning fallback. Replace both rates with comparable local quotes; both values remain editable.`;
+      roofReferenceStatus.textContent = `${roofRateBasis} This is an optional national planning reference, not a local or material-specific price. Replace both rates with comparable local quotes; both values remain editable.`;
       refreshField(roofLowInput); refreshField(roofHighInput);
     }
     function loadNationalSolarReference() {
@@ -218,7 +218,8 @@
     // A national source is an explicit fallback where city-level installed-price records
     // have not passed publication gates. City-specific approved records can override it
     // through the location-data handoff; neither fallback is presented as a local quote.
-    loadNationalRoofReference();
+    // Do not silently anchor roof-cost estimates to a broad national range. Visitors
+    // must deliberately load it; otherwise the roof-cost component stays unestimated.
     loadNationalSolarReference();
 
     // An approved city/state historical LBNL distribution overrides the national
