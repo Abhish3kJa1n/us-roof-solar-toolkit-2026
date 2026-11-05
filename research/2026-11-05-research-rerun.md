@@ -17,6 +17,8 @@ This commit triggers the isolated AHS source audit, Berkeley Lab 2026 source-fil
 - The exact public ZIP member's compression method, compressed/uncompressed sizes and extraction size are logged.
 - Python 3.12's unsupported Zstandard ZIP methods (20/93) use the installed zstandard decoder. No source file or calculated price distribution is committed or uploaded as an artifact.
 - The actual CSV schema, row count, missing values, geography labels, installation-year coverage, filter-stage counts, and resulting city/state coverage must be inspected from the downloaded 2026 file.
+- Report every state's eligible unweighted count before applying the state fallback threshold. Do not infer nationwide state coverage from the small number of rows remaining after suppression.
+- Disclose that RES includes residential with unspecified subtype, while RES_SF is explicit single-family and RES_MF is explicit multifamily; do not describe RES + RES_SF as strictly single-family.
 - Commercial reuse permission remains unconfirmed. Even a successful extraction/cohort audit does not authorize publication or commercial reuse.
 
 ## Release guardrails

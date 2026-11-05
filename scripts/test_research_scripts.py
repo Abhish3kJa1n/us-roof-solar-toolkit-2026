@@ -82,6 +82,9 @@ with tempfile.TemporaryDirectory() as tmp:
     assert city_rows[0]["installation_year_min"] == "2024" and city_rows[0]["installation_year_max"] == "2025"
     assert city_rows[0]["publication_status"] == "RESEARCH_ONLY_LICENSE_AND_EXTERNAL_VALIDATION_HOLD"
     assert len(state_rows) == 1 and state_rows[0]["state"] == "TX"
+    assert "States with any strictly eligible project rows before state suppression: 1" in stdout
+    assert "TX: n=100; meets_n100=True" in stdout
+    assert "RES is residential with no single-family/multifamily subtype specified" in stdout
     assert len(coverage_rows) == 1 and coverage_rows[0]["meets_minimum_sample"] == "True"
     assert "third_party_owned_confirmed: 1" in stdout
     assert "third_party_ownership_unknown: 2" in stdout

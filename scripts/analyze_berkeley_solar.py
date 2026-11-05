@@ -267,10 +267,17 @@ def main() -> int:
     print(f"Installation-year counts: {dict(sorted(years_seen.items()))}")
     print(f"City/state groups with at least {args.min_city_sample} eligible rows: {city_written}")
     print(f"States with at least {args.min_state_sample} eligible rows: {state_written}")
+    print(f"States with any strictly eligible project rows before state suppression: {len(state_groups)}")
+    print("STATE_ELIGIBLE_SAMPLE_COUNTS_BEFORE_MINIMUM_N:")
+    for state, (values, _display, _variants) in sorted(
+        state_groups.items(), key=lambda item: (-len(item[1][0]), item[0])
+    ):
+        print(f"  {state}: n={len(values)}; meets_n{args.min_state_sample}={len(values) >= args.min_state_sample}")
     print(f"City summary: {args.output}")
     print(f"State fallback summary: {args.state_output}")
     print(f"City coverage diagnostics: {args.coverage_output}")
     print("Strict filters: PV-only; rooftop only; RES/RES_SF; 1–25 kW DC by default; 2024–2025 by default; explicitly non-TPO (reported or inferred); explicitly not self-installed; explicitly not expansion; explicitly not multi-phase.")
+    print("RES is residential with no single-family/multifamily subtype specified by the provider; RES_SF is known residential single-family; RES_MF is excluded.")
     print("Filter counts:")
     for name, count in sorted(reasons.items()):
         print(f"  {name}: {count:,}")
