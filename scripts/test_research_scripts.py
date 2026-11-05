@@ -195,7 +195,7 @@ lbnl_audit = runpy.run_path(str(ROOT / "scripts" / "audit_lbnl_source_files.py")
 assert lbnl_audit["valid_state_code"]("tx") is True
 assert lbnl_audit["valid_state_code"]("ZZ") is False
 assert lbnl_audit["valid_state_code"]("-1") is False
-assert lbnl_audit["valid_city_label("-1") is False
+assert lbnl_audit["valid_city_label"]("-1") is False
 flag_state = lbnl_audit["ownership_flag_state"]
 evidence_bucket = lbnl_audit["ownership_evidence_bucket"]
 assert flag_state("0") == "no" and flag_state("1.0") == "yes" and flag_state("-1") == "unknown"
