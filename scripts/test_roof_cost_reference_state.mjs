@@ -36,7 +36,7 @@ const labels = {
   },
   metalSystem: {
     '': 'Choose the closest published metal category',
-    corrugated: 'Corrugated / standard sheet metal',
+    corrugated: 'Corrugated sheet metal',
     standing_seam: 'Standing seam',
     metal_shingles: 'Metal shingles',
     metal_slate: 'Metal slate',
@@ -113,7 +113,7 @@ assert.ok(elements.loadReference.textContent.includes('Choose a metal category')
 
 // Every published metal-system range is loaded and the source follows the selected system.
 const systems = [
-  ['corrugated', '5', '12', 'corrugated / standard sheet metal'],
+  ['corrugated', '5', '12', 'corrugated sheet metal'],
   ['standing_seam', '9', '16', 'standing seam'],
   ['metal_shingles', '6', '14', 'metal shingles'],
   ['metal_slate', '6', '14', 'metal slate'],
@@ -152,16 +152,16 @@ assert.ok(elements.referenceStatus.textContent.includes('high endpoint remains f
 chooseMetalSystem('corrugated');
 assertRates('10', '16', 'mixed range retained after changing system');
 assert.ok(elements.referenceStatus.textContent.includes('standing seam'));
-assert.ok(elements.referenceStatus.textContent.includes('not a published range for corrugated / standard sheet metal'));
-assert.ok(elements.loadReference.textContent.includes('Reload corrugated / standard sheet metal reference'));
+assert.ok(elements.referenceStatus.textContent.includes('not a published range for corrugated sheet metal'));
+assert.ok(elements.loadReference.textContent.includes('Reload corrugated sheet metal reference'));
 calculate();
 assert.ok(elements.result.innerHTML.includes('Mixed/custom rate pair'));
 assert.ok(elements.result.innerHTML.includes('not a published range'));
 reload();
 assertRates('5', '12', 'explicit reload for newly selected system');
-assert.ok(elements.referenceStatus.textContent.includes('corrugated / standard sheet metal'));
+assert.ok(elements.referenceStatus.textContent.includes('corrugated sheet metal'));
 calculate();
-assert.ok(elements.result.innerHTML.includes('HomeGuide published installed range for corrugated / standard sheet metal'));
+assert.ok(elements.result.innerHTML.includes('HomeGuide published installed range for corrugated sheet metal'));
 console.log('PASS edited reference never silently becomes another system reference; explicit reload replaces both endpoints');
 
 // A material change clears any reference-derived values, including partially edited published ranges.
