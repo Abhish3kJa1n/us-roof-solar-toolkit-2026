@@ -59,6 +59,9 @@ with tempfile.TemporaryDirectory() as tmp:
             {**base, "expansion_system": "1"},
             {**base, "multiple_phase_system": "1"},
             {**base, "city": ""},
+            {**base, "city": "-1"},
+            {**base, "state": "-1", "city": "Not a state"},
+            {**base, "state": "ZZ", "city": "Not a state"},
         ]
         w.writerows(records + cases)
     output = tmp / "berkeley-city-out.csv"
@@ -83,11 +86,11 @@ with tempfile.TemporaryDirectory() as tmp:
     assert city_rows[0]["publication_status"] == "RESEARCH_ONLY_LICENSE_AND_EXTERNAL_VALIDATION_HOLD"
     assert len(state_rows) == 1 and state_rows[0]["state"] == "TX"
     assert "States with any strictly eligible project rows before state suppression: 1" in stdout
-    assert "TX: n=101; meets_n100=True" in stdout, "State coverage includes the no-city row; city coverage does not"
+    assert "TX: n=102; meets_n100=True" in stdout, "State coverage includes blank and -1 city rows; city coverage does not"
     assert "RES is residential with no single-family/multifamily subtype specified" in stdout
     assert "CITY_SAMPLE_COVERAGE_BY_THRESHOLD: {50: 1, 100: 1, 200: 0, 500: 0}" in stdout
     assert "STATE_SAMPLE_COVERAGE_BY_THRESHOLD: {100: 1, 250: 0, 500: 0, 1000: 0}" in stdout
-    assert "Residential customer_segment code counts: {'RES_SF': 110}" in stdout
+    assert "Residential customer_segment code counts: {'RES_SF': 113}" in stdout
     assert len(coverage_rows) == 1 and coverage_rows[0]["meets_minimum_sample"] == "True"
     assert "third_party_owned_confirmed: 1" in stdout
     assert "third_party_ownership_unknown: 2" in stdout
@@ -189,6 +192,10 @@ with tempfile.TemporaryDirectory() as tmp:
 # The two LBNL TPO fields represent independent yes/no judgements. Unknown
 # must not be treated as affirmative evidence or as an explicit negative.
 lbnl_audit = runpy.run_path(str(ROOT / "scripts" / "audit_lbnl_source_files.py"))
+assert lbnl_audit["valid_state_code"]("tx") is True
+assert lbnl_audit["valid_state_code"]("ZZ") is False
+assert lbnl_audit["valid_state_code"]("-1") is False
+assert lbnl_audit["valid_city_label("-1") is False
 flag_state = lbnl_audit["ownership_flag_state"]
 evidence_bucket = lbnl_audit["ownership_evidence_bucket"]
 assert flag_state("0") == "no" and flag_state("1.0") == "yes" and flag_state("-1") == "unknown"

@@ -25,6 +25,15 @@ from pathlib import Path
 GUIDE_URL = "https://eta-publications.lbl.gov/sites/default/files/2026-08/lbnl_publicdatafile_userguide_8.07.26.pdf"
 CSV_URL = "https://bit.ly/trackingthesun2026"
 CHUNK = 1024 * 1024
+VALID_US_STATE_CODES = {
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
+    "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME",
+    "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
+    "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
+    "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI",
+    "WY", "AS", "GU", "MP", "PR", "VI",
+}
+MISSING_GEO = {"", "-1", "-1.0", "na", "n/a", "null", "none", "unknown"}
 NEEDED = {
     "PV_system_size_DC", "total_installed_price", "customer_segment",
     "ground_mounted", "technology_type", "state", "city", "installation_date",
@@ -224,6 +233,15 @@ def value(raw: str | None) -> str:
     return (raw or "").strip()
 
 
+def valid_state_code(raw: str | None) -> bool:
+    return value(raw).strip().upper() in VALID_US_STATE_CODES
+
+
+def valid_city_label(raw: str | None) -> bool:
+    token = value(raw).strip()
+    return bool(token) and token.lower() not in MISSING_GEO
+
+
 def ownership_flag_state(raw: str | None) -> str:
     token = value(raw).lower()
     if token in {"0", "0.0", "false", "no", "n"}:
@@ -321,13 +339,12 @@ def main() -> int:
                     segment_counts[segment or "<blank>"] += 1
                     tech_counts[technology or "<blank>"] += 1
                     ground_counts[ground or "<blank>"] += 1
-                    if len(state) == 2:
-                        year_match = re.match(r"^(19\d{2}|20\d{2})", date)
-                        year = year_match.group(1) if year_match else "<missing>"
-                        year_counts[year] += 1
-                    else:
-                        year = "<missing-state>"
-                    if len(state) == 2 and city:
+                    year_match = re.match(r"^(19\d{2}|20\d{2})", date)
+                    year = year_match.group(1) if year_match else "<missing>"
+                    year_counts[year] += 1
+                    state_is_valid = valid_state_code(state)
+                    city_is_valid = valid_city_label(city)
+                    if state_is_valid and city_is_valid:
                         city_state_counts[(state, city)] += 1
                     for field in NEEDED:
                         if not value(row.get(field)) or value(row.get(field)) in {"-1", "-1.0"}:
@@ -363,7 +380,7 @@ def main() -> int:
                         and year in {"2024", "2025"}
                         and is_pv
                         and is_roof
-                        and len(state) == 2
+                        and state_is_valid
                         and 1.0 <= dc_kw <= 25.0
                         and installed_price > 0
                         and ownership_flag_state(row.get("self_installed")) == "no"
@@ -384,7 +401,7 @@ def main() -> int:
                         }.get(bucket)
                         if policy:
                             ownership_state_counts[policy][state] += 1
-                            if city:
+                            if city_is_valid:
                                 ownership_city_counts[policy][(state, city.casefold().strip())] += 1
 
                     if tpo not in {"0", "0.0", "false", "no", "n"} or tpoi not in {"0", "0.0", "false", "no", "n"}:

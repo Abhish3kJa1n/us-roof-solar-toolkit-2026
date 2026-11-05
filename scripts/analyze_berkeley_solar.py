@@ -32,7 +32,15 @@ REQUIRED = {
 }
 FALSE_VALUES = {"0", "0.0", "false", "no", "n"}
 TRUE_VALUES = {"1", "1.0", "true", "yes", "y"}
-MISSING = {"", "-1", "-1.0", "na", "n/a", "null", "none"}
+MISSING = {"", "-1", "-1.0", "na", "n/a", "null", "none", "unknown"}
+VALID_US_STATE_CODES = {
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
+    "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME",
+    "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
+    "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
+    "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI",
+    "WY", "AS", "GU", "MP", "PR", "VI",
+}
 
 
 def num(raw: str | None) -> float | None:
@@ -221,7 +229,7 @@ def main() -> int:
                 reasons["missing_or_nonpositive_installed_price"] += 1
                 continue
             state = (row.get("state") or "").strip().upper()
-            if not re.fullmatch(r"[A-Z]{2}", state):
+            if state not in VALID_US_STATE_CODES:
                 reasons["missing_or_invalid_state"] += 1
                 continue
             price_per_watt = price / (kw * 1000.0)
@@ -234,7 +242,7 @@ def main() -> int:
             state_groups[state][0].append(price_per_watt)
 
             city = (row.get("city") or "").strip()
-            if city:
+            if city and city.lower() not in MISSING:
                 key = (state, city_key(city))
                 if key not in city_groups:
                     city_groups[key] = (array("d"), city, set())
