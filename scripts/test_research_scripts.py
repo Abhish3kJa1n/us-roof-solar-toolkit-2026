@@ -85,6 +85,9 @@ with tempfile.TemporaryDirectory() as tmp:
     assert "States with any strictly eligible project rows before state suppression: 1" in stdout
     assert "TX: n=100; meets_n100=True" in stdout
     assert "RES is residential with no single-family/multifamily subtype specified" in stdout
+    assert "CITY_SAMPLE_COVERAGE_BY_THRESHOLD: {50: 1, 100: 1, 200: 0, 500: 0}" in stdout
+    assert "STATE_SAMPLE_COVERAGE_BY_THRESHOLD: {100: 1, 250: 0, 500: 0, 1000: 0}" in stdout
+    assert "Residential customer_segment code counts: {'RES_SF': 110}" in stdout
     assert len(coverage_rows) == 1 and coverage_rows[0]["meets_minimum_sample"] == "True"
     assert "third_party_owned_confirmed: 1" in stdout
     assert "third_party_ownership_unknown: 2" in stdout
