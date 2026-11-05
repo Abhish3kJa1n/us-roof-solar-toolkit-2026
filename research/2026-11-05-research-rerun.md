@@ -10,7 +10,7 @@ This commit triggers the isolated AHS source audit, Berkeley Lab 2026 source-fil
 - Output reports project records separately from housing units, plus positive-cost project and housing-unit counts.
 - For contractor-oriented screening, only JOBDIY='2' positive-cost projects are relevant. DIY and all-project distributions remain separate.
 - The analyzer calculates mean, median, p25 and p75 CV values from the 160 replicate weights using Census's Fay-BRR 4/160 variance formula. CV below 30% is only a screen, not independent approval.
-- The independent 2023 Metro sample's 59.2% unit nonresponse rate remains a material nonsampling-risk blocker. Do not assume nonresponse weighting removes bias.
+- Census Table 2.2 reports the five Next-10 weighted response rates: Cincinnati 62.9%, Cleveland 51.9%, Denver 59.6%, Milwaukee 61.4% and New Orleans 61.0%. The overview's separate 59.2% unit nonresponse figure is survey-wide, not an area rate. Keep them distinct; do not assume nonresponse weighting removes bias.
 
 ## Berkeley Lab 2026 source handling
 

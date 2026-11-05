@@ -16,13 +16,14 @@
     },
     "ahs_metro_roofing_job_cost": {
       "status": "withheld",
-      "reason": "The National PUF supports the integrated National/Top-15 analysis. The separate 2023 Metropolitan PUF contains the five Next-10 areas actually sampled in 2023; its OMB13CBSA household frequencies match the Census Sample Design Table 2.2 interview counts. The PUFs must be analyzed separately with their own household weights. The independent Metro sample's 59.2% unit nonresponse rate is below the Census Bureau's 60% serious-quality-risk threshold, and Census warns weighting may not fully remove nonresponse bias. No metro records are approved for publication.",
+      "reason": "The National PUF supports integrated National/Top-15 analysis. The separate 2023 Metropolitan PUF's five Next-10 OMB13CBSA frequencies match Census Table 2.2 interviewed-unit counts. Table 2.2 reports area-specific weighted response rates of 51.9%–62.9% for these five areas. The report's separate 59.2% unit nonresponse figure is survey-wide and is not substituted for an area-specific rate. Nonresponse adjustment may not fully remove bias; no AHS records are approved for publication.",
       "next_gates": [
         "Complete and review the separate National PUF Top-15 and Metropolitan PUF five-area outputs; never pool records or replicate weights from the two PUFs.",
         "For contractor-oriented references, use only positive-cost JOBDIY=2 professional projects. Preserve DIY and all-project distributions as separate research outputs.",
         "Report project counts and distinct contributing housing units separately; sample_n must represent positive-cost housing units, not project rows.",
         "Require mean, median, p25 and p75 Fay-BRR CV values below 30%, plus manual precision and suppression approval. The 30% screen mirrors the AHS Table Creator suppression rule; a PUF pass is not equivalent to Table Creator approval.",
-        "Require manual review of the 2023 response-rate and nonsampling-bias risk, including the 59.2% unit nonresponse rate for the independent Metro sample.",
+        "Record the area-specific 2023 Census Table 2.2 weighted response rate on each Next-5 Metropolitan PUF row: Cincinnati 62.9%, Cleveland 51.9%, Denver 59.6%, Milwaukee 61.4%, New Orleans 61.0%.",
+        "Keep the survey-wide 59.2% unit nonresponse figure distinct from area-specific response rates and document the possible nonresponse-bias impact.",
         "Validate selected-city-to-metro assignment against the matching February 2013 OMB CBSA geography. Never label a metro-wide distribution as an individual-city price.",
         "Publish only metro-level nominal-dollar whole-project distributions with source PUF, survey period, positive-cost project and housing-unit counts, scope, imputation and response limitations. Never convert AHS whole-project spending to dollars per square foot."
       ]
