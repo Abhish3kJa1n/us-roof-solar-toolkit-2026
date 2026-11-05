@@ -225,6 +225,8 @@ document.getElementById('run').addEventListener('click',()=>{
 });
 document.getElementById('reset').addEventListener('click',()=>{
   areaEl.value='';
+  lowEl.value='';
+  highEl.value='';
   materialEl.value='';
   metalSystemEl.value='';
   previousMaterial='';
