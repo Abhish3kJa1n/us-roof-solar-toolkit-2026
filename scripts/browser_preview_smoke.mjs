@@ -212,7 +212,7 @@ try {
   await page.locator('#run').click();
   const mixedResult = await page.locator('#result').innerText();
   assert.match(mixedResult, /Mixed\/custom rate pair/i);
-  assert.match(mixedResult, /Original reference: HomeGuide published installed range for standing seam/i);
+  assert.match(mixedResult, /Original source: HomeGuide published installed range for standing seam/i);
   assert.match(mixedResult, /not a published range for corrugated sheet metal/i);
   await page.locator('#loadReference').click();
   assert.equal(await page.locator('#low').inputValue(), '5');
