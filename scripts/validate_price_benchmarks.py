@@ -23,6 +23,8 @@ ROOF_APPROVALS = (
     "job_type_code_verified",
     "census_table_c16_reconciled",
     "variance_method_validated",
+    "statistical_precision_reviewed",
+    "nonsampling_risk_reviewed",
     "metro_geography_verified",
     "scope_and_imputation_disclosed",
 )
@@ -95,7 +97,31 @@ def validate_record(row: object) -> list[str]:
         if row.get("metric") != "nominal_usd_whole_project":
             errors.append("AHS roof metric must be nominal_usd_whole_project; no $/sq-ft conversion")
         if n < 30:
-            errors.append("AHS metro sample_n must be at least 30 unweighted projects")
+            errors.append("AHS sample_n must be at least 30 distinct owner-occupied housing units with positive-cost professional roofing projects; this is an internal minimum floor, not proof of precision")
+        if row.get("jobdiy_scope") != "professional":
+            errors.append("AHS contractor-oriented roof reference must use JOBDIY='2' professional projects only; do not mix DIY and professional jobs")
+        if row.get("source_puf") not in {"national", "metropolitan"}:
+            errors.append("AHS roof row must identify source_puf as national or metropolitan")
+        try:
+            project_n = row["project_n"]
+            positive_project_n = row["positive_cost_project_n"]
+            positive_unit_n = row["positive_cost_housing_units_n"]
+            if any(isinstance(x, bool) or not isinstance(x, int) or x <= 0 for x in (project_n, positive_project_n, positive_unit_n)):
+                raise ValueError
+            if positive_project_n > project_n or positive_unit_n != n:
+                raise ValueError
+        except (KeyError, TypeError, ValueError):
+            errors.append("AHS row must report consistent positive integer project_n, positive_cost_project_n and positive_cost_housing_units_n; sample_n must equal positive-cost housing units")
+        try:
+            cvs = {metric: float(row[f"{metric}_cv"]) for metric in ("mean", "median", "p25", "p75")}
+            if any(not (0 <= cv < 0.30) for cv in cvs.values()):
+                errors.append("AHS mean/median/p25/p75 relative standard errors must each be below the 30% Table Creator suppression threshold")
+        except (KeyError, TypeError, ValueError):
+            errors.append("AHS row requires finite mean_cv, median_cv, p25_cv and p75_cv from all 160 Fay-BRR replicate weights")
+        if len(str(row.get("precision_review_note", "")).strip()) < 80:
+            errors.append("AHS row requires a substantive metric-specific precision and suppression review note")
+        if len(str(row.get("nonsampling_risk_note", "")).strip()) < 80:
+            errors.append("AHS row requires a substantive 2023 unit-nonresponse and nonsampling-risk review note")
         code = str(row.get("metro_omb13cbsa", ""))
         if len(code) != 5 or not code.isdigit():
             errors.append("AHS metro row requires the five-digit 2013 OMB CBSA code")
