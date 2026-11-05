@@ -155,7 +155,10 @@ try {
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('roof-cost');
   await accessibilityScan('roof-cost');
-  await page.locator('#roofMetroBenchmarkResult').waitFor({ state: 'visible' });
+  await page.waitForFunction(() => {
+    const node = document.querySelector('#roofMetroBenchmarkResult');
+    return Boolean(node && /national point estimates reproduce the Census Table C-16/i.test(node.innerText));
+  }, undefined, { timeout: 15000 });
   assert.equal(await page.locator('#roofMetroBenchmarkField').isVisible(), false, 'empty AHS registry must hide the unavailable dropdown field');
   const ahsStatus = await page.locator('#roofMetroBenchmarkResult').innerText();
   assert.match(ahsStatus, /No AHS metro roofing distribution is currently approved/i);
@@ -207,7 +210,10 @@ try {
   assert.match(mixedStatus, /not a published range for corrugated sheet metal/i);
   assert.match(await page.locator('#loadReference').innerText(), /Reload corrugated sheet metal reference/i);
   await page.locator('#run').click();
-  assert.match(await page.locator('#result').innerText(), /Mixed\/custom rate pair/i);
+  const mixedResult = await page.locator('#result').innerText();
+  assert.match(mixedResult, /Mixed\/custom rate pair/i);
+  assert.match(mixedResult, /Original reference: HomeGuide published installed range for standing seam/i);
+  assert.match(mixedResult, /not a published range for corrugated sheet metal/i);
   await page.locator('#loadReference').click();
   assert.equal(await page.locator('#low').inputValue(), '5');
   assert.equal(await page.locator('#high').inputValue(), '12');
