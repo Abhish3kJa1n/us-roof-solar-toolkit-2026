@@ -250,7 +250,7 @@ try {
   await page.locator('#metalSystem').selectOption('metal_shingles');
   assert.equal(await page.locator('#low').inputValue(), '5.5');
   assert.equal(await page.locator('#high').inputValue(), '8.5');
-  assert.match(await page.locator('#referenceStatus').innerText(), /not a published reference for the new system/i);
+  assert.match(await page.locator('#referenceStatus').innerText(), /not a published reference for the new category/i);
   await page.locator('#loadReference').click();
   assert.equal(await page.locator('#low').inputValue(), '6');
   assert.equal(await page.locator('#high').inputValue(), '14');
