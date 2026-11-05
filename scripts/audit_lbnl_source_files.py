@@ -103,7 +103,7 @@ def inspect_guide(path: Path) -> str:
     # the public CSV and all price outputs remain in the temporary directory.
     try:
         import fitz
-        render_dir = Path(os.environ.get("GITHUB_WORKSPACE", ".")) / ".lbnl-guide-renders"
+        render_dir = Path(os.environ.get("GITHUB_WORKSPACE", ".")) / "lbnl-guide-renders"
         render_dir.mkdir(parents=True, exist_ok=True)
         visual_doc = fitz.open(str(path))
         for page_index in range(min(3, len(visual_doc))):
@@ -118,6 +118,46 @@ def inspect_guide(path: Path) -> str:
     return text
 
 
+def open_zip_member(archive: zipfile.ZipFile, name: str):
+    """Open a ZIP member, adding Zstandard support for compression methods 20/93.
+
+    Python 3.12's zipfile does not support ZIP Zstandard. The workaround is
+    scoped to constructing the ZipExtFile reader and immediately restores the
+    module's original private handlers. The decoded bytes are then streamed by
+    the standard ZipExtFile implementation and checked against the ZIP size.
+    """
+    info = archive.getinfo(name)
+    if info.compress_type not in {20, 93}:
+        return archive.open(name)
+    try:
+        import zstandard
+    except ImportError as exc:
+        raise RuntimeError(
+            f"ZIP member {name!r} uses unsupported Zstandard method {info.compress_type}; "
+            "install the zstandard package before extraction."
+        ) from exc
+    original_check = zipfile._check_compression
+    original_decompressor = zipfile._get_decompressor
+
+    def check_compression(method: int) -> None:
+        if method in {20, 93}:
+            return
+        original_check(method)
+
+    def get_decompressor(method: int):
+        if method in {20, 93}:
+            return zstandard.ZstdDecompressor().decompressobj()
+        return original_decompressor(method)
+
+    zipfile._check_compression = check_compression
+    zipfile._get_decompressor = get_decompressor
+    try:
+        return archive.open(name)
+    finally:
+        zipfile._check_compression = original_check
+        zipfile._get_decompressor = original_decompressor
+
+
 def locate_data_file(path: Path, root: Path) -> Path:
     if zipfile.is_zipfile(path):
         with zipfile.ZipFile(path) as archive:
@@ -125,13 +165,25 @@ def locate_data_file(path: Path, root: Path) -> Path:
             if len(candidates) != 1:
                 print(f"ZIP entries: {candidates[:30]}")
                 raise RuntimeError(f"Expected exactly one CSV in archive, found {len(candidates)}")
+            info = archive.getinfo(candidates[0])
+            print(
+                f"CSV_ARCHIVE_MEMBER: {candidates[0]}; compression_method={info.compress_type}; "
+                f"compressed_bytes={info.compress_size:,}; uncompressed_bytes={info.file_size:,}"
+            )
+            if info.flag_bits & 0x1:
+                raise RuntimeError("The Berkeley Lab public ZIP member is encrypted; refusing unsupported extraction.")
             extracted = root / Path(candidates[0]).name
-            with archive.open(candidates[0]) as source, extracted.open("wb") as target:
+            with open_zip_member(archive, candidates[0]) as source, extracted.open("wb") as target:
                 while True:
                     block = source.read(CHUNK)
                     if not block:
                         break
                     target.write(block)
+            actual_size = extracted.stat().st_size
+            if actual_size != info.file_size:
+                raise RuntimeError(
+                    f"ZIP extraction size mismatch: expected {info.file_size:,}, got {actual_size:,} bytes."
+                )
             print(f"CSV_ARCHIVE_ENTRY: {candidates[0]}")
             return extracted
     with path.open("rb") as probe:
@@ -226,8 +278,8 @@ def main() -> int:
                         year_counts[year] += 1
                     else:
                         year = "<missing-state>"
-                        if city:
-                            city_state_counts[(state, city)] += 1
+                    if len(state) == 2 and city:
+                        city_state_counts[(state, city)] += 1
                     for field in NEEDED:
                         if not value(row.get(field)) or value(row.get(field)) in {"-1", "-1.0"}:
                             missing_counts[field] += 1
@@ -260,7 +312,7 @@ def main() -> int:
                         filter_counts["host_owned_non_self_non_expansion_single_phase"] += 1
 
         print(f"PUBLIC_CSV_ROWS: {row_count:,}")
-        print(f"UNIQUE_CITY_STATE_LABELS: {len(city_state_counts):,}")
+        print(f"UNIQUE_VALID_STATE_CITY_LABELS: {len(city_state_counts):,}")
         print("INSTALLATION_YEARS (top 30): " + str(year_counts.most_common(30)))
         print("CUSTOMER_SEGMENT: " + str(segment_counts.most_common(30)))
         print("TECHNOLOGY_TYPE: " + str(tech_counts.most_common(20)))
