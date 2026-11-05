@@ -5,7 +5,7 @@ import vm from 'node:vm';
 class FakeNode {
   constructor(tag = 'div', value = '') {
     this.tagName = tag.toUpperCase(); this.value = value; this.textContent = ''; this.className = '';
-    this.children = []; this.listeners = {}; this.disabled = false; this.href = ''; this.target = ''; this.rel = '';
+    this.children = []; this.listeners = {}; this.disabled = false; this.hidden = false; this.href = ''; this.target = ''; this.rel = '';
   }
   replaceChildren(...nodes) { this.children = [...nodes]; }
   append(...nodes) { this.children.push(...nodes); }
@@ -38,7 +38,7 @@ const validRoof = {
 };
 
 async function boot(registry) {
-  const ids = ['solarInstalledBenchmark', 'roofMetroBenchmark', 'roofMetroBenchmarkResult'];
+  const ids = ['solarInstalledBenchmark', 'roofMetroBenchmark', 'roofMetroBenchmarkField', 'roofMetroBenchmarkResult'];
   const nodes = Object.fromEntries(ids.map((id) => [id, new FakeNode(id === 'roofMetroBenchmark' ? 'select' : 'div')]));
   const listeners = {};
   const calls = [];
@@ -64,14 +64,16 @@ async function boot(registry) {
 // Empty registry: no estimates, no selectable metro, and a quote-based fallback.
 const empty = await boot({ schema_version: 1, records: [], source_status: {} });
 assert.equal(empty.nodes.roofMetroBenchmark.disabled, true);
-assert.match(flatten(empty.nodes.roofMetroBenchmarkResult), /No metro roofing distribution is approved/);
+assert.equal(empty.nodes.roofMetroBenchmarkField.hidden, true, 'empty AHS registry must hide the unavailable dropdown field');
+assert.match(flatten(empty.nodes.roofMetroBenchmarkResult), /No AHS metro roofing distribution is currently approved/);
+assert.match(flatten(empty.nodes.roofMetroBenchmarkResult), /national point estimates reproduce the Census Table C-16/);
 await empty.listeners['roofsolar:place-selected']({ detail: { city: 'Austin', state: 'TX' } });
 await wait();
 assert.match(flatten(empty.nodes.solarInstalledBenchmark), /No approved installed-price distribution/);
 assert.match(flatten(empty.nodes.solarInstalledBenchmark), /written cash quote/);
 assert.match(empty.calls[0].url, /\/data\/price-benchmarks\.json$/);
 assert.equal(empty.calls[0].options.credentials, 'omit');
-console.log('PASS empty registry withholds all local price numbers and preserves quote-based fallback.');
+console.log('PASS empty registry hides unavailable AHS selector, explains remaining metro gates, withholds local price numbers and preserves quote-based fallback.');
 
 // Approved synthetic rows: the UI renders only correctly typed price metrics and stated sample metadata.
 const populated = await boot({ schema_version: 1, records: [validSolar, validRoof], source_status: { solar_installed_price: { status: 'published' }, ahs_metro_roofing_job_cost: { status: 'published' } } });
@@ -80,11 +82,12 @@ await wait();
 assert.match(flatten(populated.nodes.solarInstalledBenchmark), /\$2\.45–\$3\.40 per W DC/);
 assert.match(flatten(populated.nodes.solarInstalledBenchmark), /150 projects/);
 assert.equal(populated.nodes.roofMetroBenchmark.disabled, false);
+assert.equal(populated.nodes.roofMetroBenchmarkField.hidden, false, 'approved AHS rows must reveal the selector field');
 populated.nodes.roofMetroBenchmark.value = '0';
 await populated.nodes.roofMetroBenchmark.emit('change');
 assert.match(flatten(populated.nodes.roofMetroBenchmarkResult), /\$6,100–\$16,900/);
 assert.match(flatten(populated.nodes.roofMetroBenchmarkResult), /not a verified contractor invoice or a \$\/sq-ft rate/);
-console.log('PASS approved synthetic city-solar and metro-AHS rows render with explicit units and limitations.');
+console.log('PASS approved synthetic city-solar and metro-AHS rows reveal the selector and render with explicit units and limitations.');
 
 // Editing a location clears an old price reference immediately.
 await populated.listeners['roofsolar:place-selected']({ detail: null });
