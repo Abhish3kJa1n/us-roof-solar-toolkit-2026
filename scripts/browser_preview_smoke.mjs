@@ -160,7 +160,8 @@ try {
   await page.locator('#estimate').click();
   await page.waitForFunction(() => {
     const node = document.querySelector('#result');
-    return node && !/Waiting for location and inputs|Model needs updating/.test(node.innerText);
+    const text = node?.innerText || '';
+    return Boolean(text) && !/Waiting for location and inputs|Model needs updating|Calculating(?:…|\.\.\.)?/i.test(text);
   }, undefined, { timeout: 60000 });
   const pvText = await page.locator('#result').innerText();
   assert.match(pvText, /kWh/i, 'PVWatts result missing kWh output: ' + pvText);
