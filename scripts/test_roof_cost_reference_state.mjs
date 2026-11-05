@@ -159,7 +159,7 @@ assert.ok(elements.result.innerHTML.includes('Mixed/custom rate pair'));
 assert.ok(elements.result.innerHTML.includes('not a published range'));
 reload();
 assertRates('5', '12', 'explicit reload for newly selected system');
-assert.ok(elements.referenceStatus.textContent.includes('corrugated sheet metal'));
+assert.ok(elements.referenceStatus.textContent.includes('corrugated / standard sheet metal'));
 calculate();
 assert.ok(elements.result.innerHTML.includes('HomeGuide published installed range for corrugated / standard sheet metal'));
 console.log('PASS edited reference never silently becomes another system reference; explicit reload replaces both endpoints');
