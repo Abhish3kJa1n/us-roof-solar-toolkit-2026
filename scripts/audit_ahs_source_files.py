@@ -41,6 +41,17 @@ EXPECTED_2023_METRO_PUF_HOUSEHOLD_COUNTS = {
     "35380": 1788,  # New Orleans, LA
 }
 
+# Official 2023 AHS Independent Metro Sample Table 2.2 weighted response rates.
+# These area-specific rates are distinct from the survey-wide 59.2% unit
+# nonresponse figure in the report overview.
+EXPECTED_2023_METRO_WEIGHTED_RESPONSE_RATES = {
+    "17140": 62.9,  # Cincinnati, OH
+    "17460": 51.9,  # Cleveland, OH
+    "19740": 59.6,  # Denver, CO
+    "33340": 61.4,  # Milwaukee, WI
+    "35380": 61.0,  # New Orleans, LA
+}
+
 
 def download(name: str, url: str, target: Path) -> tuple[int, str]:
     request = urllib.request.Request(
@@ -431,9 +442,9 @@ def main() -> int:
             if row["group"] in {"all_roofing_projects", "household_did_not_do_most_work_JOBDIY_2"}:
                 print(
                     f"  {row['metro_omb13cbsa']} {row['metro_name']} [{row['jobdiy_scope']}]: "
-                    f"project_n={row['unweighted_n']}; respondent_households={row['unweighted_households_n']}; "
+                    f"project_n={row['unweighted_n']}; respondent_households={row['unweighted_housing_units_n']}; "
                     f"positive_cost_project_n={row['positive_cost_unweighted_n']}; "
-                    f"positive_cost_households={row['positive_cost_households_n']}; "
+                    f"positive_cost_households={row['positive_cost_housing_units_n']}; "
                     f"median={row['median_nominal_survey_usd'] or 'not estimable'}; "
                     f"median_CV={row['median_cv'] or 'not estimable'}; "
                     f"precision={row['precision_screen_status']}"
@@ -467,19 +478,25 @@ def main() -> int:
             for group in ("all_roofing_projects", "household_did_not_do_most_work_JOBDIY_2", "household_did_most_work_JOBDIY_1"):
                 row = next((item for item in next5_rows if item["metro_omb13cbsa"] == code and item["group"] == group), None)
                 scope = "professional" if group.endswith("JOBDIY_2") else "diy" if group.endswith("JOBDIY_1") else "professional_and_diy"
+                response_rate = EXPECTED_2023_METRO_WEIGHTED_RESPONSE_RATES[code]
                 if row is None:
-                    print(f"  {code} {scope}: suppressed below the research distinct-household floor; no benchmark approved.")
+                    print(
+                        f"  {code} {scope}: suppressed below the minimum distinct positive-cost housing-unit floor; "
+                        f"Census interviewed_units={expected_households}; weighted_response_rate_pct={response_rate:.1f}; "
+                        "no benchmark approved."
+                    )
                     continue
                 print(
                     f"  {code} {row['metro_name']} [{scope}]: project_n={row['unweighted_n']}; "
-                    f"respondent_households={row['unweighted_households_n']}; "
+                    f"respondent_housing_units={row['unweighted_housing_units_n']}; weighted_response_rate_pct={response_rate:.1f}; "
                     f"positive_cost_project_n={row['positive_cost_unweighted_n']}; "
-                    f"positive_cost_households={row['positive_cost_households_n']}; "
+                    f"positive_cost_households={row['positive_cost_housing_units_n']}; "
                     f"weighted_projects={row['weighted_project_count']}; "
                     f"median={row['median_nominal_survey_usd'] or 'not estimable'}; "
                     f"median_CV={row['median_cv'] or 'not estimable'}; "
                     f"precision={row['precision_screen_status']}"
                 )
+        print("NONRESPONSE NOTE: Table 2.2 reports area-specific weighted response rates for the five Next-10 CBSAs. The separate 59.2% unit nonresponse figure in the overview is survey-wide; it is not an area-specific rate.")
         print("\nNational PUF Top-15 analysis and separate Metropolitan PUF five-area analysis completed. All outputs were temporary; no raw records or price aggregates were committed or uploaded.")
     return 0
 

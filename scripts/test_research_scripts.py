@@ -209,7 +209,55 @@ for filename, geography_field, require_omb in [
         assert observed_geo["OMB13CBSA"] == {"12060": 1}
     source_zip.unlink()
 
+# A cost distribution's minimum-n screen must count distinct housing units with
+# positive costs, not every unit that reported a roofing project. 31 units
+# report roofing work here but only 29 contribute a positive JOBCOST.
+with tempfile.TemporaryDirectory() as low_tmp_name:
+    low_tmp = Path(low_tmp_name)
+    low_project = low_tmp / "ahs-low-positive-cost-project.csv"
+    low_household = low_tmp / "ahs-low-positive-cost-household.csv"
+    with low_project.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=project_fields)
+        writer.writeheader()
+        for i in range(31):
+            writer.writerow({
+                "CONTROL": f"low{i:03d}", "JOBTYPE": "16",
+                "JOBCOST": "0" if i >= 29 else str(9000 + i * 100),
+                "JOBDIY": "2",
+            })
+    with low_household.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["CONTROL", "TENURE", "INTSTATUS", "WEIGHT", "OMB13CBSA", *replicate_fields])
+        writer.writeheader()
+        for i in range(31):
+            writer.writerow({
+                "CONTROL": f"low{i:03d}", "TENURE": "1", "INTSTATUS": "1",
+                "WEIGHT": "1", "OMB13CBSA": "12060",
+                **{field: "1" for field in replicate_fields},
+            })
+    low_output = low_tmp / "ahs-low-positive-cost-out.csv"
+    low_metro_output = low_tmp / "ahs-low-positive-cost-metro.csv"
+    run([
+        ROOT / "scripts/analyze_ahs_roof.py",
+        "--project-input", low_project, "--household-input", low_household,
+        "--output", low_output, "--metro-output", low_metro_output,
+        "--minimum-unweighted-n", "30", "--minimum-metro-unweighted-n", "30",
+        "--roof-job-type-code", "16", "--sample-source", "Synthetic low-positive-cost-n fixture",
+    ])
+    with low_output.open(encoding="utf-8") as f:
+        assert list(csv.DictReader(f)) == [], "29 positive-cost housing units must fail the overall 30-unit floor"
+    with low_metro_output.open(encoding="utf-8") as f:
+        assert list(csv.DictReader(f)) == [], "29 positive-cost housing units must fail the metro 30-unit floor"
+
+# Independently verify the Census Fay-BRR multiplier: 4/160 times the sum of
+# squared replicate/full-sample estimate deviations.
 analyzer = runpy.run_path(str(ROOT / "scripts" / "analyze_ahs_roof.py"))
+weighted_mean_with_brr = analyzer["weighted_mean_with_brr"]
+rep_a = tuple([0.5] * 80 + [1.5] * 80)
+rep_b = tuple([1.5] * 80 + [0.5] * 80)
+brr = weighted_mean_with_brr([(100.0, 1.0, rep_a), (200.0, 1.0, rep_b)])
+assert brr is not None
+assert abs(brr[0] - 150.0) < 1e-9 and abs(brr[1] - 50.0) < 1e-9, "Fay-BRR must use the 4/160 variance multiplier"
 metro_names = analyzer["METRO_NAMES"]
 assert {code for code in ("17140", "17460", "19740", "33340", "35380") if code in metro_names} == {"17140", "17460", "19740", "33340", "35380"}
+assert audit["EXPECTED_2023_METRO_WEIGHTED_RESPONSE_RATES"] == {"17140": 62.9, "17460": 51.9, "19740": 59.6, "33340": 61.4, "35380": 61.0}
 print("PASS: Berkeley/AHS research scripts on synthetic fixtures, including separate PUF source provenance, distinct-household counts and replicate CV outputs.")

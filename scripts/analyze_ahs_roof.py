@@ -313,7 +313,8 @@ def main() -> int:
             positive_records = groups[group]
             nonnegative_records = total_groups[group]
             household_n = len(count_households[group])
-            if household_n < args.minimum_unweighted_n:
+            positive_household_n = len(positive_cost_households[group])
+            if positive_household_n < args.minimum_unweighted_n:
                 continue
             total_result = weighted_sum_with_brr(nonnegative_records)
             out: dict[str, object] = {
@@ -363,7 +364,7 @@ def main() -> int:
                 positive_records = metro_groups.get(metro_code, {}).get(group, [])
                 positive_household_n = len(metro_positive_cost_households.get(metro_code, {}).get(group, set()))
                 nonnegative_records = metro_total_groups.get(metro_code, {}).get(group, [])
-                if household_n < args.minimum_metro_unweighted_n:
+                if positive_household_n < args.minimum_metro_unweighted_n:
                     continue
                 total_result = weighted_sum_with_brr(nonnegative_records)
                 out: dict[str, object] = {
@@ -421,7 +422,8 @@ def main() -> int:
     print("- Every PUF run is source-specific. The National PUF represents national/Top-15 use; the separate Metropolitan PUF is used for the five Next-10 metro areas sampled in 2023. Their records and household weights are never pooled.")
     print("- The 2023 independent Metro sample had a 59.2% unit nonresponse rate. Census warns that response rates below 60% may create serious nonsampling quality issues and that nonresponse weighting may not fully remove the risk.")
     print("- AHS costs are nominal whole-project survey expenditures, not verified contractor invoices or consistent full tear-off scopes. Roof area, material, pitch and $/sq-ft denominators are not provided.")
-    print("- Metro groups below the configured distinct-household floor are suppressed; the floor is only an exploratory screen, not evidence of representativeness or precision.")
+    print("- Overall and metro cost distributions are screened using distinct housing units with positive JOBCOST; raw project counts and all-project housing-unit counts remain separately reported.")
+    print("- The configured distinct positive-cost housing-unit floor is an internal screen, not a Census disclosure rule or proof of statistical precision.")
     print("- No result is approved for public release. Metric-specific CVs, source-specific response risk, geography crosswalk and manual review are still required.")
     return 0
 
