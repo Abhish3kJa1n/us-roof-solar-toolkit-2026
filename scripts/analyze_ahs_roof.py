@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
-"""Research-only national and Top 15 metro roofing summaries from the 2023 AHS relational PUF.
+"""Research-only AHS 2023 whole-project roofing summaries from relational PUFs.
 
-Use the 2023 National PUF PROJECT and HOUSEHOLD CSV files from the same release. The
-HOUSEHOLD file must include OMB13CBSA; only the 15 named 2013 CBSA codes are
-reported as metro groups. This is metro geography, not individual-city geography.
-The PUF stores home-improvement jobs as generic JOBTYPE/JOBCOST/JOBDIY records;
-the questionnaire-specific ROOFAM/ROOFWK fields are not the PUF project schema.
+Run the integrated National PUF for National/Top-15 analysis and the separate
+Metropolitan PUF for the five Next-10 areas actually sampled in 2023. Never
+pool their PROJECT/HOUSEHOLD records or weights. Join each PUF's project rows
+to its own household table by CONTROL.
 
-The official 2023 Value Labels package confirms JOBTYPE='16' means
-"Added or replaced roofing". C-16-OO specifies separate universes:
-project counts use interviewed owner-occupied households and JOBDIY in
-{1,2}; mean and median costs use JOBCOST > 0; total expenditures use
-JOBCOST >= 0. The script keeps these populations separate. It includes
-Census-edited/imputed values and is not a raw-response-only contractor-price sample.
+The official 2023 Value Labels package identifies JOBTYPE='16' as added or
+replaced roofing, JOBDIY='1' as Do-It-Yourself and JOBDIY='2' as Professional.
+The C-16-OO owner-occupied/interviewed universe uses TENURE=1 and INTSTATUS=1.
+Project counts, positive-cost statistics and total expenditures use different
+JOBCOST universes and are kept separate.
 
-Outputs are exploratory weighted summaries with Fay-BRR replicate SEs and
-approximate 90% normal intervals. Do not publish the PUF estimates until they
-are independently reconciled against Census's Table Specifications workbook.
-"""
+A household can contribute multiple project records (up to 26 in the PUF).
+Therefore outputs distinguish project rows from distinct respondent households.
+Fay-BRR estimates use the 160 replicate weights and multiplier 4/160. Results
+remain research-only: whole-project nominal survey dollars, not contractor
+invoices, consistent full tear-off scope or $/sq-ft costs. Census identifies
+material 2023 nonresponse risk in the independent Metro sample."""
 from __future__ import annotations
 import argparse
 import csv
@@ -29,8 +29,9 @@ REPLICATE_COUNT = 160
 BRR_FAY_FACTOR = 4.0 / REPLICATE_COUNT
 Z_90 = 1.6448536269514722
 
-# 2013 OMB CBSA codes used by the 2023 AHS National PUF for the Top 15 metros.
-# Source: Census Bureau, Metropolitan Area Histories: 2015 to 2023.
+# 2013 OMB CBSA codes used by the National PUF Top 15 and the five Next-10
+# metropolitan areas actually sampled in the separate 2023 Metropolitan PUF.
+# The five Next-10 names are from the 2023 Census AHS Metropolitan Sample Design.
 METRO_NAMES = {
     "12060": "Atlanta-Sandy Springs-Roswell, GA",
     "14460": "Boston-Cambridge-Newton, MA-NH",
@@ -47,6 +48,11 @@ METRO_NAMES = {
     "41860": "San Francisco-Oakland-Hayward, CA",
     "42660": "Seattle-Tacoma-Bellevue, WA",
     "47900": "Washington-Arlington-Alexandria, DC-VA-MD-WV",
+    "17140": "Cincinnati, OH",
+    "17460": "Cleveland, OH",
+    "19740": "Denver, CO",
+    "33340": "Milwaukee, WI",
+    "35380": "New Orleans, LA",
 }
 
 
@@ -169,24 +175,25 @@ def read_household_weights(path: Path, weight_field: str, replicate_prefix: str,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--project-input", required=True, type=Path, help="2023 National PUF relational PROJECT CSV")
-    parser.add_argument("--household-input", required=True, type=Path, help="Matching 2023 National PUF relational HOUSEHOLD CSV (must include OMB13CBSA)")
-    parser.add_argument("--output", default=Path("ahs-roof-national-research.csv"), type=Path)
-    parser.add_argument("--metro-output", default=Path("ahs-roof-metro-research.csv"), type=Path, help="Research-only Top 15 metro summaries using OMB13CBSA")
+    parser.add_argument("--project-input", required=True, type=Path, help="2023 AHS relational PROJECT CSV from one PUF")
+    parser.add_argument("--household-input", required=True, type=Path, help="Matching 2023 AHS relational HOUSEHOLD CSV with OMB13CBSA and replicate weights")
+    parser.add_argument("--output", default=Path("ahs-roof-overall-research.csv"), type=Path)
+    parser.add_argument("--metro-output", default=Path("ahs-roof-metro-research.csv"), type=Path, help="Research-only CBSA summaries from this PUF only")
+    parser.add_argument("--sample-source", default="unspecified PUF", help="Explicit provenance label for the PUF used by this run")
     parser.add_argument("--metro-field", default="OMB13CBSA", help="2013 OMB CBSA code field in the household file")
-    parser.add_argument("--minimum-metro-unweighted-n", type=int, default=30, help="Suppress metro/group rows below this raw project count")
+    parser.add_argument("--minimum-metro-unweighted-n", type=int, default=30, help="Exploratory minimum distinct respondent households per metro/group")
     parser.add_argument("--weight-field", default="WEIGHT", help="Household final weight; verify against the 2023 codebook")
     parser.add_argument("--replicate-prefix", default="REPWEIGHT", help="Household replicate weight prefix (default REPWEIGHT1..160)")
     parser.add_argument("--roof-job-type-code", type=int, required=True, help="AHS JOBTYPE code for roofing, verified against the official 2023 Value Labels Package")
-    parser.add_argument("--minimum-unweighted-n", type=int, default=100)
+    parser.add_argument("--minimum-unweighted-n", type=int, default=100, help="Exploratory minimum distinct respondent households per overall group")
     args = parser.parse_args()
     for path in (args.project_input, args.household_input):
         if not path.exists():
             parser.error(f"Input file not found: {path}")
     if args.minimum_unweighted_n < 30:
-        parser.error("--minimum-unweighted-n must be at least 30 for exploratory screening")
+        parser.error("--minimum-unweighted-n must be at least 30 distinct respondent households")
     if args.minimum_metro_unweighted_n < 30:
-        parser.error("--minimum-metro-unweighted-n must be at least 30")
+        parser.error("--minimum-metro-unweighted-n must be at least 30 distinct respondent households")
     if not args.metro_field or not args.metro_field.replace("_", "").isalnum():
         parser.error("--metro-field must be a valid alphanumeric PUF field name")
     if args.roof_job_type_code < 1:
@@ -202,10 +209,14 @@ def main() -> int:
     # C-16 project counts are independent of cost validity; cost statistics use
     # positive JOBCOST, while total expenditure uses nonnegative JOBCOST.
     count_groups: dict[str, list[tuple[float, tuple[float, ...]]]] = {name: [] for name in group_names}
+    count_households: dict[str, set[str]] = {name: set() for name in group_names}
     groups: dict[str, list[tuple[float, float, tuple[float, ...]]]] = {name: [] for name in group_names}
+    positive_cost_households: dict[str, set[str]] = {name: set() for name in group_names}
     total_groups: dict[str, list[tuple[float, float, tuple[float, ...]]]] = {name: [] for name in group_names}
     metro_count_groups: dict[str, dict[str, list[tuple[float, tuple[float, ...]]]]] = {}
+    metro_count_households: dict[str, dict[str, set[str]]] = {}
     metro_groups: dict[str, dict[str, list[tuple[float, float, tuple[float, ...]]]]] = {}
+    metro_positive_cost_households: dict[str, dict[str, set[str]]] = {}
     metro_total_groups: dict[str, dict[str, list[tuple[float, float, tuple[float, ...]]]]] = {}
     metro_project_counts: dict[str, int] = {code: 0 for code in METRO_NAMES}
     counters = {
@@ -249,15 +260,19 @@ def main() -> int:
             selected_groups.append("household_did_most_work_JOBDIY_1" if diy_status == 1 else "household_did_not_do_most_work_JOBDIY_2")
             for group in selected_groups:
                 count_groups[group].append(count_record)
+                count_households[group].add(control)
 
             if metro_code in METRO_NAMES:
                 metro_project_counts[metro_code] += 1
                 if metro_code not in metro_count_groups:
                     metro_count_groups[metro_code] = {name: [] for name in group_names}
+                    metro_count_households[metro_code] = {name: set() for name in group_names}
                     metro_groups[metro_code] = {name: [] for name in group_names}
+                    metro_positive_cost_households[metro_code] = {name: set() for name in group_names}
                     metro_total_groups[metro_code] = {name: [] for name in group_names}
                 for group in selected_groups:
                     metro_count_groups[metro_code][group].append(count_record)
+                    metro_count_households[metro_code][group].add(control)
 
             cost = to_num(row.get("JOBCOST"))
             if cost is None or cost < 0:
@@ -274,14 +289,21 @@ def main() -> int:
                     metro_total_groups[metro_code][group].append(record)
                 if cost > 0:
                     groups[group].append(record)
+                    positive_cost_households[group].add(control)
                     if metro_code in METRO_NAMES:
                         metro_groups[metro_code][group].append(record)
+                        metro_positive_cost_households[metro_code][group].add(control)
 
-    out_fields = ["group", "unweighted_n", "weighted_project_count", "positive_cost_unweighted_n", "zero_cost_unweighted_n", "nonnegative_cost_unweighted_n",
+    out_fields = ["sample_source", "jobdiy_scope", "group", "unweighted_n", "unweighted_households_n",
+        "weighted_project_count", "positive_cost_unweighted_n", "positive_cost_households_n",
+        "zero_cost_unweighted_n", "nonnegative_cost_unweighted_n",
         "total_expenditure_nominal_survey_usd", "total_expenditure_replicate_se_usd", "total_expenditure_90ci_low_usd", "total_expenditure_90ci_high_usd"]
     for label in ("mean", "median", "p25", "p75"):
-        out_fields.extend([f"{label}_nominal_survey_usd", f"{label}_replicate_se_usd", f"{label}_90ci_low_usd", f"{label}_90ci_high_usd"])
-    out_fields.append("publication_status")
+        out_fields.extend([
+            f"{label}_nominal_survey_usd", f"{label}_replicate_se_usd",
+            f"{label}_cv", f"{label}_90ci_low_usd", f"{label}_90ci_high_usd",
+        ])
+    out_fields.extend(["precision_screen_status", "cv_screen_threshold"])
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8", newline="") as stream:
         writer = csv.DictWriter(stream, fieldnames=out_fields)
@@ -290,33 +312,43 @@ def main() -> int:
             count_records = count_groups[group]
             positive_records = groups[group]
             nonnegative_records = total_groups[group]
-            if len(count_records) < args.minimum_unweighted_n:
+            household_n = len(count_households[group])
+            if household_n < args.minimum_unweighted_n:
                 continue
             total_result = weighted_sum_with_brr(nonnegative_records)
             out: dict[str, object] = {
-                "group": group, "unweighted_n": len(count_records),
+                "sample_source": args.sample_source,
+                "jobdiy_scope": "diy" if group == "household_did_most_work_JOBDIY_1" else "professional" if group == "household_did_not_do_most_work_JOBDIY_2" else "professional_and_diy",
+                "group": group,
+                "unweighted_n": len(count_records),
+                "unweighted_households_n": household_n,
                 "weighted_project_count": round(sum(weight for weight, _ in count_records)),
                 "positive_cost_unweighted_n": len(positive_records),
+                "positive_cost_households_n": len(positive_cost_households[group]),
                 "zero_cost_unweighted_n": sum(1 for cost, _, _ in nonnegative_records if cost == 0),
                 "nonnegative_cost_unweighted_n": len(nonnegative_records),
                 "total_expenditure_nominal_survey_usd": round(total_result[0]) if total_result else "",
                 "total_expenditure_replicate_se_usd": round(total_result[1]) if total_result else "",
                 "total_expenditure_90ci_low_usd": round(total_result[2]) if total_result else "",
                 "total_expenditure_90ci_high_usd": round(total_result[3]) if total_result else "",
-                "publication_status": "RESEARCH_ONLY_C16_RECONCILIATION_AND_VARIANCE_REVIEW_PENDING",
+                "precision_screen_status": "NOT_MANUALLY_REVIEWED",
+                "cv_screen_threshold": 0.30,
             }
             metric_results = [("mean", weighted_mean_with_brr(positive_records))]
             metric_results.extend((label, weighted_quantile_with_brr(positive_records, q)) for label, q in (("median", .5), ("p25", .25), ("p75", .75)))
             for label, result in metric_results:
                 if result is None:
-                    for suffix in ("nominal_survey_usd", "replicate_se_usd", "90ci_low_usd", "90ci_high_usd"):
+                    for suffix in ("nominal_survey_usd", "replicate_se_usd", "cv", "90ci_low_usd", "90ci_high_usd"):
                         out[f"{label}_{suffix}"] = ""
                 else:
                     point, se, low, high = result
                     out[f"{label}_nominal_survey_usd"] = round(point, 0)
                     out[f"{label}_replicate_se_usd"] = round(se, 0)
+                    out[f"{label}_cv"] = round(se / abs(point), 6) if point else ""
                     out[f"{label}_90ci_low_usd"] = round(low, 0)
                     out[f"{label}_90ci_high_usd"] = round(high, 0)
+            cvs = [out.get(f"{metric}_cv") for metric in ("mean", "median", "p25", "p75")]
+            out["precision_screen_status"] = "PASS_CV_SCREEN_NOT_MANUAL_APPROVAL" if all(isinstance(cv, (int, float)) and 0 <= cv < 0.30 for cv in cvs) else "FAIL_OR_UNDEFINED_CV_SCREEN"
             writer.writerow(out)
 
     metro_fields = ["metro_omb13cbsa", "metro_name", *out_fields]
@@ -327,16 +359,22 @@ def main() -> int:
         for metro_code, metro_name in METRO_NAMES.items():
             for group in group_names:
                 count_records = metro_count_groups.get(metro_code, {}).get(group, [])
+                household_n = len(metro_count_households.get(metro_code, {}).get(group, set()))
                 positive_records = metro_groups.get(metro_code, {}).get(group, [])
+                positive_household_n = len(metro_positive_cost_households.get(metro_code, {}).get(group, set()))
                 nonnegative_records = metro_total_groups.get(metro_code, {}).get(group, [])
-                if len(count_records) < args.minimum_metro_unweighted_n:
+                if household_n < args.minimum_metro_unweighted_n:
                     continue
                 total_result = weighted_sum_with_brr(nonnegative_records)
                 out: dict[str, object] = {
+                    "sample_source": args.sample_source,
+                    "jobdiy_scope": "diy" if group == "household_did_most_work_JOBDIY_1" else "professional" if group == "household_did_not_do_most_work_JOBDIY_2" else "professional_and_diy",
                     "metro_omb13cbsa": metro_code, "metro_name": metro_name, "group": group,
                     "unweighted_n": len(count_records),
+                    "unweighted_households_n": household_n,
                     "weighted_project_count": round(sum(weight for weight, _ in count_records)),
                     "positive_cost_unweighted_n": len(positive_records),
+                    "positive_cost_households_n": positive_household_n,
                     "zero_cost_unweighted_n": sum(1 for cost, _, _ in nonnegative_records if cost == 0),
                     "nonnegative_cost_unweighted_n": len(nonnegative_records),
                     "total_expenditure_nominal_survey_usd": round(total_result[0]) if total_result else "",
@@ -349,18 +387,22 @@ def main() -> int:
                 metric_results.extend((label, weighted_quantile_with_brr(positive_records, q)) for label, q in (("median", .5), ("p25", .25), ("p75", .75)))
                 for label, result in metric_results:
                     if result is None:
-                        for suffix in ("nominal_survey_usd", "replicate_se_usd", "90ci_low_usd", "90ci_high_usd"):
+                        for suffix in ("nominal_survey_usd", "replicate_se_usd", "cv", "90ci_low_usd", "90ci_high_usd"):
                             out[f"{label}_{suffix}"] = ""
                     else:
                         point, se, low, high = result
                         out[f"{label}_nominal_survey_usd"] = round(point, 0)
                         out[f"{label}_replicate_se_usd"] = round(se, 0)
+                        out[f"{label}_cv"] = round(se / abs(point), 6) if point else ""
                         out[f"{label}_90ci_low_usd"] = round(low, 0)
                         out[f"{label}_90ci_high_usd"] = round(high, 0)
+                cvs = [out.get(f"{metric}_cv") for metric in ("mean", "median", "p25", "p75")]
+                out["precision_screen_status"] = "PASS_CV_SCREEN_NOT_MANUAL_APPROVAL" if all(isinstance(cv, (int, float)) and 0 <= cv < 0.30 for cv in cvs) else "FAIL_OR_UNDEFINED_CV_SCREEN"
                 writer.writerow(out)
 
-    print(f"Project rows scanned: {counters['project_rows']:,}; JOBTYPE {args.roof_job_type_code} owner-occupied/interviewed projects: {len(count_groups['all_roofing_projects']):,}")
-    print(f"Top 15 AHS metro codes with eligible roofing projects: {sum(1 for count in metro_project_counts.values() if count):,}; metro summary: {args.metro_output}")
+    print(f"SAMPLE_SOURCE: {args.sample_source}")
+    print(f"Project rows scanned: {counters['project_rows']:,}; eligible roofing project records: {len(count_groups['all_roofing_projects']):,}; distinct respondent households: {len(count_households['all_roofing_projects']):,}")
+    print(f"Supported 2013 OMB CBSA codes present in this PUF: {sum(1 for count in metro_project_counts.values() if count):,}; metro summary: {args.metro_output}")
     print(f"Positive JOBCOST rows for mean/median: {counters['positive_cost']:,}; zero-cost records retained in count/total: {counters['zero_cost']:,}; missing/negative-cost records retained in count but excluded from cost metrics: {counters['missing_or_negative_cost']:,}; JOBDIY outside 1/2: {counters['jobdiy_not_1_or_2']:,}")
     for name, count in counters.items():
         if name != "project_rows":
@@ -372,10 +414,14 @@ def main() -> int:
     print("- JOBCOST is Census hot-deck imputed for some records. This is not a raw-response-only sample or a contractor-invoice dataset.")
     print("- Costs are whole-project nominal survey dollars for the AHS two-year reference window, roughly 2021-2023; no inflation conversion is applied.")
     print("- This survey does not provide roof size, material, pitch, tear-off layers, or cost per roofing square; do not convert the amount to $/sq ft.")
-    print("- C-16 positive-cost and nonnegative-cost rules are implemented separately; weighted quantiles and Fay-BRR intervals remain exploratory pending PUF and variance reconciliation.")
-    print("- The optional metro output groups only the 15 named 2013 OMB CBSA codes in the 2023 National PUF; it is metro geography, not city pricing.")
-    print("- Metro groups below the configured raw project threshold are suppressed; an unweighted n threshold is not proof of estimate precision.")
-    print("- Do not publish the national or metro PUF outputs until reconciled against official Census Table C-16 estimates and margins of error.")
+    print("- C-16 project counts include eligible projects regardless of cost validity; means/medians/quantiles use JOBCOST > 0; total expenditure uses JOBCOST >= 0.")
+    print("- A household may contribute multiple project records (up to 26 in the PUF); outputs report project rows and distinct contributing households separately.")
+    print("- The 30% relative-standard-error screen follows the AHS Table Creator's published cell-suppression rule; a passing PUF CV screen is not equivalent to Census Table Creator approval.")
+    print("- Every PUF run is source-specific. The National PUF represents national/Top-15 use; the separate Metropolitan PUF is used for the five Next-10 metro areas sampled in 2023. Their records and household weights are never pooled.")
+    print("- The 2023 independent Metro sample had a 59.2% unit nonresponse rate. Census warns that response rates below 60% may create serious nonsampling quality issues and that nonresponse weighting may not fully remove the risk.")
+    print("- AHS costs are nominal whole-project survey expenditures, not verified contractor invoices or consistent full tear-off scopes. Roof area, material, pitch and $/sq-ft denominators are not provided.")
+    print("- Metro groups below the configured distinct-household floor are suppressed; the floor is only an exploratory screen, not evidence of representativeness or precision.")
+    print("- No result is approved for public release. Metric-specific CVs, source-specific response risk, geography crosswalk and manual review are still required.")
     return 0
 
 
