@@ -83,7 +83,7 @@ with tempfile.TemporaryDirectory() as tmp:
     assert city_rows[0]["publication_status"] == "RESEARCH_ONLY_LICENSE_AND_EXTERNAL_VALIDATION_HOLD"
     assert len(state_rows) == 1 and state_rows[0]["state"] == "TX"
     assert "States with any strictly eligible project rows before state suppression: 1" in stdout
-    assert "TX: n=100; meets_n500=False" in stdout
+    assert "TX: n=101; meets_n100=True" in stdout, "State coverage includes the no-city row; city coverage does not"
     assert "RES is residential with no single-family/multifamily subtype specified" in stdout
     assert "CITY_SAMPLE_COVERAGE_BY_THRESHOLD: {50: 1, 100: 1, 200: 0, 500: 0}" in stdout
     assert "STATE_SAMPLE_COVERAGE_BY_THRESHOLD: {100: 1, 250: 0, 500: 0, 1000: 0}" in stdout
