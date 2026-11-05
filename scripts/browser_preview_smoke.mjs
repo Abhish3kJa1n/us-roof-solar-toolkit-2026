@@ -26,8 +26,13 @@ async function waitForPreview() {
       const response = await fetch(base + '/index.html', { redirect: 'follow' });
       lastStatus = 'HTTP ' + response.status;
       if (response.status === 200 && /noindex/i.test(response.headers.get('x-robots-tag') || '')) {
-        console.log('PREVIEW_READY: ' + base);
-        return;
+        const roofResponse = await fetch(base + '/calculators/roof-replacement-cost.html', { redirect: 'follow' });
+        const roofHtml = roofResponse.ok ? await roofResponse.text() : '';
+        if (roofResponse.status === 200 && roofHtml.includes('data-qa="metal-reference-state-v2"')) {
+          console.log('PREVIEW_READY_WITH_ROOF_REFERENCE_STATE_V2: ' + base);
+          return;
+        }
+        lastStatus = 'Preview is reachable but the roof reference-state v2 build is not deployed yet';
       }
     } catch (error) {
       lastStatus = error.message;
@@ -145,28 +150,102 @@ try {
   results.push('combined calculator: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png'), fullPage: true });
 
-  // Standalone roof-cost calculator: no automatic national default; explicit reference load and metal-system selection.
+  // Standalone roof-cost calculator: AHS availability state, material changes and all metal-system references.
   await open('/calculators/roof-replacement-cost.html');
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('roof-cost');
   await accessibilityScan('roof-cost');
+  await page.locator('#roofMetroBenchmarkResult').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#roofMetroBenchmarkField').isVisible(), false, 'empty AHS registry must hide the unavailable dropdown field');
+  const ahsStatus = await page.locator('#roofMetroBenchmarkResult').innerText();
+  assert.match(ahsStatus, /No AHS metro roofing distribution is currently approved/i);
+  assert.match(ahsStatus, /national point estimates reproduce the Census Table C-16/i);
+
   assert.equal(await page.locator('#low').inputValue(), '', 'standalone roof calculator must not auto-load general national rates');
   assert.equal(await page.locator('#high').inputValue(), '', 'standalone roof calculator must not auto-load general national rates');
   await page.locator('#area').fill('1800');
   await page.locator('#loadReference').click();
   assert.equal(await page.locator('#low').inputValue(), '4');
   assert.equal(await page.locator('#high').inputValue(), '11');
-  assert.match(await page.locator('#referenceStatus').innerText(), /not a city estimate.*material-specific/i);
+  assert.match(await page.locator('#referenceStatus').innerText(), /not a local or material-specific price/i);
   await page.locator('#run').click();
   assert.match(await page.locator('#result').innerText(), /\$7,200|\$19,800/);
+
+  // A generic national roof range must be cleared when Metal is selected.
   await page.locator('#material').selectOption('metal');
-  assert.equal(await page.locator('#low').inputValue(), '', 'changing to Metal must clear the general roofing reference');
-  assert.equal(await page.locator('#high').inputValue(), '', 'changing to Metal must clear the general roofing reference');
+  assert.equal(await page.locator('#metalSystemField').isVisible(), true);
+  assert.equal(await page.locator('#low').inputValue(), '');
+  assert.equal(await page.locator('#high').inputValue(), '');
+  assert.equal(await page.locator('#metalSystem').inputValue(), '');
+  assert.equal(await page.locator('#loadReference').isDisabled(), true, 'a metal reference cannot be loaded before choosing a system');
+
+  const metalSystems = [
+    ['corrugated', '5', '12', /corrugated sheet metal/i],
+    ['standing_seam', '9', '16', /standing seam/i],
+    ['metal_shingles', '6', '14', /metal shingles/i],
+    ['steel', '5', '13', /galvanized \/ Galvalume steel/i],
+  ];
+  for (const [system, low, high, label] of metalSystems) {
+    await page.locator('#metalSystem').selectOption(system);
+    assert.equal(await page.locator('#low').inputValue(), low, system + ' low reference');
+    assert.equal(await page.locator('#high').inputValue(), high, system + ' high reference');
+    assert.match(await page.locator('#referenceStatus').innerText(), label);
+    await page.locator('#run').click();
+    assert.match(await page.locator('#result').innerText(), /HomeGuide/);
+  }
+  results.push('AHS empty state and all four metal-system references: PASS');
+
+  // A visitor edit creates a mixed range. Changing system preserves it as custom and does not mislabel it.
   await page.locator('#metalSystem').selectOption('standing_seam');
-  assert.equal(await page.locator('#low').inputValue(), '9');
+  await page.locator('#low').fill('10');
+  assert.match(await page.locator('#referenceStatus').innerText(), /high endpoint remains from the original/i);
+  await page.locator('#metalSystem').selectOption('corrugated');
+  assert.equal(await page.locator('#low').inputValue(), '10');
   assert.equal(await page.locator('#high').inputValue(), '16');
-  assert.match(await page.locator('#referenceStatus').innerText(), /standing seam/i);
-  results.push('standalone roof-cost explicit reference and metal-system flow: PASS');
+  const mixedStatus = await page.locator('#referenceStatus').innerText();
+  assert.match(mixedStatus, /standing seam/i);
+  assert.match(mixedStatus, /not a published range for corrugated sheet metal/i);
+  assert.match(await page.locator('#loadReference').innerText(), /Reload corrugated sheet metal reference/i);
+  await page.locator('#run').click();
+  assert.match(await page.locator('#result').innerText(), /Mixed\/custom rate pair/i);
+  await page.locator('#loadReference').click();
+  assert.equal(await page.locator('#low').inputValue(), '5');
+  assert.equal(await page.locator('#high').inputValue(), '12');
+  assert.match(await page.locator('#referenceStatus').innerText(), /corrugated sheet metal/i);
+
+  // Changing material clears source-derived rates and hides the metal selector.
+  await page.locator('#material').selectOption('tile');
+  assert.equal(await page.locator('#metalSystemField').isVisible(), false);
+  assert.equal(await page.locator('#metalSystem').inputValue(), '');
+  assert.equal(await page.locator('#low').inputValue(), '');
+  assert.equal(await page.locator('#high').inputValue(), '');
+  assert.match(await page.locator('#referenceStatus').innerText(), /rates were cleared because the roof material changed/i);
+
+  // Manually entered values remain editable but are not silently promoted to a system reference.
+  await page.locator('#low').fill('5.5');
+  await page.locator('#high').fill('8.5');
+  await page.locator('#material').selectOption('metal');
+  assert.equal(await page.locator('#low').inputValue(), '5.5');
+  assert.equal(await page.locator('#high').inputValue(), '8.5');
+  assert.match(await page.locator('#referenceStatus').innerText(), /visitor-entered rates were retained/i);
+  await page.locator('#metalSystem').selectOption('metal_shingles');
+  assert.equal(await page.locator('#low').inputValue(), '5.5');
+  assert.equal(await page.locator('#high').inputValue(), '8.5');
+  assert.match(await page.locator('#referenceStatus').innerText(), /not a published reference for the new system/i);
+  await page.locator('#loadReference').click();
+  assert.equal(await page.locator('#low').inputValue(), '6');
+  assert.equal(await page.locator('#high').inputValue(), '14');
+
+  // Switching away from Metal clears the selected metal reference; Reset clears everything.
+  await page.locator('#material').selectOption('asphalt');
+  assert.equal(await page.locator('#metalSystemField').isVisible(), false);
+  assert.equal(await page.locator('#low').inputValue(), '');
+  assert.equal(await page.locator('#high').inputValue(), '');
+  await page.locator('#reset').click();
+  assert.equal(await page.locator('#low').inputValue(), '');
+  assert.equal(await page.locator('#high').inputValue(), '');
+  assert.equal(await page.locator('#metalSystemField').isVisible(), false);
+  results.push('metal reference edits, system switching, material switching and reset: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-metal-reference.png'), fullPage: true });
 
   // City-based solar: real Census autocomplete, exact place lookup, PVWatts and OpenEI.
