@@ -19,11 +19,23 @@ const nationalReference={
   source:'Angi national roof-replacement cost guide (updated October 22, 2026)',
   basis:'Angi broad national $4–$11 per roof sq ft reference (updated October 22, 2026); not local, material-specific or property-specific.'
 };
+const metalSource='HomeGuide metal roof cost guide (November 21, 2025)';
 const metalReferences={
-  corrugated:{type:'metal',key:'corrugated',low:'5',high:'12',label:'corrugated sheet metal',source:'HomeGuide metal roof cost guide (November 21, 2025)'},
-  standing_seam:{type:'metal',key:'standing_seam',low:'9',high:'16',label:'standing seam',source:'HomeGuide metal roof cost guide (November 21, 2025)'},
-  metal_shingles:{type:'metal',key:'metal_shingles',low:'6',high:'14',label:'metal shingles',source:'HomeGuide metal roof cost guide (November 21, 2025)'},
-  steel:{type:'metal',key:'steel',low:'5',high:'13',label:'galvanized / Galvalume steel',source:'HomeGuide metal roof cost guide (November 21, 2025)'}
+  // Published roof-style/system categories. These are not a material-by-system price matrix.
+  corrugated:{type:'metal',group:'style',key:'corrugated',low:'5',high:'12',label:'corrugated / standard sheet metal',source:metalSource},
+  standing_seam:{type:'metal',group:'style',key:'standing_seam',low:'9',high:'16',label:'standing seam',source:metalSource},
+  metal_shingles:{type:'metal',group:'style',key:'metal_shingles',low:'6',high:'14',label:'metal shingles',source:metalSource},
+  metal_slate:{type:'metal',group:'style',key:'metal_slate',low:'6',high:'14',label:'metal slate',source:metalSource},
+  stone_coated_steel:{type:'metal',group:'style',key:'stone_coated_steel',low:'7',high:'13',label:'stone-coated steel',source:metalSource},
+  // Published base-metal categories. Choose one category only; do not stack it with a roof-style range.
+  galvanized_steel:{type:'metal',group:'material',key:'galvanized_steel',low:'5',high:'13',label:'galvanized steel',source:metalSource},
+  galvalume_steel:{type:'metal',group:'material',key:'galvalume_steel',low:'5',high:'13',label:'Galvalume steel',source:metalSource},
+  aluminum:{type:'metal',group:'material',key:'aluminum',low:'7',high:'17',label:'aluminum',source:metalSource},
+  copper:{type:'metal',group:'material',key:'copper',low:'13',high:'30',label:'copper',source:metalSource},
+  zinc:{type:'metal',group:'material',key:'zinc',low:'10',high:'20',label:'zinc',source:metalSource},
+  tin_terne:{type:'metal',group:'material',key:'tin_terne',low:'6',high:'18',label:'tin / terne',source:metalSource},
+  stainless_steel:{type:'metal',group:'material',key:'stainless_steel',low:'10',high:'21',label:'stainless steel',source:metalSource},
+  corten_steel:{type:'metal',group:'material',key:'corten_steel',low:'6',high:'11',label:'Corten / weathering steel',source:metalSource}
 };
 
 let activeReference=null;
@@ -54,7 +66,7 @@ const endpointDescription=(name,reference)=>{
 };
 const carriedNotice=(nextLabel)=>{
   if(!carriedReference) return customNotice;
-  return 'Mixed/custom rate pair retained after changing from '+carriedReference.label+' to '+nextLabel+'. '+endpointDescription('low',carriedReference)+'; '+endpointDescription('high',carriedReference)+'. These values are not a published range for '+nextLabel+'. Original source: '+referenceBasis(carriedReference)+' Click the reload button to replace both values with the selected system reference, or edit both rates to match your written proposal.';
+  return 'Mixed/custom rate pair retained after changing from '+carriedReference.label+' to '+nextLabel+'. '+endpointDescription('low',carriedReference)+'; '+endpointDescription('high',carriedReference)+'. These values are not a published range for '+nextLabel+'. Original source: '+referenceBasis(carriedReference)+' Click the reload button to replace both values with the selected category reference, or edit both rates to match your written proposal.';
 };
 const rateBasis=()=>{
   if(activeReference){
@@ -202,7 +214,7 @@ referenceButton.addEventListener('click',()=>{
   if(materialEl.value==='metal'){
     const ref=metalReferences[metalSystemEl.value];
     if(!ref){
-      setStatus('Choose an exact metal system before loading a metal price reference.');
+      setStatus('Choose a metal price-reference category before loading a published range.');
       return;
     }
     applyMetalReference(true);
@@ -220,7 +232,7 @@ document.getElementById('run').addEventListener('click',()=>{
   }
   const totalLow=area*low,totalHigh=area*high;
   const materialLabel=materialEl.value?materialEl.selectedOptions[0].textContent:'not specified';
-  const systemLabel=materialEl.value==='metal'&&metalSystemEl.value?' · Metal system: '+metalSystemEl.selectedOptions[0].textContent:'';
+  const systemLabel=materialEl.value==='metal'&&metalSystemEl.value?' · Metal reference category: '+metalSystemEl.selectedOptions[0].textContent:'';
   resultEl.innerHTML='<div class="kicker">Illustrative roof replacement range</div><div class="big">'+roofMoney(totalLow)+' – '+roofMoney(totalHigh)+'</div><p>'+area.toLocaleString('en-US')+' sq ft × '+roofRateMoney(low)+'–'+roofRateMoney(high)+' installed per sq ft. Material label: '+materialLabel+systemLabel+'.</p><p>Rate basis: '+rateBasis()+' It does not verify local labor, material, roof complexity or proposal scope.</p>';
 });
 document.getElementById('reset').addEventListener('click',()=>{
