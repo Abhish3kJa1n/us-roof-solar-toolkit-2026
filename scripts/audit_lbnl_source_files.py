@@ -118,74 +118,94 @@ def inspect_guide(path: Path) -> str:
     return text
 
 
-def open_zip_member(archive: zipfile.ZipFile, name: str):
-    """Open a ZIP member, adding Zstandard support for compression methods 20/93.
-
-    Python 3.12's zipfile does not support ZIP Zstandard. The workaround is
-    scoped to constructing the ZipExtFile reader and immediately restores the
-    module's original private handlers. The decoded bytes are then streamed by
-    the standard ZipExtFile implementation and checked against the ZIP size.
-    """
-    info = archive.getinfo(name)
-    if info.compress_type not in {20, 93}:
-        return archive.open(name)
-    try:
-        import zstandard
-    except ImportError as exc:
-        raise RuntimeError(
-            f"ZIP member {name!r} uses unsupported Zstandard method {info.compress_type}; "
-            "install the zstandard package before extraction."
-        ) from exc
-    original_check = zipfile._check_compression
-    original_decompressor = zipfile._get_decompressor
-
-    def check_compression(method: int) -> None:
-        if method in {20, 93}:
-            return
-        original_check(method)
-
-    def get_decompressor(method: int):
-        if method in {20, 93}:
-            return zstandard.ZstdDecompressor().decompressobj()
-        return original_decompressor(method)
-
-    zipfile._check_compression = check_compression
-    zipfile._get_decompressor = get_decompressor
-    try:
-        return archive.open(name)
-    finally:
-        zipfile._check_compression = original_check
-        zipfile._get_decompressor = original_decompressor
+def _file_chunks(path: Path):
+    """Yield non-empty chunks from a ZIP file without loading the archive at once."""
+    with path.open("rb") as stream:
+        while True:
+            block = stream.read(CHUNK)
+            if not block:
+                return
+            yield block
 
 
 def locate_data_file(path: Path, root: Path) -> Path:
     if zipfile.is_zipfile(path):
+        try:
+            from stream_unzip import NO_ENCRYPTION, stream_unzip
+        except ImportError as exc:
+            raise RuntimeError(
+                "stream-unzip==0.0.101 is required: the official Berkeley Lab archive uses ZIP Deflate64."
+            ) from exc
+
+        # zipfile can read central-directory metadata even when it cannot
+        # decompress the member. Validate method, encryption and expected size
+        # before streaming the multi-gigabyte CSV to a temporary path.
         with zipfile.ZipFile(path) as archive:
-            candidates = [n for n in archive.namelist() if n.lower().endswith(".csv") and not n.endswith("/")]
+            candidates = [
+                info for info in archive.infolist()
+                if info.filename.lower().endswith(".csv") and not info.is_dir()
+            ]
             if len(candidates) != 1:
-                print(f"ZIP entries: {candidates[:30]}")
                 raise RuntimeError(f"Expected exactly one CSV in archive, found {len(candidates)}")
-            info = archive.getinfo(candidates[0])
+            info = candidates[0]
+            if info.flag_bits & 0x1:
+                raise RuntimeError("The Berkeley Lab public CSV member is encrypted; refusing unexpected encrypted input.")
+            method_names = {
+                0: "Stored", 8: "Deflate", 9: "Deflate64", 12: "BZip2",
+                20: "Zstandard (deprecated method ID)", 93: "Zstandard",
+            }
+            method_name = method_names.get(info.compress_type, "Unknown")
             print(
-                f"CSV_ARCHIVE_MEMBER: {candidates[0]}; compression_method={info.compress_type}; "
+                f"CSV_ARCHIVE_MEMBER: {info.filename}; compression_method={info.compress_type} ({method_name}); "
                 f"compressed_bytes={info.compress_size:,}; uncompressed_bytes={info.file_size:,}"
             )
-            if info.flag_bits & 0x1:
-                raise RuntimeError("The Berkeley Lab public ZIP member is encrypted; refusing unsupported extraction.")
-            extracted = root / Path(candidates[0]).name
-            with open_zip_member(archive, candidates[0]) as source, extracted.open("wb") as target:
-                while True:
-                    block = source.read(CHUNK)
-                    if not block:
-                        break
-                    target.write(block)
-            actual_size = extracted.stat().st_size
-            if actual_size != info.file_size:
-                raise RuntimeError(
-                    f"ZIP extraction size mismatch: expected {info.file_size:,}, got {actual_size:,} bytes."
-                )
-            print(f"CSV_ARCHIVE_ENTRY: {candidates[0]}")
-            return extracted
+            expected_name = info.filename
+            safe_basename = Path(expected_name.replace(chr(92), "/")).name
+            extracted = root / safe_basename
+            if extracted.exists():
+                raise RuntimeError(f"Refusing to overwrite temporary extraction target: {extracted.name}")
+
+        member_count = 0
+        written = 0
+        digest = hashlib.sha256()
+        for member_name, declared_size, member_chunks in stream_unzip(
+            _file_chunks(path),
+            chunk_size=CHUNK,
+            allow_zip64=True,
+            allowed_encryption_mechanisms=(NO_ENCRYPTION,),
+        ):
+            name = member_name.decode("utf-8", errors="replace")
+            if name == expected_name:
+                member_count += 1
+                if member_count > 1:
+                    raise RuntimeError("The public ZIP contains more than one matching CSV member.")
+                with extracted.open("xb") as target:
+                    for block in member_chunks:
+                        target.write(block)
+                        digest.update(block)
+                        written += len(block)
+                if declared_size is not None and written != declared_size:
+                    raise RuntimeError(
+                        f"Deflate64 output size mismatch: member declared {declared_size:,}, wrote {written:,} bytes."
+                    )
+            else:
+                # stream-unzip requires every yielded member generator to be
+                # fully consumed before the next member can be requested.
+                for _ in member_chunks:
+                    pass
+
+        if member_count != 1:
+            raise RuntimeError(f"stream-unzip yielded the selected CSV {member_count} times; expected exactly once.")
+        if written != info.file_size:
+            raise RuntimeError(
+                f"Deflate64 output size mismatch: central directory declared {info.file_size:,}, wrote {written:,} bytes."
+            )
+        print(
+            f"CSV_ARCHIVE_ENTRY: {expected_name}; compression_method={info.compress_type}; "
+            f"uncompressed_bytes={written:,}; sha256={digest.hexdigest()}; "
+            "stream-unzip CRC32 and size verification completed."
+        )
+        return extracted
     with path.open("rb") as probe:
         magic = probe.read(2)
     if path.suffix.lower() == ".gz" or magic == b"\x1f\x8b":
