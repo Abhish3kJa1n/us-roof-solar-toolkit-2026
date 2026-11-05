@@ -381,7 +381,8 @@ def main() -> int:
                     "total_expenditure_replicate_se_usd": round(total_result[1]) if total_result else "",
                     "total_expenditure_90ci_low_usd": round(total_result[2]) if total_result else "",
                     "total_expenditure_90ci_high_usd": round(total_result[3]) if total_result else "",
-                    "publication_status": "RESEARCH_ONLY_C16_RECONCILIATION_AND_VARIANCE_REVIEW_PENDING",
+                    "precision_screen_status": "NOT_MANUALLY_REVIEWED",
+                    "cv_screen_threshold": 0.30,
                 }
                 metric_results = [("mean", weighted_mean_with_brr(positive_records))]
                 metric_results.extend((label, weighted_quantile_with_brr(positive_records, q)) for label, q in (("median", .5), ("p25", .25), ("p75", .75)))
