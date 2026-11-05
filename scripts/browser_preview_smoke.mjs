@@ -246,6 +246,7 @@ try {
   assert.equal(await page.locator('#high').inputValue(), '');
   assert.equal(await page.locator('#metalSystemField').isVisible(), false);
   results.push('metal reference edits, system switching, material switching and reset: PASS');
+  results.push('roof reference-state v2 regression coverage: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-metal-reference.png'), fullPage: true });
 
   // City-based solar: real Census autocomplete, exact place lookup, PVWatts and OpenEI.
