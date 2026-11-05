@@ -35,6 +35,7 @@ let previousMaterial=materialEl.value;
 let previousMetalSystem=metalSystemEl.value;
 
 const hasAnyRate=()=>lowEl.value.trim()!==''||highEl.value.trim()!=='';
+const referenceBasis=reference=>reference.basis||(reference.type==='metal'?'HomeGuide published installed range for '+reference.label+' ('+reference.source+'); not local or property-specific.':(reference.source||'Publisher reference; not local or property-specific.'));
 const setStatus=message=>{
   referenceStatus.textContent=message||'';
   referenceStatus.hidden=!message;
@@ -53,18 +54,19 @@ const endpointDescription=(name,reference)=>{
 };
 const carriedNotice=(nextLabel)=>{
   if(!carriedReference) return customNotice;
-  return 'Your rate values were retained after changing from '+carriedReference.label+' to '+nextLabel+'. '+endpointDescription('low',carriedReference)+'; '+endpointDescription('high',carriedReference)+'. These values are not a published range for '+nextLabel+'. Click the reload button to replace both values with the selected system reference, or edit both rates to match your written proposal.';
+  return 'Your rate values were retained after changing from '+carriedReference.label+' to '+nextLabel+'. '+endpointDescription('low',carriedReference)+'; '+endpointDescription('high',carriedReference)+'. These values are not a published range for '+nextLabel+'. Original source: '+referenceBasis(carriedReference)+' Click the reload button to replace both values with the selected system reference, or edit both rates to match your written proposal.';
 };
 const rateBasis=()=>{
   if(activeReference){
     if(editedEndpoints.size===0) return activeReference.basis;
-    return 'Mixed/custom rate pair. '+endpointDescription('low',activeReference)+'; '+endpointDescription('high',activeReference)+'. This is no longer the publisher’s complete published interval. Original reference: '+activeReference.basis;
+    return 'Mixed/custom rate pair. '+endpointDescription('low',activeReference)+'; '+endpointDescription('high',activeReference)+'. This is no longer the publisher’s complete published interval. Original reference: '+referenceBasis(activeReference);
   }
   if(carriedReference) return carriedNotice(materialEl.value==='metal'&&metalReferences[metalSystemEl.value]?metalReferences[metalSystemEl.value].label:'the selected material');
   if(customNotice) return customNotice;
   return 'Visitor-entered rates; source not asserted.';
 };
 const setReference=(reference,message)=>{
+  reference.basis=referenceBasis(reference);
   lowEl.value=reference.low;
   highEl.value=reference.high;
   activeReference=reference;
