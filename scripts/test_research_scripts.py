@@ -173,7 +173,7 @@ with tempfile.TemporaryDirectory() as tmp:
     assert all(float(row["median_replicate_se_usd"]) == 0 for row in rows)
     assert all(float(row["mean_replicate_se_usd"]) == 0 for row in rows)
     assert "eligible roofing project records: 63" in stdout
-    assert "distinct owner-occupied housing units: 62" in stdout
+    assert "distinct respondent housing units: 62" in stdout
     assert "zero-cost records retained in count/total: 2" in stdout
     assert "missing_or_negative_cost: 1" in stdout
     assert "owner_occupancy_or_interview_excluded: 2" in stdout
