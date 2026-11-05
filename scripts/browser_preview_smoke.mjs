@@ -187,9 +187,7 @@ try {
     ['corrugated', '5', '12', /corrugated sheet metal/i],
     ['standing_seam', '9', '16', /standing seam/i],
     ['metal_shingles', '6', '14', /metal shingles/i],
-    ['metal_slate', '6', '14', /metal slate/i],
-    ['stone_coated_steel', '7', '13', /stone-coated steel/i],
-    // Base-metal material references
+    // Base-metal material/type references
     ['galvanized_steel', '5', '13', /galvanized steel/i],
     ['galvalume_steel', '5', '13', /Galvalume steel/i],
     ['aluminum', '7', '17', /aluminum/i],
@@ -198,6 +196,8 @@ try {
     ['tin_terne', '6', '18', /tin \/ terne/i],
     ['stainless_steel', '10', '21', /stainless steel/i],
     ['corten_steel', '6', '11', /Corten \/ weathering steel/i],
+    ['metal_slate', '6', '14', /metal slate/i],
+    ['stone_coated_steel', '7', '13', /stone-coated steel/i],
   ];
   for (const [system, low, high, label] of metalSystems) {
     await page.locator('#metalSystem').selectOption(system);
