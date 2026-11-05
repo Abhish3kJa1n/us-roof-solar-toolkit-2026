@@ -171,14 +171,14 @@ with tempfile.TemporaryDirectory() as tmp:
 audit = runpy.run_path(str(ROOT / "scripts/audit_ahs_source_files.py"))
 locate_relational_csvs = audit["locate_relational_csvs"]
 replicate_fields = [f"REPWEIGHT{i}" for i in range(1, 161)]
-project_csv = "CONTROL,JOBTYPE,JOBCOST,JOBDIY\\nh1,16,10000,2\\n"
+project_csv = "CONTROL,JOBTYPE,JOBCOST,JOBDIY\nh1,16,10000,2\n"
 for filename, geography_field, require_omb in [
     ("national-source.zip", "OMB13CBSA", True),
     ("metro-source.zip", "METRO", False),
 ]:
     source_zip = Path(tempfile.gettempdir()) / filename
     household_fields = ["CONTROL", "TENURE", "INTSTATUS", "WEIGHT", geography_field, *replicate_fields]
-    household_csv = ",".join(household_fields) + "\\nh1,1,1,1,12060," + ",".join(["1"] * 160) + "\\n"
+    household_csv = ",".join(household_fields) + "\nh1,1,1,1,12060," + ",".join(["1"] * 160) + "\n"
     with zipfile.ZipFile(source_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("PROJECT.csv", project_csv)
         archive.writestr("HOUSEHOLD.csv", household_csv)
