@@ -184,7 +184,7 @@ try {
 
   const metalSystems = [
     // Roof style / system references
-    ['corrugated', '5', '12', /corrugated \/ standard sheet metal/i],
+    ['corrugated', '5', '12', /corrugated sheet metal/i],
     ['standing_seam', '9', '16', /standing seam/i],
     ['metal_shingles', '6', '14', /metal shingles/i],
     ['metal_slate', '6', '14', /metal slate/i],
@@ -220,8 +220,8 @@ try {
   assert.equal(await page.locator('#high').inputValue(), '16');
   const mixedStatus = await page.locator('#referenceStatus').innerText();
   assert.match(mixedStatus, /standing seam/i);
-  assert.match(mixedStatus, /not a published range for corrugated \/ standard sheet metal/i);
-  assert.match(await page.locator('#loadReference').innerText(), /Reload corrugated \/ standard sheet metal reference/i);
+  assert.match(mixedStatus, /not a published range for corrugated sheet metal/i);
+  assert.match(await page.locator('#loadReference').innerText(), /Reload corrugated sheet metal reference/i);
   await page.locator('#run').click();
   const mixedResult = await page.locator('#result').innerText();
   assert.match(mixedResult, /Mixed\/custom rate pair/i);
