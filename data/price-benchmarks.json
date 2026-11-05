@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "last_updated": "2026-11-01",
+  "last_updated": "2026-11-05",
   "currency": "USD",
   "records": [],
   "source_status": {
@@ -16,13 +16,15 @@
     },
     "ahs_metro_roofing_job_cost": {
       "status": "withheld",
-      "reason": "The 2023 AHS National PUF has been processed: JOBTYPE=16 is confirmed as added/replaced roofing, and national C-16 point estimates reproduce the PUF estimate column. Metro-level Fay-BRR margin-of-error reconciliation, precision/sample review and the February 2013 OMB CBSA crosswalk remain incomplete. No metro records are approved for publication.",
+      "reason": "The National PUF supports the integrated National/Top-15 analysis. The separate 2023 Metropolitan PUF contains the five Next-10 areas actually sampled in 2023; its OMB13CBSA household frequencies match the Census Sample Design Table 2.2 interview counts. The PUFs must be analyzed separately with their own household weights. The independent Metro sample's 59.2% unit nonresponse rate is below the Census Bureau's 60% serious-quality-risk threshold, and Census warns weighting may not fully remove nonresponse bias. No metro records are approved for publication.",
       "next_gates": [
-        "Complete metro-specific weighted whole-project distributions for the supported AHS Top 15 metros using the validated roofing job universe and survey weights.",
-        "Reconcile metro Fay-BRR 90% margins of error against the corresponding Census AHS Table Creator C-16 MOEs; document any remaining differences.",
-        "Set and independently review unweighted sample-size and statistical-precision suppression rules for every published metro distribution.",
-        "Validate city-to-metro assignment against the AHS-matching February 2013 OMB CBSA boundaries; never label a metro distribution as an individual-city price.",
-        "Publish only metro-level nominal-dollar whole-project distributions with unweighted sample count, survey period, scope, imputation and variance limitations. Never convert AHS whole-project spending into dollars per square foot."
+        "Complete and review the separate National PUF Top-15 and Metropolitan PUF five-area outputs; never pool records or replicate weights from the two PUFs.",
+        "For contractor-oriented references, use only positive-cost JOBDIY=2 professional projects. Preserve DIY and all-project distributions as separate research outputs.",
+        "Report project counts and distinct contributing housing units separately; sample_n must represent positive-cost housing units, not project rows.",
+        "Require mean, median, p25 and p75 Fay-BRR CV values below 30%, plus manual precision and suppression approval. The 30% screen mirrors the AHS Table Creator suppression rule; a PUF pass is not equivalent to Table Creator approval.",
+        "Require manual review of the 2023 response-rate and nonsampling-bias risk, including the 59.2% unit nonresponse rate for the independent Metro sample.",
+        "Validate selected-city-to-metro assignment against the matching February 2013 OMB CBSA geography. Never label a metro-wide distribution as an individual-city price.",
+        "Publish only metro-level nominal-dollar whole-project distributions with source PUF, survey period, positive-cost project and housing-unit counts, scope, imputation and response limitations. Never convert AHS whole-project spending to dollars per square foot."
       ]
     }
   }
