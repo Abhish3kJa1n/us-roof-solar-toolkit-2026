@@ -28,7 +28,7 @@ def solar_row(n=125):
 def roof_row(n=44):
     return {
         "record_type": "ahs_metro_roofing_job_cost", "publication_status": "approved",
-        "geography_level": "metro", "metro_omb13cbsa": "17140", "metro_name": "Cincinnati, OH",
+        "geography_level": "metro", "metro_omb13cbsa": "17140", "metro_name": "Cincinnati, OH-KY-IN",
         "sample_n": n, "source_puf": "metropolitan", "weighted_response_rate_pct": 62.9,
         "project_n": n + 6, "positive_cost_project_n": n + 2, "positive_cost_housing_units_n": n,
         "jobdiy_scope": "professional",
@@ -91,10 +91,12 @@ expect(any("must match 2023 Census Table 2.2 (62.9%)" in e for e in mod.validate
 row = roof_row(); row["metro_omb13cbsa"] = "12420"; row["metro_name"] = "Austin-Round Rock-Georgetown, TX"
 expect(any("five Next-10 CBSA areas actually interviewed" in e for e in mod.validate_record(row)), "2023 Metro PUF cannot publish an unsampled metro")
 row = roof_row(); row["metro_name"] = "Cincinnati"
-expect(any("2013 CBSA label used by the analyzer" in e for e in mod.validate_record(row)), "Next-5 metro label must match the analyzer's 2013 CBSA label")
+expect(any("official 2013 OMB CBSA label" in e for e in mod.validate_record(row)), "Next-5 metro label must match the official 2013 CBSA geography label")
+row = roof_row(); row["metro_name"] = "Cincinnati, OH"
+expect(any("official 2013 OMB CBSA label" in e for e in mod.validate_record(row)), "abbreviated city-only label cannot pass the Next-5 CBSA geography gate")
 row = roof_row(); row["source_puf"] = "national"; row["metro_omb13cbsa"] = "12060"; row["metro_name"] = "Atlanta-Sandy Springs-Roswell, GA"; row.pop("weighted_response_rate_pct")
 expect(mod.validate_record(row) == [], "National PUF row may use an integrated Top-15 code without Metro-PUF response metadata")
-row = roof_row(); row["source_puf"] = "national"; row["metro_omb13cbsa"] = "17140"; row["metro_name"] = "Cincinnati, OH"; row.pop("weighted_response_rate_pct")
+row = roof_row(); row["source_puf"] = "national"; row["metro_omb13cbsa"] = "17140"; row["metro_name"] = "Cincinnati, OH-KY-IN"; row.pop("weighted_response_rate_pct")
 expect(any("15 integrated Top-15" in e for e in mod.validate_record(row)), "National PUF must not be used for the separately sampled Next-5 areas")
 row = roof_row(); row["approval"]["statistical_precision_reviewed"] = False
 expect(any("statistical_precision_reviewed" in e for e in mod.validate_record(row)), "AHS precision approval is mandatory")

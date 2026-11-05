@@ -48,11 +48,11 @@ METRO_NAMES = {
     "41860": "San Francisco-Oakland-Hayward, CA",
     "42660": "Seattle-Tacoma-Bellevue, WA",
     "47900": "Washington-Arlington-Alexandria, DC-VA-MD-WV",
-    "17140": "Cincinnati, OH",
-    "17460": "Cleveland, OH",
-    "19740": "Denver, CO",
-    "33340": "Milwaukee, WI",
-    "35380": "New Orleans, LA",
+    "17140": "Cincinnati, OH-KY-IN",
+    "17460": "Cleveland-Elyria, OH",
+    "19740": "Denver-Aurora-Lakewood, CO",
+    "33340": "Milwaukee-Waukesha-West Allis, WI",
+    "35380": "New Orleans-Metairie, LA",
 }
 
 

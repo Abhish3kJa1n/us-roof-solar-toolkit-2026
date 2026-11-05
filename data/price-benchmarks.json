@@ -22,7 +22,7 @@
         "For contractor-oriented references, use only positive-cost JOBDIY=2 professional projects. Preserve DIY and all-project distributions as separate research outputs.",
         "Report project counts and distinct contributing housing units separately; sample_n must represent positive-cost housing units, not project rows.",
         "Require mean, median, p25 and p75 Fay-BRR CV values below 30%, plus manual precision and suppression approval. The 30% screen mirrors the AHS Table Creator suppression rule; a PUF pass is not equivalent to Table Creator approval.",
-        "Record the area-specific 2023 Census Table 2.2 weighted response rate on each Next-5 Metropolitan PUF row: Cincinnati 62.9%, Cleveland 51.9%, Denver 59.6%, Milwaukee 61.4%, New Orleans 61.0%.",
+        "Record the area-specific 2023 Census Table 2.2 weighted response rate on each Next-5 Metropolitan PUF row: Cincinnati, OH-KY-IN 62.9%; Cleveland-Elyria, OH 51.9%; Denver-Aurora-Lakewood, CO 59.6%; Milwaukee-Waukesha-West Allis, WI 61.4%; New Orleans-Metairie, LA 61.0%.",
         "Keep the survey-wide 59.2% unit nonresponse figure distinct from area-specific response rates and document the possible nonresponse-bias impact.",
         "Validate selected-city-to-metro assignment against the matching February 2013 OMB CBSA geography. Never label a metro-wide distribution as an individual-city price.",
         "Publish only metro-level nominal-dollar whole-project distributions with source PUF, survey period, positive-cost project and housing-unit counts, scope, imputation and response limitations. Never convert AHS whole-project spending to dollars per square foot."

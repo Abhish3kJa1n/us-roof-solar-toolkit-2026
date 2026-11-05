@@ -264,6 +264,13 @@ brr = weighted_mean_with_brr([(100.0, 1.0, rep_a), (200.0, 1.0, rep_b)])
 assert brr is not None
 assert abs(brr[0] - 150.0) < 1e-9 and abs(brr[1] - 50.0) < 1e-9, "Fay-BRR must use the 4/160 variance multiplier"
 metro_names = analyzer["METRO_NAMES"]
-assert {code for code in ("17140", "17460", "19740", "33340", "35380") if code in metro_names} == {"17140", "17460", "19740", "33340", "35380"}
+expected_next5_names = {
+    "17140": "Cincinnati, OH-KY-IN",
+    "17460": "Cleveland-Elyria, OH",
+    "19740": "Denver-Aurora-Lakewood, CO",
+    "33340": "Milwaukee-Waukesha-West Allis, WI",
+    "35380": "New Orleans-Metairie, LA",
+}
+assert {code: metro_names.get(code) for code in expected_next5_names} == expected_next5_names
 assert audit["EXPECTED_2023_METRO_WEIGHTED_RESPONSE_RATES"] == {"17140": 62.9, "17460": 51.9, "19740": 59.6, "33340": 61.4, "35380": 61.0}
 print("PASS: Berkeley/AHS research scripts on synthetic fixtures, including separate PUF source provenance, distinct-household counts and replicate CV outputs.")

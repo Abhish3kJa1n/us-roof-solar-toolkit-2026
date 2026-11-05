@@ -34,22 +34,22 @@ CHUNK = 1024 * 1024
 # units for the five Next-10 areas actually surveyed in 2023. The observed PUF
 # geography counts should match these counts exactly.
 EXPECTED_2023_METRO_PUF_HOUSEHOLD_COUNTS = {
-    "17140": 1936,  # Cincinnati, OH
-    "17460": 1555,  # Cleveland, OH
-    "19740": 2057,  # Denver, CO
-    "33340": 1905,  # Milwaukee, WI
-    "35380": 1788,  # New Orleans, LA
+    "17140": 1936,  # Cincinnati, OH-KY-IN
+    "17460": 1555,  # Cleveland-Elyria, OH
+    "19740": 2057,  # Denver-Aurora-Lakewood, CO
+    "33340": 1905,  # Milwaukee-Waukesha-West Allis, WI
+    "35380": 1788,  # New Orleans-Metairie, LA
 }
 
 # Official 2023 AHS Independent Metro Sample Table 2.2 weighted response rates.
 # These area-specific rates are distinct from the survey-wide 59.2% unit
 # nonresponse figure in the report overview.
 EXPECTED_2023_METRO_WEIGHTED_RESPONSE_RATES = {
-    "17140": 62.9,  # Cincinnati, OH
-    "17460": 51.9,  # Cleveland, OH
-    "19740": 59.6,  # Denver, CO
-    "33340": 61.4,  # Milwaukee, WI
-    "35380": 61.0,  # New Orleans, LA
+    "17140": 62.9,  # Cincinnati, OH-KY-IN
+    "17460": 51.9,  # Cleveland-Elyria, OH
+    "19740": 59.6,  # Denver-Aurora-Lakewood, CO
+    "33340": 61.4,  # Milwaukee-Waukesha-West Allis, WI
+    "35380": 61.0,  # New Orleans-Metairie, LA
 }
 
 

@@ -35,11 +35,11 @@ AHS_2023_TOP15_CBSA_CODES = {
     "38060", "40140", "41860", "42660", "47900",
 }
 AHS_2023_NEXT5_METROS = {
-    "17140": ("Cincinnati, OH", 62.9),
-    "17460": ("Cleveland, OH", 51.9),
-    "19740": ("Denver, CO", 59.6),
-    "33340": ("Milwaukee, WI", 61.4),
-    "35380": ("New Orleans, LA", 61.0),
+    "17140": ("Cincinnati, OH-KY-IN", 62.9),
+    "17460": ("Cleveland-Elyria, OH", 51.9),
+    "19740": ("Denver-Aurora-Lakewood, CO", 59.6),
+    "33340": ("Milwaukee-Waukesha-West Allis, WI", 61.4),
+    "35380": ("New Orleans-Metairie, LA", 61.0),
 }
 
 
@@ -148,7 +148,7 @@ def validate_record(row: object) -> list[str]:
             else:
                 expected_name, expected_rate = expected
                 if row.get("metro_name") != expected_name:
-                    errors.append("2023 Metropolitan PUF metro_name must match the 2013 CBSA label used by the analyzer")
+                    errors.append("2023 Metropolitan PUF metro_name must match the official 2013 OMB CBSA label used by the analyzer")
                 try:
                     observed_rate = float(row["weighted_response_rate_pct"])
                     if abs(observed_rate - expected_rate) > 0.05:
