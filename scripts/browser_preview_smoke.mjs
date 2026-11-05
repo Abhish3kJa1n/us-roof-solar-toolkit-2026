@@ -106,9 +106,12 @@ try {
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
 
-  // The next-step gate must reject blank required roof inputs before moving on.
+  // The shared validator must mark each blank required field inline and block the next step.
   await page.locator('button[data-next="2"]').click();
-  assert.ok((await page.locator('#error1').innerText()).trim().length > 0, 'blank required roof inputs should be blocked before results');
+  const roofTypeMessage = page.locator('#roofType-checker-message');
+  assert.equal(await page.locator('#roofType').getAttribute('aria-invalid'), 'true', 'blank roof material must be marked invalid');
+  assert.ok((await roofTypeMessage.innerText()).trim().length > 0, 'blank roof material must show an inline field-level error');
+  assert.ok(await roofTypeMessage.isVisible(), 'the inline roof-material error must be visible');
   assert.equal(await page.locator('[data-panel="2"]').isVisible(), false, 'invalid roof inputs must not advance to energy details');
 
   await page.locator('#roofType').selectOption('asphalt');
