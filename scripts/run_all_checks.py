@@ -12,6 +12,7 @@ CHECKS = [
     "test_prepare_deploy.py",
     "audit_eia_data.py",
     "test_standalone_calculators.py",
+    "test_roof_cost_reference_state.mjs",
     "test_solar_calculator.py",
     "test_combined_calculator.py",
     "test_privacy_guardrails.py",
