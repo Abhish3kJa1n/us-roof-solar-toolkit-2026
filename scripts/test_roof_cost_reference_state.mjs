@@ -35,11 +35,20 @@ const labels = {
     flat: 'Flat / membrane',
   },
   metalSystem: {
-    '': 'Choose the quoted metal system',
-    corrugated: 'Corrugated sheet metal',
+    '': 'Choose the closest published metal category',
+    corrugated: 'Corrugated / standard sheet metal',
     standing_seam: 'Standing seam',
     metal_shingles: 'Metal shingles',
-    steel: 'Galvanized / Galvalume steel',
+    metal_slate: 'Metal slate',
+    stone_coated_steel: 'Stone-coated steel',
+    galvanized_steel: 'Galvanized steel',
+    galvalume_steel: 'Galvalume steel',
+    aluminum: 'Aluminum',
+    copper: 'Copper',
+    zinc: 'Zinc',
+    tin_terne: 'Tin / terne',
+    stainless_steel: 'Stainless steel',
+    corten_steel: 'Corten / weathering steel',
   },
 };
 
@@ -62,6 +71,12 @@ const document = {
     return elements[id];
   },
 };
+const pageHtml = fs.readFileSync(new URL('../calculators/roof-replacement-cost.html', import.meta.url), 'utf8');
+assert.match(pageHtml, /<optgroup label="By roof style \/ system">/);
+assert.match(pageHtml, /<optgroup label="By base metal \/ material">/);
+for (const value of ['corrugated', 'standing_seam', 'metal_shingles', 'metal_slate', 'stone_coated_steel', 'galvanized_steel', 'galvalume_steel', 'aluminum', 'copper', 'zinc', 'tin_terne', 'stainless_steel', 'corten_steel']) {
+  assert.match(pageHtml, new RegExp('value="' + value + '"'), 'missing published metal category option: ' + value);
+}
 const source = fs.readFileSync(new URL('../assets/js/roof-replacement-cost-1.js', import.meta.url), 'utf8');
 vm.runInNewContext(source, { document, Intl, Number, Set, Array, String, Math }, { filename: 'roof-replacement-cost-1.js' });
 
@@ -94,14 +109,23 @@ assert.equal(elements.metalSystem.value, '');
 assert.equal(elements.low.value, '');
 assert.equal(elements.high.value, '');
 assert.equal(elements.loadReference.disabled, true, 'reference button is disabled until a metal system is selected');
-assert.ok(elements.loadReference.textContent.includes('Choose a metal system'));
+assert.ok(elements.loadReference.textContent.includes('Choose a metal category'));
 
 // Every published metal-system range is loaded and the source follows the selected system.
 const systems = [
-  ['corrugated', '5', '12', 'corrugated sheet metal'],
+  ['corrugated', '5', '12', 'corrugated / standard sheet metal'],
   ['standing_seam', '9', '16', 'standing seam'],
   ['metal_shingles', '6', '14', 'metal shingles'],
-  ['steel', '5', '13', 'galvanized / Galvalume steel'],
+  ['metal_slate', '6', '14', 'metal slate'],
+  ['stone_coated_steel', '7', '13', 'stone-coated steel'],
+  ['galvanized_steel', '5', '13', 'galvanized steel'],
+  ['galvalume_steel', '5', '13', 'Galvalume steel'],
+  ['aluminum', '7', '17', 'aluminum'],
+  ['copper', '13', '30', 'copper'],
+  ['zinc', '10', '20', 'zinc'],
+  ['tin_terne', '6', '18', 'tin / terne'],
+  ['stainless_steel', '10', '21', 'stainless steel'],
+  ['corten_steel', '6', '11', 'Corten / weathering steel'],
 ];
 for (const [key, low, high, label] of systems) {
   chooseMetalSystem(key);
@@ -111,9 +135,9 @@ for (const [key, low, high, label] of systems) {
   assert.equal(elements.loadReference.disabled, false);
   calculate();
   assert.ok(elements.result.innerHTML.includes('HomeGuide'));
-  assert.ok(elements.result.innerHTML.toLowerCase().includes(('Metal system: ' + label).toLowerCase()));
+  assert.ok(elements.result.innerHTML.toLowerCase().includes(('Metal reference category: ' + label).toLowerCase()));
 }
-console.log('PASS all four metal systems load their own disclosed HomeGuide ranges');
+console.log('PASS all 13 metal style/material categories load their own disclosed HomeGuide ranges');
 
 // Changing between systems without editing automatically refreshes both endpoints.
 chooseMetalSystem('corrugated');
@@ -128,8 +152,8 @@ assert.ok(elements.referenceStatus.textContent.includes('high endpoint remains f
 chooseMetalSystem('corrugated');
 assertRates('10', '16', 'mixed range retained after changing system');
 assert.ok(elements.referenceStatus.textContent.includes('standing seam'));
-assert.ok(elements.referenceStatus.textContent.includes('not a published range for corrugated sheet metal'));
-assert.ok(elements.loadReference.textContent.includes('Reload corrugated sheet metal reference'));
+assert.ok(elements.referenceStatus.textContent.includes('not a published range for corrugated / standard sheet metal'));
+assert.ok(elements.loadReference.textContent.includes('Reload corrugated / standard sheet metal reference'));
 calculate();
 assert.ok(elements.result.innerHTML.includes('Mixed/custom rate pair'));
 assert.ok(elements.result.innerHTML.includes('not a published range'));
@@ -137,7 +161,7 @@ reload();
 assertRates('5', '12', 'explicit reload for newly selected system');
 assert.ok(elements.referenceStatus.textContent.includes('corrugated sheet metal'));
 calculate();
-assert.ok(elements.result.innerHTML.includes('HomeGuide published installed range for corrugated sheet metal'));
+assert.ok(elements.result.innerHTML.includes('HomeGuide published installed range for corrugated / standard sheet metal'));
 console.log('PASS edited reference never silently becomes another system reference; explicit reload replaces both endpoints');
 
 // A material change clears any reference-derived values, including partially edited published ranges.
