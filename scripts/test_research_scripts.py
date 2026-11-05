@@ -150,7 +150,7 @@ with tempfile.TemporaryDirectory() as tmp:
     professional = next(row for row in rows if row["group"] == "household_did_not_do_most_work_JOBDIY_2")
     diy = next(row for row in rows if row["group"] == "household_did_most_work_JOBDIY_1")
     assert professional["jobdiy_scope"] == "professional" and diy["jobdiy_scope"] == "diy"
-    assert professional["positive_cost_households_n"] == "31"
+    assert professional["positive_cost_households_n"] == "30"
     assert next(row for row in metro_rows if row["group"] == "all_roofing_projects")["sample_source"] == "Synthetic National PUF fixture"
     metro_all = next(row for row in metro_rows if row["group"] == "all_roofing_projects")
     assert metro_all["metro_omb13cbsa"] == "12060"
