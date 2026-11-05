@@ -54,7 +54,7 @@ const endpointDescription=(name,reference)=>{
 };
 const carriedNotice=(nextLabel)=>{
   if(!carriedReference) return customNotice;
-  return 'Your rate values were retained after changing from '+carriedReference.label+' to '+nextLabel+'. '+endpointDescription('low',carriedReference)+'; '+endpointDescription('high',carriedReference)+'. These values are not a published range for '+nextLabel+'. Original source: '+referenceBasis(carriedReference)+' Click the reload button to replace both values with the selected system reference, or edit both rates to match your written proposal.';
+  return 'Mixed/custom rate pair retained after changing from '+carriedReference.label+' to '+nextLabel+'. '+endpointDescription('low',carriedReference)+'; '+endpointDescription('high',carriedReference)+'. These values are not a published range for '+nextLabel+'. Original source: '+referenceBasis(carriedReference)+' Click the reload button to replace both values with the selected system reference, or edit both rates to match your written proposal.';
 };
 const rateBasis=()=>{
   if(activeReference){
