@@ -30,6 +30,17 @@ SOURCES = {
 }
 CHUNK = 1024 * 1024
 
+# Official 2023 AHS Independent Metro Sample Table 2.2: interviewed housing
+# units for the five Next-10 areas actually surveyed in 2023. The observed PUF
+# geography counts should match these counts exactly.
+EXPECTED_2023_METRO_PUF_HOUSEHOLD_COUNTS = {
+    "17140": 1936,  # Cincinnati, OH
+    "17460": 1555,  # Cleveland, OH
+    "19740": 2057,  # Denver, CO
+    "33340": 1905,  # Milwaukee, WI
+    "35380": 1788,  # New Orleans, LA
+}
+
 
 def download(name: str, url: str, target: Path) -> tuple[int, str]:
     request = urllib.request.Request(
@@ -188,13 +199,13 @@ def inspect_household(puf_zip: Path, household_name: str, header: list[str]) -> 
     print(f"HOUSEHOLD rows: {count:,}")
 
 
-def inspect_geography_distributions(puf_zip: Path, household_name: str, header: list[str]) -> None:
-    """Print only aggregate frequencies for likely metro/geography identifiers."""
+def inspect_geography_distributions(puf_zip: Path, household_name: str, header: list[str]) -> dict[str, dict[str, int]]:
+    """Print aggregate frequencies and return them for geography validation."""
     fields = [x.strip().strip('"') for x in header]
     candidates = [field for field in fields if re.search(r"METRO|CBSA|AREA|SMSA|MSA", field, re.I)]
     if not candidates:
         print("METROPOLITAN GEOGRAPHY: no likely geography field name found; inspect the codebook and labels.")
-        return
+        return {}
     counters = {field: Counter() for field in candidates}
     with zipfile.ZipFile(puf_zip) as archive, archive.open(household_name) as binary:
         text = io.TextIOWrapper(binary, encoding="utf-8-sig", newline="")
@@ -206,6 +217,7 @@ def inspect_geography_distributions(puf_zip: Path, household_name: str, header: 
     print("METROPOLITAN GEOGRAPHY IDENTIFIER DISTRIBUTIONS (aggregate only):")
     for field, counts in counters.items():
         print(f"  {field}: distinct_nonblank={len(counts):,}; values={counts.most_common(60)}")
+    return {field.upper(): dict(counts) for field, counts in counters.items()}
 
 
 def inspect_value_labels(labels_zip: Path) -> None:
@@ -316,18 +328,26 @@ def main() -> int:
         inspect_household(files["national_puf"], household_name, household_header)
         project_jobtype_counts(files["national_puf"], project_name)
 
-        # The Metropolitan PUF is a separate package. Inspect its own
-        # relational files and geography fields instead of reusing the National
-        # PUF's OMB13CBSA assumptions or treating its Top-15 groups as exhaustive.
+        # The Metropolitan PUF is a separate sample source. Require the
+        # observed OMB13CBSA field; never infer geography from file names.
         metro_project_name, metro_household_name, metro_project_header, metro_household_header = locate_relational_csvs(
-            files["metro_puf"], require_omb13cbsa=False
+            files["metro_puf"], require_omb13cbsa=True
         )
         print("\nIdentified relational METROPOLITAN PROJECT CSV: " + metro_project_name)
         print("METRO PROJECT schema: " + ", ".join(metro_project_header[:80]))
         print("Identified relational METROPOLITAN HOUSEHOLD CSV: " + metro_household_name)
         print("METRO HOUSEHOLD schema fields: " + str(len(metro_household_header)))
         inspect_household(files["metro_puf"], metro_household_name, metro_household_header)
-        inspect_geography_distributions(files["metro_puf"], metro_household_name, metro_household_header)
+        metro_geo_counts = inspect_geography_distributions(files["metro_puf"], metro_household_name, metro_household_header)
+        observed_metro_counts = metro_geo_counts.get("OMB13CBSA", {})
+        if observed_metro_counts != EXPECTED_2023_METRO_PUF_HOUSEHOLD_COUNTS:
+            raise RuntimeError(
+                "Metropolitan PUF OMB13CBSA frequency check failed. "
+                f"Expected 2023 Table 2.2 interviewed counts={EXPECTED_2023_METRO_PUF_HOUSEHOLD_COUNTS}; "
+                f"observed PUF household counts={observed_metro_counts}. "
+                "Stop; do not infer metro assignment."
+            )
+        print("METROPOLITAN PUF OMB13CBSA CHECK: PASS; exact five-area frequencies match Census 2023 Sample Design Table 2.2.")
         project_jobtype_counts(files["metro_puf"], metro_project_name)
 
         inspect_value_labels(files["value_labels"])
@@ -351,6 +371,7 @@ def main() -> int:
             "--output", str(national_output),
             "--metro-output", str(metro_output),
             "--roof-job-type-code", "16",
+            "--sample-source", "2023 National PUF (integrated national longitudinal sample; Top 15 OMB13CBSA)",
         ]
         print("\nRunning the corrected AHS research estimator against the actual National PUF...")
         completed = subprocess.run(command, check=True, text=True, capture_output=True)
@@ -395,7 +416,8 @@ def main() -> int:
             ("Mean", float(all_roofing["mean_90ci_high_usd"]) - actual_mean, reference["mean_moe_usd"]),
             ("Total", float(all_roofing["total_expenditure_90ci_high_usd"]) - actual_total, reference["total_expenditure_moe_thousands"] * 1000),
         ]
-        print("C-16 TABLE CREATOR 90% MARGIN COMPARISON (variance review only):")
+        print("C-16 TABLE CREATOR 90% MARGIN COMPARISON (cross-source diagnostic only):")
+        print("  The PUF estimates are disclosure-protected; published Table Creator estimates use the IUF. Census warns that PUF estimates may differ due to topcoding and geographic disclosure avoidance. Do not treat these as identical estimands.")
         for label, actual_moe, reference_moe in margin_checks:
             gap_pct = 100 * (actual_moe - reference_moe) / reference_moe if reference_moe else float("nan")
             print(f"  {label}: Fay-BRR margin USD {actual_moe:,.0f}; Table Creator margin USD {reference_moe:,.0f}; difference={gap_pct:+.1f}%")
@@ -404,18 +426,61 @@ def main() -> int:
 
         with metro_output.open(encoding="utf-8", newline="") as stream:
             metro_rows = list(csv.DictReader(stream))
-        print("TOP-15 METRO RESEARCH-ONLY OUTPUTS (whole-project roofing costs; not city prices):")
+        print("NATIONAL PUF TOP-15 RESEARCH-ONLY OUTPUTS (whole-project spend; not local prices):")
         for row in metro_rows:
-            if row["group"] == "all_roofing_projects":
+            if row["group"] in {"all_roofing_projects", "household_did_not_do_most_work_JOBDIY_2"}:
                 print(
-                    f"  {row['metro_omb13cbsa']} {row['metro_name']}: "
-                    f"projects n={row['unweighted_n']}, weighted={row['weighted_project_count']}; "
-                    f"positive-cost n={row['positive_cost_unweighted_n']}; "
-                    f"median USD {float(row['median_nominal_survey_usd']):,.0f}; "
-                    f"p25 USD {float(row['p25_nominal_survey_usd']):,.0f}; "
-                    f"p75 USD {float(row['p75_nominal_survey_usd']):,.0f}"
+                    f"  {row['metro_omb13cbsa']} {row['metro_name']} [{row['jobdiy_scope']}]: "
+                    f"project_n={row['unweighted_n']}; respondent_households={row['unweighted_households_n']}; "
+                    f"positive_cost_project_n={row['positive_cost_unweighted_n']}; "
+                    f"positive_cost_households={row['positive_cost_households_n']}; "
+                    f"median={row['median_nominal_survey_usd'] or 'not estimable'}; "
+                    f"median_CV={row['median_cv'] or 'not estimable'}; "
+                    f"precision={row['precision_screen_status']}"
                 )
-        print("\nAHS NATIONAL PUF RECONCILIATION AND SEPARATE METROPOLITAN PUF SOURCE/SCHEMA AUDIT COMPLETED. The Metropolitan PUF has not yet been converted into published estimates. No raw files or record-level data were uploaded.")
+
+        # The 2023 Metropolitan PUF is independent of the integrated National
+        # PUF. Run it with its own matched PROJECT/HOUSEHOLD tables and weights.
+        metro_puf_dir = root / "metropolitan-puf"
+        metro_puf_dir.mkdir()
+        with zipfile.ZipFile(files["metro_puf"]) as archive:
+            metro_project_path = Path(archive.extract(metro_project_name, metro_puf_dir))
+            metro_household_path = Path(archive.extract(metro_household_name, metro_puf_dir))
+        next5_overall_output = root / "ahs-roof-next5-overall-research.csv"
+        next5_metro_output = root / "ahs-roof-next5-metro-research.csv"
+        next5_command = [
+            sys.executable, str(analyzer),
+            "--project-input", str(metro_project_path),
+            "--household-input", str(metro_household_path),
+            "--output", str(next5_overall_output),
+            "--metro-output", str(next5_metro_output),
+            "--roof-job-type-code", "16",
+            "--sample-source", "2023 Metropolitan PUF (independent sample; five Next-10 areas interviewed in 2023)",
+        ]
+        print("\nRunning the same research estimator against the separate 2023 Metropolitan PUF...")
+        next5_completed = subprocess.run(next5_command, check=True, text=True, capture_output=True)
+        print(next5_completed.stdout)
+        with next5_metro_output.open(encoding="utf-8", newline="") as stream:
+            next5_rows = list(csv.DictReader(stream))
+        print("SEPARATE METROPOLITAN PUF — FIVE NEXT-10 AREAS (research only; never merged with Top 15):")
+        for code, expected_households in sorted(EXPECTED_2023_METRO_PUF_HOUSEHOLD_COUNTS.items()):
+            for group in ("all_roofing_projects", "household_did_not_do_most_work_JOBDIY_2", "household_did_most_work_JOBDIY_1"):
+                row = next((item for item in next5_rows if item["metro_omb13cbsa"] == code and item["group"] == group), None)
+                scope = "professional" if group.endswith("JOBDIY_2") else "diy" if group.endswith("JOBDIY_1") else "professional_and_diy"
+                if row is None:
+                    print(f"  {code} {scope}: suppressed below the research distinct-household floor; no benchmark approved.")
+                    continue
+                print(
+                    f"  {code} {row['metro_name']} [{scope}]: project_n={row['unweighted_n']}; "
+                    f"respondent_households={row['unweighted_households_n']}; "
+                    f"positive_cost_project_n={row['positive_cost_unweighted_n']}; "
+                    f"positive_cost_households={row['positive_cost_households_n']}; "
+                    f"weighted_projects={row['weighted_project_count']}; "
+                    f"median={row['median_nominal_survey_usd'] or 'not estimable'}; "
+                    f"median_CV={row['median_cv'] or 'not estimable'}; "
+                    f"precision={row['precision_screen_status']}"
+                )
+        print("\nNational PUF Top-15 analysis and separate Metropolitan PUF five-area analysis completed. All outputs were temporary; no raw records or price aggregates were committed or uploaded.")
     return 0
 
 
