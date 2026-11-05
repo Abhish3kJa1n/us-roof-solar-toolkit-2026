@@ -183,10 +183,21 @@ try {
   assert.equal(await page.locator('#loadReference').isDisabled(), true, 'a metal reference cannot be loaded before choosing a system');
 
   const metalSystems = [
-    ['corrugated', '5', '12', /corrugated sheet metal/i],
+    // Roof style / system references
+    ['corrugated', '5', '12', /corrugated \/ standard sheet metal/i],
     ['standing_seam', '9', '16', /standing seam/i],
     ['metal_shingles', '6', '14', /metal shingles/i],
-    ['steel', '5', '13', /galvanized \/ Galvalume steel/i],
+    ['metal_slate', '6', '14', /metal slate/i],
+    ['stone_coated_steel', '7', '13', /stone-coated steel/i],
+    // Base-metal material references
+    ['galvanized_steel', '5', '13', /galvanized steel/i],
+    ['galvalume_steel', '5', '13', /Galvalume steel/i],
+    ['aluminum', '7', '17', /aluminum/i],
+    ['copper', '13', '30', /copper/i],
+    ['zinc', '10', '20', /zinc/i],
+    ['tin_terne', '6', '18', /tin \/ terne/i],
+    ['stainless_steel', '10', '21', /stainless steel/i],
+    ['corten_steel', '6', '11', /Corten \/ weathering steel/i],
   ];
   for (const [system, low, high, label] of metalSystems) {
     await page.locator('#metalSystem').selectOption(system);
@@ -196,7 +207,7 @@ try {
     await page.locator('#run').click();
     assert.match(await page.locator('#result').innerText(), /HomeGuide/);
   }
-  results.push('AHS empty state and all four metal-system references: PASS');
+  results.push('AHS empty state and all 13 metal style/material references: PASS');
 
   // A visitor edit creates a mixed range. Changing system preserves it as custom and does not mislabel it.
   await page.locator('#metalSystem').selectOption('standing_seam');
@@ -207,8 +218,8 @@ try {
   assert.equal(await page.locator('#high').inputValue(), '16');
   const mixedStatus = await page.locator('#referenceStatus').innerText();
   assert.match(mixedStatus, /standing seam/i);
-  assert.match(mixedStatus, /not a published range for corrugated sheet metal/i);
-  assert.match(await page.locator('#loadReference').innerText(), /Reload corrugated sheet metal reference/i);
+  assert.match(mixedStatus, /not a published range for corrugated \/ standard sheet metal/i);
+  assert.match(await page.locator('#loadReference').innerText(), /Reload corrugated \/ standard sheet metal reference/i);
   await page.locator('#run').click();
   const mixedResult = await page.locator('#result').innerText();
   assert.match(mixedResult, /Mixed\/custom rate pair/i);
