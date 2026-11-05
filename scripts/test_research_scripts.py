@@ -122,6 +122,9 @@ with tempfile.TemporaryDirectory() as tmp:
         {"CONTROL": "h063", "JOBTYPE": "16", "JOBCOST": "5000", "JOBDIY": "9"},
         {"CONTROL": "h064", "JOBTYPE": "16", "JOBCOST": "5000", "JOBDIY": "2"},
         {"CONTROL": "h065", "JOBTYPE": "16", "JOBCOST": "5000", "JOBDIY": "2"},
+        # A second project from the same household proves that project records
+        # and distinct respondent households are not interchangeable.
+        {"CONTROL": "'h000'", "JOBTYPE": "16", "JOBCOST": "0", "JOBDIY": "2"},
         {"CONTROL": "unmatched", "JOBTYPE": "16", "JOBCOST": "25000", "JOBDIY": "2"},
     ])
     household_rows.extend([
@@ -137,30 +140,41 @@ with tempfile.TemporaryDirectory() as tmp:
         w = csv.DictWriter(f, fieldnames=["CONTROL", "TENURE", "INTSTATUS", "WEIGHT", "OMB13CBSA", *replicate_fields])
         w.writeheader(); w.writerows(household_rows)
     output = tmp / "ahs-out.csv"
-    stdout = run([ROOT / "scripts/analyze_ahs_roof.py", "--project-input", project, "--household-input", household, "--output", output, "--metro-output", tmp / "ahs-metro-out.csv", "--minimum-unweighted-n", "30", "--minimum-metro-unweighted-n", "30", "--roof-job-type-code", "16"])
+    stdout = run([ROOT / "scripts/analyze_ahs_roof.py", "--project-input", project, "--household-input", household, "--output", output, "--metro-output", tmp / "ahs-metro-out.csv", "--minimum-unweighted-n", "30", "--minimum-metro-unweighted-n", "30", "--roof-job-type-code", "16", "--sample-source", "Synthetic National PUF fixture"])
     with output.open(encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     with (tmp / "ahs-metro-out.csv").open(encoding="utf-8") as f:
         metro_rows = list(csv.DictReader(f))
     assert {row["group"] for row in rows} == {"all_roofing_projects", "household_did_not_do_most_work_JOBDIY_2", "household_did_most_work_JOBDIY_1"}
+    assert all(row["sample_source"] == "Synthetic National PUF fixture" for row in rows)
+    professional = next(row for row in rows if row["group"] == "household_did_not_do_most_work_JOBDIY_2")
+    diy = next(row for row in rows if row["group"] == "household_did_most_work_JOBDIY_1")
+    assert professional["jobdiy_scope"] == "professional" and diy["jobdiy_scope"] == "diy"
+    assert professional["positive_cost_households_n"] == "31"
+    assert next(row for row in metro_rows if row["group"] == "all_roofing_projects")["sample_source"] == "Synthetic National PUF fixture"
     metro_all = next(row for row in metro_rows if row["group"] == "all_roofing_projects")
     assert metro_all["metro_omb13cbsa"] == "12060"
     assert metro_all["metro_name"] == "Atlanta-Sandy Springs-Roswell, GA"
-    assert metro_all["unweighted_n"] == "62"
+    assert metro_all["unweighted_n"] == "63"
+    assert metro_all["unweighted_households_n"] == "62"
     all_rows = next(row for row in rows if row["group"] == "all_roofing_projects")
-    assert all_rows["unweighted_n"] == "62"
-    assert all_rows["weighted_project_count"] == "1061"
+    assert all_rows["unweighted_n"] == "63"
+    assert all_rows["unweighted_households_n"] == "62"
+    assert all_rows["weighted_project_count"] == "1062"
     assert all_rows["positive_cost_unweighted_n"] == "60"
-    assert all_rows["zero_cost_unweighted_n"] == "1"
-    assert all_rows["nonnegative_cost_unweighted_n"] == "61"
+    assert all_rows["positive_cost_households_n"] == "60"
+    assert all_rows["zero_cost_unweighted_n"] == "2"
+    assert all_rows["nonnegative_cost_unweighted_n"] == "62"
     assert all_rows["mean_nominal_survey_usd"] == "39500.0"
     assert all_rows["median_nominal_survey_usd"] == "39000.0", "zero-cost jobs must not enter the C-16 median"
     assert float(all_rows["total_expenditure_nominal_survey_usd"]) == 2370000, "total must include nonnegative-cost jobs"
-    assert all(row["publication_status"] == "RESEARCH_ONLY_C16_RECONCILIATION_AND_VARIANCE_REVIEW_PENDING" for row in rows)
+    assert all(row["precision_screen_status"] == "PASS_CV_SCREEN_NOT_MANUAL_APPROVAL" for row in rows)
+    assert all(row["mean_cv"] == "0.0" and row["median_cv"] == "0.0" for row in rows)
     assert all(float(row["median_replicate_se_usd"]) == 0 for row in rows)
     assert all(float(row["mean_replicate_se_usd"]) == 0 for row in rows)
-    assert "JOBTYPE 16 owner-occupied/interviewed projects: 62" in stdout
-    assert "zero-cost records retained in count/total: 1" in stdout
+    assert "eligible roofing project records: 63" in stdout
+    assert "distinct respondent households: 62" in stdout
+    assert "zero-cost records retained in count/total: 2" in stdout
     assert "missing_or_negative_cost: 1" in stdout
     assert "owner_occupancy_or_interview_excluded: 2" in stdout
     assert "unmatched_household: 1" in stdout
@@ -177,7 +191,7 @@ assert project_csv.count("\n") == 2, "PROJECT fixture must contain a header and 
 assert r"\n" not in project_csv, "PROJECT fixture contains literal backslash-n text"
 for filename, geography_field, require_omb in [
     ("national-source.zip", "OMB13CBSA", True),
-    ("metro-source.zip", "METRO", False),
+    ("metro-source.zip", "OMB13CBSA", True),
 ]:
     source_zip = Path(tempfile.gettempdir()) / filename
     household_fields = ["CONTROL", "TENURE", "INTSTATUS", "WEIGHT", geography_field, *replicate_fields]
@@ -190,6 +204,12 @@ for filename, geography_field, require_omb in [
     project_name, household_name, project_header, household_header = locate_relational_csvs(source_zip, require_omb13cbsa=require_omb)
     assert project_name == "PROJECT.csv" and household_name == "HOUSEHOLD.csv"
     assert geography_field in household_header
+    if filename == "metro-source.zip":
+        observed_geo = audit["inspect_geography_distributions"](source_zip, household_name, household_header)
+        assert observed_geo["OMB13CBSA"] == {"12060": 1}
     source_zip.unlink()
 
-print("PASS: Berkeley/AHS research scripts on synthetic fixtures, including separate National/Metro PUF schema discovery.")
+analyzer = runpy.run_path(str(ROOT / "scripts" / "analyze_ahs_roof.py"))
+metro_names = analyzer["METRO_NAMES"]
+assert {code for code in ("17140", "17460", "19740", "33340", "35380") if code in metro_names} == {"17140", "17460", "19740", "33340", "35380"}
+print("PASS: Berkeley/AHS research scripts on synthetic fixtures, including separate PUF source provenance, distinct-household counts and replicate CV outputs.")
