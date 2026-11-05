@@ -25,8 +25,8 @@ const metalReferences={
   corrugated:{type:'metal',group:'style',key:'corrugated',low:'5',high:'12',label:'corrugated sheet metal',source:metalSource},
   standing_seam:{type:'metal',group:'style',key:'standing_seam',low:'9',high:'16',label:'standing seam',source:metalSource},
   metal_shingles:{type:'metal',group:'style',key:'metal_shingles',low:'6',high:'14',label:'metal shingles',source:metalSource},
-  metal_slate:{type:'metal',group:'style',key:'metal_slate',low:'6',high:'14',label:'metal slate',source:metalSource},
-  stone_coated_steel:{type:'metal',group:'style',key:'stone_coated_steel',low:'7',high:'13',label:'stone-coated steel',source:metalSource},
+  metal_slate:{type:'metal',group:'material',key:'metal_slate',low:'6',high:'14',label:'metal slate',source:metalSource},
+  stone_coated_steel:{type:'metal',group:'material',key:'stone_coated_steel',low:'7',high:'13',label:'stone-coated steel',source:metalSource},
   // Base-metal material categories; never combine these with style ranges.
   galvanized_steel:{type:'metal',group:'material',key:'galvanized_steel',low:'5',high:'13',label:'galvanized steel',source:metalSource},
   galvalume_steel:{type:'metal',group:'material',key:'galvalume_steel',low:'5',high:'13',label:'Galvalume steel',source:metalSource},
