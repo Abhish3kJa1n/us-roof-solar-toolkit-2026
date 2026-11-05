@@ -106,6 +106,14 @@ try {
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
 
+  // Roof-price defaults must remain blank until the visitor explicitly requests the national reference.
+  assert.equal(await page.locator('#roofRateLow').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
+  assert.equal(await page.locator('#roofRateHigh').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
+  await page.locator('#loadNationalRoofReference').click();
+  assert.equal(await page.locator('#roofRateLow').inputValue(), '4');
+  assert.equal(await page.locator('#roofRateHigh').inputValue(), '11');
+  assert.match(await page.locator('#roofReferenceStatus').innerText(), /not a local or material-specific price/i);
+
   // The shared validator must mark each blank required field inline and block the next step.
   await page.locator('button[data-next="2"]').click();
   const roofTypeMessage = page.locator('#roofType-checker-message');
@@ -136,6 +144,30 @@ try {
   assert.match(combinedResults, /kWh|solar/i);
   results.push('combined calculator: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png'), fullPage: true });
+
+  // Standalone roof-cost calculator: no automatic national default; explicit reference load and metal-system selection.
+  await open('/calculators/roof-replacement-cost.html');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-desktop.png'), fullPage: true });
+  await assertNoHorizontalOverflow('roof-cost');
+  await accessibilityScan('roof-cost');
+  assert.equal(await page.locator('#low').inputValue(), '', 'standalone roof calculator must not auto-load general national rates');
+  assert.equal(await page.locator('#high').inputValue(), '', 'standalone roof calculator must not auto-load general national rates');
+  await page.locator('#area').fill('1800');
+  await page.locator('#loadReference').click();
+  assert.equal(await page.locator('#low').inputValue(), '4');
+  assert.equal(await page.locator('#high').inputValue(), '11');
+  assert.match(await page.locator('#referenceStatus').innerText(), /not local or material-specific/i);
+  await page.locator('#run').click();
+  assert.match(await page.locator('#result').innerText(), /\\$7,200|\\$19,800/);
+  await page.locator('#material').selectOption('metal');
+  assert.equal(await page.locator('#low').inputValue(), '', 'changing to Metal must clear the general roofing reference');
+  assert.equal(await page.locator('#high').inputValue(), '', 'changing to Metal must clear the general roofing reference');
+  await page.locator('#metalSystem').selectOption('standing_seam');
+  assert.equal(await page.locator('#low').inputValue(), '9');
+  assert.equal(await page.locator('#high').inputValue(), '16');
+  assert.match(await page.locator('#referenceStatus').innerText(), /standing seam/i);
+  results.push('standalone roof-cost explicit reference and metal-system flow: PASS');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-metal-reference.png'), fullPage: true });
 
   // City-based solar: real Census autocomplete, exact place lookup, PVWatts and OpenEI.
   await open('/calculators/location-solar.html');
