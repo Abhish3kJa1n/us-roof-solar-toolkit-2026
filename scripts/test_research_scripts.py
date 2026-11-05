@@ -150,19 +150,19 @@ with tempfile.TemporaryDirectory() as tmp:
     professional = next(row for row in rows if row["group"] == "household_did_not_do_most_work_JOBDIY_2")
     diy = next(row for row in rows if row["group"] == "household_did_most_work_JOBDIY_1")
     assert professional["jobdiy_scope"] == "professional" and diy["jobdiy_scope"] == "diy"
-    assert professional["positive_cost_households_n"] == "30"
+    assert professional["positive_cost_housing_units_n"] == "30"
     assert next(row for row in metro_rows if row["group"] == "all_roofing_projects")["sample_source"] == "Synthetic National PUF fixture"
     metro_all = next(row for row in metro_rows if row["group"] == "all_roofing_projects")
     assert metro_all["metro_omb13cbsa"] == "12060"
     assert metro_all["metro_name"] == "Atlanta-Sandy Springs-Roswell, GA"
     assert metro_all["unweighted_n"] == "63"
-    assert metro_all["unweighted_households_n"] == "62"
+    assert metro_all["unweighted_housing_units_n"] == "62"
     all_rows = next(row for row in rows if row["group"] == "all_roofing_projects")
     assert all_rows["unweighted_n"] == "63"
-    assert all_rows["unweighted_households_n"] == "62"
+    assert all_rows["unweighted_housing_units_n"] == "62"
     assert all_rows["weighted_project_count"] == "1062"
     assert all_rows["positive_cost_unweighted_n"] == "60"
-    assert all_rows["positive_cost_households_n"] == "60"
+    assert all_rows["positive_cost_housing_units_n"] == "60"
     assert all_rows["zero_cost_unweighted_n"] == "2"
     assert all_rows["nonnegative_cost_unweighted_n"] == "62"
     assert all_rows["mean_nominal_survey_usd"] == "39500.0"
@@ -173,7 +173,7 @@ with tempfile.TemporaryDirectory() as tmp:
     assert all(float(row["median_replicate_se_usd"]) == 0 for row in rows)
     assert all(float(row["mean_replicate_se_usd"]) == 0 for row in rows)
     assert "eligible roofing project records: 63" in stdout
-    assert "distinct respondent households: 62" in stdout
+    assert "distinct owner-occupied housing units: 62" in stdout
     assert "zero-cost records retained in count/total: 2" in stdout
     assert "missing_or_negative_cost: 1" in stdout
     assert "owner_occupancy_or_interview_excluded: 2" in stdout
