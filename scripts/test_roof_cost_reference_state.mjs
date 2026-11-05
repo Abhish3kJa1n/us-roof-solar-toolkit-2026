@@ -201,7 +201,7 @@ assertRates('5.5', '8.5', 'manual values retained on material change');
 assert.ok(elements.referenceStatus.textContent.toLowerCase().includes('visitor-entered rates were retained'));
 chooseMetalSystem('metal_shingles');
 assertRates('5.5', '8.5', 'manual values retained on system change');
-assert.ok(elements.referenceStatus.textContent.includes('not a published reference for the new system'));
+assert.ok(elements.referenceStatus.textContent.includes('not a published reference for the new category'));
 reload();
 assertRates('6', '14', 'manual values intentionally replaced by reload');
 calculate();
