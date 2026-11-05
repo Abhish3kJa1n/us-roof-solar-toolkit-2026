@@ -47,7 +47,7 @@ function updateReferenceControls(){
     referenceButton.textContent=ref?`Reload ${ref.label} reference ($${ref.low}–$${ref.high} / sq ft)`:'Choose a metal system to load its reference';
   }else{
     referenceButton.disabled=false;
-    referenceButton.textContent='Reload broad national reference ($4–$11 / sq ft)';
+    referenceButton.textContent='Load broad national reference ($4–$11 / sq ft)';
   }
 }
 lowEl.addEventListener('input',customRateEdit);highEl.addEventListener('input',customRateEdit);
@@ -55,7 +55,6 @@ materialEl.addEventListener('change',()=>{
   clearLoadedReference();
   updateReferenceControls();
   if(materialEl.value==='metal') applyMetalReference();
-  else applyNationalReference();
 });
 metalSystemEl.addEventListener('change',()=>{
   clearLoadedReference();
@@ -63,7 +62,7 @@ metalSystemEl.addEventListener('change',()=>{
   if(materialEl.value==='metal') applyMetalReference();
 });
 updateReferenceControls();
-if(materialEl.value==='metal') applyMetalReference(); else applyNationalReference();
+if(materialEl.value==='metal') applyMetalReference();
 referenceButton.addEventListener('click',()=>{
   if(materialEl.value==='metal'){
     const ref=metalReferences[metalSystemEl.value];
