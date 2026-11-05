@@ -156,7 +156,7 @@ try {
   await page.locator('#loadReference').click();
   assert.equal(await page.locator('#low').inputValue(), '4');
   assert.equal(await page.locator('#high').inputValue(), '11');
-  assert.match(await page.locator('#referenceStatus').innerText(), /not local or material-specific/i);
+  assert.match(await page.locator('#referenceStatus').innerText(), /not a city estimate.*material-specific/i);
   await page.locator('#run').click();
   assert.match(await page.locator('#result').innerText(), /\$7,200|\$19,800/);
   await page.locator('#material').selectOption('metal');
