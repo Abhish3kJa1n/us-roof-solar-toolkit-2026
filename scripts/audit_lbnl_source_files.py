@@ -224,6 +224,26 @@ def value(raw: str | None) -> str:
     return (raw or "").strip()
 
 
+def ownership_flag_state(raw: str | None) -> str:
+    token = value(raw).lower()
+    if token in {"0", "0.0", "false", "no", "n"}:
+        return "no"
+    if token in {"1", "1.0", "true", "yes", "y"}:
+        return "yes"
+    return "unknown"
+
+
+def ownership_evidence_bucket(reported: str, inferred: str) -> str:
+    states = {reported, inferred}
+    if "yes" in states:
+        return "contains_positive_tpo_evidence"
+    if states == {"no"}:
+        return "both_flags_explicitly_non_tpo"
+    if "no" in states and "unknown" in states:
+        return "one_explicit_non_tpo_other_unknown"
+    return "both_flags_unknown"
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="lbnl-2026-audit-") as tmp:
         root = Path(tmp)
@@ -263,6 +283,15 @@ def main() -> int:
         year_counts: Counter[str] = Counter()
         filter_counts: Counter[str] = Counter()
         sample_candidates = Counter()
+        ownership_scope_n = 0
+        ownership_pairs: Counter[tuple[str, str, str]] = Counter()
+        ownership_buckets: Counter[str] = Counter()
+        ownership_state_counts: dict[str, Counter[str]] = {
+            name: Counter() for name in ("strict", "sensitivity")
+        }
+        ownership_city_counts: dict[str, Counter[tuple[str, str]]] = {
+            name: Counter() for name in ("strict", "sensitivity")
+        }
         headers: list[str] = []
         required_missing: set[str] = set()
         first_rows: list[dict[str, str]] = []
@@ -320,6 +349,44 @@ def main() -> int:
                     self_install = value(row.get("self_installed")).lower()
                     expansion = value(row.get("expansion_system")).lower()
                     multi = value(row.get("multiple_phase_system")).lower()
+
+                    # Measure a sensitivity universe with every non-ownership
+                    # cohort filter held constant; this does not change the
+                    # strict calculator benchmark cohort.
+                    try:
+                        dc_kw = float(value(row.get("PV_system_size_DC")))
+                        installed_price = float(value(row.get("total_installed_price")))
+                    except (TypeError, ValueError):
+                        dc_kw = installed_price = float("nan")
+                    other_scope_ok = (
+                        is_res
+                        and year in {"2024", "2025"}
+                        and is_pv
+                        and is_roof
+                        and len(state) == 2
+                        and 1.0 <= dc_kw <= 25.0
+                        and installed_price > 0
+                        and ownership_flag_state(row.get("self_installed")) == "no"
+                        and ownership_flag_state(row.get("expansion_system")) == "no"
+                        and ownership_flag_state(row.get("multiple_phase_system")) == "no"
+                    )
+                    if other_scope_ok:
+                        ownership_scope_n += 1
+                        reported_state = ownership_flag_state(row.get("third_party_owned"))
+                        inferred_state = ownership_flag_state(row.get("third_party_owned_inferred"))
+                        confidence = value(row.get("third_party_owned_confidence")).upper() or "<blank>"
+                        ownership_pairs[(reported_state, inferred_state, confidence)] += 1
+                        bucket = ownership_evidence_bucket(reported_state, inferred_state)
+                        ownership_buckets[bucket] += 1
+                        policy = {
+                            "both_flags_explicitly_non_tpo": "strict",
+                            "one_explicit_non_tpo_other_unknown": "sensitivity",
+                        }.get(bucket)
+                        if policy:
+                            ownership_state_counts[policy][state] += 1
+                            if city:
+                                ownership_city_counts[policy][(state, city.casefold().strip())] += 1
+
                     if tpo not in {"0", "0.0", "false", "no", "n"} or tpoi not in {"0", "0.0", "false", "no", "n"}:
                         filter_counts["ownership_not_proven_host_owned_or_tpo"] += 1
                     elif self_install not in {"0", "0.0", "false", "no", "n"}:
@@ -343,6 +410,26 @@ def main() -> int:
         print("OWNERSHIP_AND_SCOPE_FILTER COUNTS:")
         for name, count in filter_counts.most_common():
             print(f"  {name}: {count:,}")
+        print("OWNERSHIP_FLAG_SENSITIVITY — identical non-ownership filters; only TPO-flag evidence differs:")
+        print(f"  candidate_rows_before_TPO_decision: {ownership_scope_n:,}")
+        print("  joint_reported_inferred_confidence_counts:")
+        for (reported, inferred, confidence), count in sorted(ownership_pairs.items(), key=lambda item: (-item[1], item[0])):
+            print(f"    reported={reported}; inferred={inferred}; inferred_confidence={confidence}: n={count:,}")
+        print("  ownership_evidence_buckets:")
+        for name, count in sorted(ownership_buckets.items()):
+            print(f"    {name}: {count:,}")
+        strict_n = ownership_buckets["both_flags_explicitly_non_tpo"]
+        sensitivity_n = ownership_buckets["one_explicit_non_tpo_other_unknown"]
+        print(f"  strict_both_explicitly_non_tpo_n: {strict_n:,}")
+        print(f"  sensitivity_one_explicit_non_tpo_other_unknown_n: {sensitivity_n:,}")
+        print(f"  sensitivity_additional_rows_if_accepted: {sensitivity_n:,}")
+        for policy in ("strict", "sensitivity"):
+            state_counts = ownership_state_counts[policy]
+            city_counts = ownership_city_counts[policy]
+            print(f"  {policy}_state_counts: {dict(sorted(state_counts.items(), key=lambda item: (-item[1], item[0])))}")
+            print(f"  {policy}_state_groups_meeting_n500: {sum(1 for n in state_counts.values() if n >= 500)}")
+            print(f"  {policy}_city_groups_meeting_n100: {sum(1 for n in city_counts.values() if n >= 100)}")
+        print("  NOTE: sensitivity rows have one explicit non-TPO flag and one unknown flag; they remain separate from strict results.")
         print("MISSING_SENTINELS IN REQUIRED FIELDS:")
         for field in sorted(NEEDED):
             print(f"  {field}: {missing_counts[field]:,} of {row_count:,}")

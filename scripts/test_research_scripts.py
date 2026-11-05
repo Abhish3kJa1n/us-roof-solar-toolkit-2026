@@ -186,6 +186,18 @@ with tempfile.TemporaryDirectory() as tmp:
     assert "unmatched_household: 1" in stdout
 
 
+# The two LBNL TPO fields represent independent yes/no judgements. Unknown
+# must not be treated as affirmative evidence or as an explicit negative.
+lbnl_audit = runpy.run_path(str(ROOT / "scripts" / "audit_lbnl_source_files.py"))
+flag_state = lbnl_audit["ownership_flag_state"]
+evidence_bucket = lbnl_audit["ownership_evidence_bucket"]
+assert flag_state("0") == "no" and flag_state("1.0") == "yes" and flag_state("-1") == "unknown"
+assert evidence_bucket("no", "no") == "both_flags_explicitly_non_tpo"
+assert evidence_bucket("no", "unknown") == "one_explicit_non_tpo_other_unknown"
+assert evidence_bucket("unknown", "no") == "one_explicit_non_tpo_other_unknown"
+assert evidence_bucket("yes", "no") == "contains_positive_tpo_evidence"
+assert evidence_bucket("unknown", "unknown") == "both_flags_unknown"
+
 # The source audit must identify National and Metropolitan PUF relational files
 # independently. The Metro PUF geography field must not be assumed to be OMB13CBSA.
 audit = runpy.run_path(str(ROOT / "scripts/audit_ahs_source_files.py"))
