@@ -420,7 +420,7 @@ def main() -> int:
     print("- A household may contribute multiple project records (up to 26 in the PUF); outputs report project rows and distinct contributing households separately.")
     print("- The 30% relative-standard-error screen follows the AHS Table Creator's published cell-suppression rule; a passing PUF CV screen is not equivalent to Census Table Creator approval.")
     print("- Every PUF run is source-specific. The National PUF represents national/Top-15 use; the separate Metropolitan PUF is used for the five Next-10 metro areas sampled in 2023. Their records and household weights are never pooled.")
-    print("- The 2023 independent Metro sample had a 59.2% unit nonresponse rate. Census warns that response rates below 60% may create serious nonsampling quality issues and that nonresponse weighting may not fully remove the risk.")
+    print("- The 2023 AHS overview reports a 59.2% survey-wide unit nonresponse rate; it is not an area-specific Next-5 Metropolitan PUF rate. Census warns that response rates below 60% may create serious nonsampling quality issues and that nonresponse weighting may not fully remove the risk.")
     print("- AHS costs are nominal whole-project survey expenditures, not verified contractor invoices or consistent full tear-off scopes. Roof area, material, pitch and $/sq-ft denominators are not provided.")
     print("- Overall and metro cost distributions are screened using distinct housing units with positive JOBCOST; raw project counts and all-project housing-unit counts remain separately reported.")
     print("- The configured distinct positive-cost housing-unit floor is an internal screen, not a Census disclosure rule or proof of statistical precision.")
