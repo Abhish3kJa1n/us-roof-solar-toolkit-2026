@@ -54,3 +54,4 @@ jobs:
         run: node scripts/live_preview_smoke.mjs
         env:
           PREVIEW_BASE_URL: https://audit-stage1-20261103.roof-solar-toolkit-2026.pages.dev
+
