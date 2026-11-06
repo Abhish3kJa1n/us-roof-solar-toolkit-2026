@@ -138,7 +138,13 @@ def _file_chunks(path: Path):
 
 
 def locate_data_file(path: Path, root: Path) -> Path:
-    if zipfile.is_zipfile(path):
+    with path.open("rb") as probe:
+        archive_prefix = probe.read(4)
+    looks_like_zip = archive_prefix.startswith((b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08"))
+    is_zip = zipfile.is_zipfile(path)
+    if looks_like_zip and not is_zip:
+        raise RuntimeError("Input has a ZIP signature but is malformed or truncated; refusing to treat it as CSV.")
+    if is_zip:
         try:
             from stream_unzip import NO_ENCRYPTION, stream_unzip
         except ImportError as exc:
@@ -168,6 +174,11 @@ def locate_data_file(path: Path, root: Path) -> Path:
                 f"CSV_ARCHIVE_MEMBER: {info.filename}; compression_method={info.compress_type} ({method_name}); "
                 f"compressed_bytes={info.compress_size:,}; uncompressed_bytes={info.file_size:,}"
             )
+            if info.compress_type not in {0, 8, 9, 12}:
+                raise RuntimeError(
+                    f"Unsupported ZIP compression method {info.compress_type} ({method_name}); "
+                    "stream-unzip==0.0.101 supports Stored, Deflate, Deflate64 and BZip2 only."
+                )
             expected_name = info.filename
             safe_basename = Path(expected_name.replace(chr(92), "/")).name
             extracted = root / safe_basename
@@ -215,8 +226,7 @@ def locate_data_file(path: Path, root: Path) -> Path:
             "stream-unzip CRC32 and size verification completed."
         )
         return extracted
-    with path.open("rb") as probe:
-        magic = probe.read(2)
+    magic = archive_prefix[:2]
     if path.suffix.lower() == ".gz" or magic == b"\x1f\x8b":
         extracted = root / "public-data.csv"
         with gzip.open(path, "rb") as source, extracted.open("wb") as target:

@@ -196,6 +196,7 @@ assert lbnl_audit["valid_state_code"]("tx") is True
 assert lbnl_audit["valid_state_code"]("ZZ") is False
 assert lbnl_audit["valid_state_code"]("-1") is False
 assert lbnl_audit["valid_city_label"]("-1") is False
+assert lbnl_audit["valid_city_label"]("Austin") is True
 flag_state = lbnl_audit["ownership_flag_state"]
 evidence_bucket = lbnl_audit["ownership_evidence_bucket"]
 assert flag_state("0") == "no" and flag_state("1.0") == "yes" and flag_state("-1") == "unknown"
@@ -204,6 +205,51 @@ assert evidence_bucket("no", "unknown") == "one_explicit_non_tpo_other_unknown"
 assert evidence_bucket("unknown", "no") == "one_explicit_non_tpo_other_unknown"
 assert evidence_bucket("yes", "no") == "contains_positive_tpo_evidence"
 assert evidence_bucket("unknown", "unknown") == "both_flags_unknown"
+
+# Exercise the method-9 streaming path with a tiny stored-block Deflate stream.
+# Stored Deflate blocks are valid Deflate64 streams too; this checks the ZIP
+# method dispatch and decoder integration without committing a large binary.
+# Also verify fail-closed handling for malformed and unsupported archives.
+locate_data_file = lbnl_audit["locate_data_file"]
+with tempfile.TemporaryDirectory() as archive_tmp_name:
+    archive_tmp = Path(archive_tmp_name)
+    valid_zip = archive_tmp / "method-9-deflate64.zip"
+    with zipfile.ZipFile(valid_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=0) as archive:
+        archive.writestr("source.csv", b"a,b\n1,2\n")
+    method9_bytes = bytearray(valid_zip.read_bytes())
+    local_header = method9_bytes.find(b"PK\x03\x04")
+    central_header = method9_bytes.find(b"PK\x01\x02")
+    assert local_header >= 0 and central_header >= 0
+    assert method9_bytes[local_header + 8:local_header + 10] == (8).to_bytes(2, "little")
+    assert method9_bytes[central_header + 10:central_header + 12] == (8).to_bytes(2, "little")
+    method9_bytes[local_header + 8:local_header + 10] = (9).to_bytes(2, "little")
+    method9_bytes[central_header + 10:central_header + 12] = (9).to_bytes(2, "little")
+    valid_zip.write_bytes(method9_bytes)
+    extracted = locate_data_file(valid_zip, archive_tmp)
+    assert extracted.read_bytes() == b"a,b\n1,2\n"
+
+    malformed_zip = archive_tmp / "truncated.zip"
+    malformed_zip.write_bytes(b"PK\x03\x04truncated")
+    try:
+        locate_data_file(malformed_zip, archive_tmp)
+    except RuntimeError as error:
+        assert "malformed or truncated" in str(error)
+    else:
+        raise AssertionError("ZIP-signature input with a truncated archive must fail closed")
+
+    unsupported_zip = archive_tmp / "unsupported.zip"
+    archive_bytes = bytearray(method9_bytes)
+    local_header = archive_bytes.find(b"PK\x03\x04")
+    central_header = archive_bytes.find(b"PK\x01\x02")
+    archive_bytes[local_header + 8:local_header + 10] = (93).to_bytes(2, "little")
+    archive_bytes[central_header + 10:central_header + 12] = (93).to_bytes(2, "little")
+    unsupported_zip.write_bytes(archive_bytes)
+    try:
+        locate_data_file(unsupported_zip, archive_tmp)
+    except RuntimeError as error:
+        assert "Unsupported ZIP compression method 93 (Zstandard)" in str(error)
+    else:
+        raise AssertionError("Zstandard ZIP input must not be passed to an unsupported decoder")
 
 # The source audit must identify National and Metropolitan PUF relational files
 # independently. The Metro PUF geography field must not be assumed to be OMB13CBSA.

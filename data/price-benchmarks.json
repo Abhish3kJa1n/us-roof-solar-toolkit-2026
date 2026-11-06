@@ -1,14 +1,14 @@
 {
   "schema_version": 1,
-  "last_updated": "2026-11-05",
+  "last_updated": "2026-11-06",
   "currency": "USD",
   "records": [],
   "source_status": {
     "solar_installed_price": {
       "status": "withheld",
-      "reason": "The August 2026 Berkeley Lab public file has not been obtained and reviewed as a real dataset, and current commercial reuse rights have not been confirmed in writing.",
+      "reason": "The August 2026 public CSV schema and strict residential cohort have been audited in a temporary research run. No explicit current commercial-reuse license or permission has been confirmed, and independent review remains incomplete.",
       "next_gates": [
-        "Obtain the exact August 2026 public CSV and preserve its source version.",
+        "Record the official source URL, guide version, archive member compression method, file size and checksum in the temporary audit results; rerun if the source changes.",
         "Obtain explicit current commercial reuse permission or a clearly applicable dataset licence.",
         "Run and independently review the documented 2024–2025 residential PV-only, rooftop, host-owned cohort.",
         "Publish only city samples with at least 100 projects or state samples with at least 500 projects, with quartiles, sample count, period and limitations."

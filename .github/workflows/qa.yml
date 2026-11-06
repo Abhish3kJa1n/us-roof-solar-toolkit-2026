@@ -30,6 +30,8 @@ jobs:
         with:
           node-version: "22"
           package-manager-cache: false
+      - name: Install the pinned ZIP reader used by research-script regression tests
+        run: python -m pip install --disable-pip-version-check "stream-unzip==0.0.101"
       - name: Run complete QA suite
         run: python scripts/run_all_checks.py
 
