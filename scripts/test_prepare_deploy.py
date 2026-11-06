@@ -52,7 +52,7 @@ def main() -> int:
     if len(html_pages) != 26:
         fail(f"expected 26 public HTML pages, found {len(html_pages)}")
 
-    allowed_root_files = {"_headers", "_routes.json", "robots.txt"}
+    allowed_root_files = {"_headers", "_routes.json", "robots.txt", "ads.txt"}
     root_files = {p.name for p in DIST.iterdir() if p.is_file()}
     root_html = {p.name for p in html_pages if p.parent == DIST}
     if root_files != allowed_root_files | root_html:
@@ -112,3 +112,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
