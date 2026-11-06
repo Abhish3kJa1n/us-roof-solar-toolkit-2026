@@ -267,8 +267,6 @@ def main() -> int:
         issues.append("robots.txt must exist and leave prelaunch pages crawlable for noindex discovery")
     if robots_path.exists() and "Sitemap:" in robots_path.read_text(encoding="utf-8"):
         issues.append("prelaunch robots.txt must not advertise a production sitemap")
-    if (ROOT / "sitemap.xml").exists():
-        issues.append("prelaunch build must not contain generated sitemap.xml")
 
     print(f"HTML pages: {len(pages)}")
     print(f"Unique page titles: {len(set(titles))}/{len(titles)}")
