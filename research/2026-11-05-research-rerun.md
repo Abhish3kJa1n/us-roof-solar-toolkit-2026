@@ -29,3 +29,4 @@ The Census AHS Quick Guide explicitly specifies Fay's BRR variance as (4/160) ti
 - The public price registry remains empty and all price-source statuses remain withheld.
 - This is not approval to deploy production, merge the PR, change DNS, transfer custom domains, add paid services, or publish benchmark values.
 - All source microdata and derived research aggregates remain in the ephemeral CI runner. Only code, tests and this written audit plan are in the repository.
+
