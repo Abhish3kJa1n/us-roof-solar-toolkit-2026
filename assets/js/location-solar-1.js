@@ -3,6 +3,13 @@
   const $ = (id) => document.getElementById(id);
   const cityEl = $('city');
   const stateEl = $('state');
+  const stateDisplay = $('stateDisplay');
+  const stateField = $('stateField');
+  const stateHelp = $('stateHelp');
+  const manualState = $('manualState');
+  const manualStateFallback = $('manualStateFallback');
+  const manualStateButton = $('useManualState');
+  const suggestionsEl = $('citySuggestions');
   const placeEl = $('place');
   const placeField = $('placeField');
   const lookupBtn = $('lookup');
@@ -32,6 +39,12 @@
   let benchmarkSequence = 0;
   let benchmarkCsvText = null;
   let benchmarkCsvPromise = null;
+  let selectedCandidate = null;
+  let suggestionSequence = 0;
+  let suggestionTimer = null;
+  let activeSuggestionIndex = -1;
+  const suggestionCache = new Map();
+  let currentSuggestions = [];
 
   // Number('') is zero. Treat blank fields as unknown, not as a valid zero.
   const number = (value) => {
@@ -192,31 +205,193 @@
     clearStateBenchmark();
   }
 
-  // Editing either city or state invalidates the previous selection and in-flight lookup.
-  const invalidatePlaceSearch = () => {
+  function hideCitySuggestions() {
+    suggestionsEl.replaceChildren();
+    suggestionsEl.hidden = true;
+    cityEl.setAttribute('aria-expanded', 'false');
+    cityEl.removeAttribute('aria-activedescendant');
+    activeSuggestionIndex = -1;
+    currentSuggestions = [];
+  }
+
+  function setActiveSuggestion(index) {
+    const options = Array.from(suggestionsEl.children);
+    if (!options.length) return;
+    activeSuggestionIndex = Math.max(0, Math.min(index, options.length - 1));
+    options.forEach((option, optionIndex) => option.setAttribute('aria-selected', String(optionIndex === activeSuggestionIndex)));
+    cityEl.setAttribute('aria-activedescendant', options[activeSuggestionIndex].id);
+  }
+
+  function chooseCityCandidate(candidate) {
+    if (!candidate) return;
+    selectedCandidate = candidate;
+    cityEl.value = candidate.placeName;
+    stateEl.value = candidate.stateAbbreviation;
+    stateDisplay.value = candidate.stateName + ' (' + candidate.stateAbbreviation + ')';
+    stateField.hidden = false;
+    stateHelp.textContent = 'The state was matched to an official Census place suggestion.';
+    hideCitySuggestions();
     lookupBtn.disabled = false;
+    setStatus(locationStatus, candidate.placeName + ', ' + candidate.stateAbbreviation + ' selected. Verify it with Census to load the representative location.');
+  }
+
+  function renderCitySuggestions(suggestions, partialWarning = '', totalMatches = null) {
+    currentSuggestions = Array.isArray(suggestions) ? suggestions : [];
+    const hasCompleteCount = totalMatches !== null && totalMatches !== undefined && Number.isFinite(Number(totalMatches));
+    const matchCount = hasCompleteCount ? Number(totalMatches) : null;
+    suggestionsEl.replaceChildren();
+    activeSuggestionIndex = -1;
+    if (!currentSuggestions.length) {
+      suggestionsEl.hidden = true;
+      cityEl.setAttribute('aria-expanded', 'false');
+      setStatus(locationStatus, 'No matching Census places were returned. Try a longer or different place spelling.' + (partialWarning ? ' ' + partialWarning : ''));
+      return;
+    }
+    currentSuggestions.forEach((candidate, index) => {
+      const option = el('button', 'autocomplete-option');
+      option.type = 'button';
+      option.id = 'city-option-' + index;
+      option.setAttribute('role', 'option');
+      option.setAttribute('aria-selected', 'false');
+      option.tabIndex = -1;
+      option.append(
+        el('span', 'autocomplete-name', candidate.placeName + ', ' + candidate.stateAbbreviation),
+        el('span', 'autocomplete-detail', candidate.stateName + ' · ' + (Array.isArray(candidate.geographyTypes) ? candidate.geographyTypes.join(' / ') : candidate.geographyType))
+      );
+      option.addEventListener('click', () => chooseCityCandidate(candidate));
+      option.addEventListener('mousemove', () => setActiveSuggestion(index));
+      suggestionsEl.append(option);
+    });
+    suggestionsEl.hidden = false;
+    cityEl.setAttribute('aria-expanded', 'true');
+    const countMessage = matchCount === null
+      ? 'Showing up to ' + currentSuggestions.length + ' matches; the complete total is unavailable because a Census source is incomplete. Type more letters to narrow the list.'
+      : matchCount > currentSuggestions.length
+        ? 'Showing the first ' + currentSuggestions.length + ' of ' + matchCount + ' Census matches. Type more letters to narrow the list.'
+        : matchCount + ' Census place/state-or-territory matches. Select the correct location.';
+    setStatus(locationStatus, countMessage + (partialWarning ? ' ' + partialWarning : ''));
+  }
+
+  function scheduleCitySuggestions() {
+    const search = cityEl.value.trim().replace(/\s+/g, ' ');
+    if (search.length < 3 || search.length > 80) {
+      hideCitySuggestions();
+      setStatus(locationStatus, 'Type at least 3 letters of a city name to see matching places and states/territories.');
+      return;
+    }
+    const sequence = ++suggestionSequence;
+    if (suggestionTimer) clearTimeout(suggestionTimer);
+    const cacheKey = search.toLocaleLowerCase('en-US');
+    if (suggestionCache.has(cacheKey)) {
+      const cached = suggestionCache.get(cacheKey);
+      renderCitySuggestions(cached.suggestions, cached.partialSourceWarning || '', cached.totalMatches);
+      return;
+    }
+    setStatus(locationStatus, 'Searching US Census city records…');
+    suggestionTimer = setTimeout(async () => {
+      try {
+        const query = params({ search });
+        const response = await fetch('../api/location?' + query.toString(), { headers: { Accept: 'application/json' } });
+        const data = await response.json();
+        if (sequence !== suggestionSequence) return;
+        if (!response.ok) throw new Error(data.error || 'City suggestions are unavailable.');
+        const rawTotalMatches = data.totalMatches;
+        const parsedTotalMatches = rawTotalMatches === null || rawTotalMatches === undefined || rawTotalMatches === '' ? null : Number(rawTotalMatches);
+        const cached = { suggestions: Array.isArray(data.suggestions) ? data.suggestions : [], totalMatches: Number.isFinite(parsedTotalMatches) && parsedTotalMatches >= 0 ? parsedTotalMatches : null, partialSourceWarning: data.partialSourceWarning || '' };
+        if (suggestionCache.size >= 30) suggestionCache.delete(suggestionCache.keys().next().value);
+        suggestionCache.set(cacheKey, cached);
+        renderCitySuggestions(cached.suggestions, cached.partialSourceWarning, cached.totalMatches);
+      } catch (error) {
+        if (sequence === suggestionSequence) {
+          hideCitySuggestions();
+          setStatus(locationStatus, error.message || 'City suggestions are unavailable. Try again.');
+        }
+      }
+    }, 450);
+  }
+
+  // City input is the only editable location field. Suggestions come from the
+  // nationwide Census place layers; state is assigned only after a user selects
+  // one explicit city/state match.
+  const invalidatePlaceSearch = () => {
+    lookupBtn.disabled = true;
+    suggestionSequence += 1;
+    if (suggestionTimer) clearTimeout(suggestionTimer);
+    selectedCandidate = null;
+    stateEl.value = '';
+    stateDisplay.value = '';
+    stateField.hidden = true;
+    stateHelp.textContent = 'Select a Census suggestion or use the manual state fallback.';
+    manualState.value = '';
+    manualStateFallback.open = false;
     locationSequence += 1;
     currentPlace = null;
     currentSolarPriceBenchmark = null;
     places = [];
     placeEl.replaceChildren(new Option('Choose a place', ''));
     placeField.hidden = true;
+    hideCitySuggestions();
     notifyInstalledPricePlace(null);
     invalidateLocationContext();
-    setStatus(locationStatus, 'Find the updated city and state to choose a representative Census place.');
+    setStatus(locationStatus, 'Type at least 3 letters of a city name to see matching places and states/territories.');
   };
-  cityEl.addEventListener('input', invalidatePlaceSearch);
-  stateEl.addEventListener('change', invalidatePlaceSearch);
+  cityEl.addEventListener('input', () => {
+    invalidatePlaceSearch();
+    scheduleCitySuggestions();
+  });
+  manualStateButton.addEventListener('click', () => {
+    suggestionSequence += 1;
+    if (suggestionTimer) clearTimeout(suggestionTimer);
+    const city = cityEl.value.trim().replace(/\s+/g, ' ');
+    const state = manualState.value.toUpperCase();
+    const option = manualState.options[manualState.selectedIndex];
+    if (city.length < 2 || city.length > 80) {
+      setStatus(locationStatus, 'Enter a city or locality name between 2 and 80 characters.');
+      return;
+    }
+    if (!/^[A-Z]{2}$/.test(state) || !option || !option.textContent) {
+      setStatus(locationStatus, 'Choose a state or territory first.');
+      return;
+    }
+    selectedCandidate = { placeName: city, stateAbbreviation: state, stateName: option.textContent, manual: true };
+    stateEl.value = state;
+    stateDisplay.value = option.textContent + ' (' + state + ')';
+    stateField.hidden = false;
+    stateHelp.textContent = 'State selected manually. Exact US Census city/state verification is still required.';
+    manualStateFallback.open = false;
+    hideCitySuggestions();
+    lookupBtn.disabled = false;
+    setStatus(locationStatus, city + ', ' + state + ' entered manually. Verify it with Census before modeling solar production.');
+  });
+
+  cityEl.addEventListener('keydown', (event) => {
+    if (event.key === 'ArrowDown' && currentSuggestions.length) {
+      event.preventDefault();
+      setActiveSuggestion(activeSuggestionIndex + 1);
+    } else if (event.key === 'ArrowUp' && currentSuggestions.length) {
+      event.preventDefault();
+      setActiveSuggestion(activeSuggestionIndex < 0 ? currentSuggestions.length - 1 : activeSuggestionIndex - 1);
+    } else if (event.key === 'Enter' && activeSuggestionIndex >= 0) {
+      event.preventDefault();
+      chooseCityCandidate(currentSuggestions[activeSuggestionIndex]);
+    } else if (event.key === 'Escape') {
+      hideCitySuggestions();
+    }
+  });
 
   lookupBtn.addEventListener('click', async () => {
     const city = cityEl.value.trim().replace(/\s+/g, ' ');
     const state = stateEl.value.trim().toUpperCase();
+    if (!selectedCandidate || city.toLocaleLowerCase('en-US') !== selectedCandidate.placeName.toLocaleLowerCase('en-US') || state !== selectedCandidate.stateAbbreviation) {
+      setStatus(locationStatus, 'Select a city and state from the Census suggestions first.');
+      return;
+    }
     if (city.length < 2 || city.length > 80) {
       setStatus(locationStatus, 'Enter a city name between 2 and 80 characters.');
       return;
     }
     if (!/^[A-Z]{2}$/.test(state)) {
-      setStatus(locationStatus, 'Choose a state first.');
+      setStatus(locationStatus, 'Select a valid Census city/state suggestion first.');
       return;
     }
     const lookupId = ++locationSequence;
@@ -229,7 +404,7 @@
     placeField.hidden = true;
     invalidateLocationContext();
     try {
-      const query = params({ city, state });
+      const query = params({ city, state, locationProofVersion: '1' });
       const response = await fetch(`../api/location?${query.toString()}`, { headers: { Accept: 'application/json' } });
       const data = await response.json();
       if (lookupId !== locationSequence) return;
@@ -302,9 +477,15 @@
     setStatus(modelStatus, 'Requesting NLR PVWatts V8 model…');
     resetResult('Calculating…', 'The representative location and explicit system assumptions are being sent to this site’s server endpoint.');
     updateActions();
-    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, capacity, tilt, azimuth, losses });
+    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation, capacity, tilt, azimuth, losses });
+    if (!selectedPlace.locationToken) {
+      modelPending = false;
+      setStatus(modelStatus, 'The Census location proof is missing. Verify the selected city again before running the solar model.');
+      updateActions();
+      return;
+    }
     try {
-      const response = await fetch(`../api/pvwatts?${query.toString()}`, { headers: { Accept: 'application/json' } });
+      const response = await fetch(`../api/pvwatts?${query.toString()}`, { headers: { Accept: 'application/json', 'X-Location-Proof': selectedPlace.locationToken } });
       const data = await response.json();
       if (seq !== requestSequence) return;
       if (!response.ok) throw new Error(data.error || 'PVWatts could not return a model.');
@@ -312,10 +493,16 @@
       setStatus(modelStatus, `Model returned ${new Date(data.fetchedAt).toLocaleString('en-US')}.`);
       const kwhPerKw = data.outputs.annualKwhPerKwDc;
       const stateAverageRate = await loadStateBenchmark(selectedPlace.stateAbbreviation);
+      if (seq !== requestSequence) return;
       const placeLabel = `${selectedPlace.placeName}, ${selectedPlace.stateAbbreviation}`;
       const priceBenchmark = await waitForSolarPriceBenchmark(selectedPlace);
+      if (seq !== requestSequence) return;
       const savingsHandoff = { production: kwhPerKw.toFixed(1), location: placeLabel, city: selectedPlace.placeName, state: selectedPlace.stateAbbreviation };
-      if (Number.isFinite(stateAverageRate) && stateAverageRate > 0 && stateAverageRate <= 5) savingsHandoff.stateAverageRate = stateAverageRate.toFixed(4);
+      if (Number.isFinite(stateAverageRate) && stateAverageRate > 0 && stateAverageRate <= 5) {
+        savingsHandoff.stateAverageRate = stateAverageRate.toFixed(4);
+        savingsHandoff.stateAverageSource = 'EIA Electric Power Monthly Table 5.6.B';
+        savingsHandoff.stateAverageRelease = '2026-10-23';
+      }
       savingsLink.href = `solar-savings.html?${params(savingsHandoff).toString()}`;
       savingsLink.textContent = `Use ${format(kwhPerKw, 0)} kWh/kW in savings calculator`;
       savingsLink.hidden = false;
@@ -401,9 +588,15 @@
     updateActions();
     setStatus(tariffStatus, 'Searching nearby residential rate records…');
     tariffResults.replaceChildren();
-    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude });
+    const query = params({ lat: selectedPlace.latitude, lon: selectedPlace.longitude, state: selectedPlace.stateAbbreviation });
+    if (!selectedPlace.locationToken) {
+      tariffPending = false;
+      setStatus(tariffStatus, 'The Census location proof is missing. Verify the selected city again before searching for tariff candidates.');
+      updateActions();
+      return;
+    }
     try {
-      const response = await fetch(`../api/tariffs?${query.toString()}`, { headers: { Accept: 'application/json' } });
+      const response = await fetch(`../api/tariffs?${query.toString()}`, { headers: { Accept: 'application/json', 'X-Location-Proof': selectedPlace.locationToken } });
       const data = await response.json();
       if (seq !== tariffSequence) return;
       if (!response.ok) throw new Error(data.error || 'Tariff discovery failed.');
@@ -451,9 +644,24 @@
   const incoming = new URLSearchParams(window.location.search);
   const requestedCity = incoming.get('city');
   const requestedState = incoming.get('state');
-  if (requestedCity && requestedState && /^[A-Z]{2}$/i.test(requestedState)) {
+  if (requestedCity && requestedState && /^[A-Z]{2}$/i.test(requestedState) && requestedCity.length >= 3) {
     cityEl.value = requestedCity.slice(0, 80);
-    stateEl.value = requestedState.toUpperCase();
-    lookupBtn.click();
+    const query = params({ search: cityEl.value });
+    fetch('../api/location?' + query.toString(), { headers: { Accept: 'application/json' } })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'City suggestions are unavailable.');
+        return data;
+      })
+      .then((data) => {
+        const candidate = (data.suggestions || []).find((item) => item.placeName.toLocaleLowerCase('en-US') === requestedCity.toLocaleLowerCase('en-US') && item.stateAbbreviation === requestedState.toUpperCase());
+        if (candidate) {
+          chooseCityCandidate(candidate);
+          lookupBtn.click();
+        } else {
+          setStatus(locationStatus, 'The linked city/state could not be matched. Select a Census suggestion manually.');
+        }
+      })
+      .catch((error) => setStatus(locationStatus, error.message || 'The linked city/state could not be resolved.'));
   }
 })();

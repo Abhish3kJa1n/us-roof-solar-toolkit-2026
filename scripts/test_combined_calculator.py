@@ -83,32 +83,40 @@ def main():
   raise SystemExit(f'FAIL target percentage required: {r.stderr} {r.stdout}')
  print('PASS target_percentage_required')
 
- # The combined calculator starts with transparent, editable national fallbacks when there is no approved local price record.
- code=HARNESS+JS+"\nconsole.log(JSON.stringify({roofLow:makeEl('roofRateLow').value,roofHigh:makeEl('roofRateHigh').value,solarPrice:makeEl('solarPricePerWatt').value,roofStatus:makeEl('roofReferenceStatus').textContent,solarStatus:makeEl('solarReferenceStatus').textContent}));"
+ # The broad roof reference must be an explicit visitor choice; the solar marketplace reference remains disclosed and editable.
+ code=HARNESS+JS+"\nconst roofButton=makeEl('loadNationalRoofReference'); const initial={roofLow:makeEl('roofRateLow').value,roofHigh:makeEl('roofRateHigh').value,button:Boolean(roofButton.handlers.click)}; if(roofButton.handlers.click)roofButton.handlers.click(); console.log(JSON.stringify({initial,loaded:{roofLow:makeEl('roofRateLow').value,roofHigh:makeEl('roofRateHigh').value,roofStatus:makeEl('roofReferenceStatus').textContent,solarPrice:makeEl('solarPricePerWatt').value,solarStatus:makeEl('solarReferenceStatus').textContent}}));"
  with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(code);temp=Path(f.name)
  try:r=subprocess.run(['node',str(temp)],capture_output=True,text=True)
  finally:temp.unlink(missing_ok=True)
- if r.returncode:raise SystemExit(f'FAIL national fallback prefill: {r.stderr}')
+ if r.returncode:raise SystemExit(f'FAIL explicit roof-reference opt-in: {r.stderr}')
  prefill=json.loads(r.stdout)
- if (prefill['roofLow'],prefill['roofHigh'],prefill['solarPrice']) != ('4','11','2.62'):
-  raise SystemExit(f'FAIL national fallback values: {prefill}')
- if 'not city-specific' not in prefill['roofStatus'].lower() or 'not city-specific' not in prefill['solarStatus'].lower():
-  raise SystemExit(f'FAIL national fallback provenance disclosure: {prefill}')
- print('PASS editable national fallback prefill and provenance disclosure')
+ if (prefill['initial']['roofLow'],prefill['initial']['roofHigh'],prefill['initial']['button']) != ('','',True):
+  raise SystemExit(f'FAIL roof reference should not auto-prefill: {prefill}')
+ if (prefill['loaded']['roofLow'],prefill['loaded']['roofHigh'],prefill['loaded']['solarPrice']) != ('4','11','2.62'):
+  raise SystemExit(f'FAIL explicit national reference values: {prefill}')
+ if 'not city-specific' not in prefill['loaded']['roofStatus'].lower() or 'not city-specific' not in prefill['loaded']['solarStatus'].lower():
+  raise SystemExit(f'FAIL national reference provenance disclosure: {prefill}')
+ print('PASS roof-price national reference requires explicit opt-in; solar fallback remains disclosed')
 
  # An approved city-level historical solar record must replace the national reference and retain its provenance.
  city_query='?productionPerKw=1575.0&city=Austin&state=TX&cityModelSource=PVWatts+V8&stateAverageRate=0.1651&stateAverageSource=EIA+Electric+Power+Monthly+Table+5.6.B&stateAverageRelease=2026-10-23&solarPricePerWatt=2.75&solarPriceSource=Berkeley+Lab+Tracking+the+Sun+2026&solarPriceGeography=city&solarPriceP25=2.35&solarPriceP75=3.08&solarPriceSampleN=140&solarPriceYearMin=2024&solarPriceYearMax=2025'
- code=HARNESS.replace("search:''", f"search:'{city_query}'")+JS+"\nconsole.log(JSON.stringify({production:makeEl('productionPerKw').value,rate:makeEl('rate').value,solarPrice:makeEl('solarPricePerWatt').value,city:makeEl('resultsLocation').textContent,solarStatus:makeEl('solarReferenceStatus').textContent}));"
+ code=HARNESS.replace("search:''", f"search:'{city_query}'")+JS+"\nconst eiaButton=Object.values(all).find(el=>el.id==='useEiaStateAverage'); const rateBefore=makeEl('rate').value; if(eiaButton&&eiaButton.handlers.click)eiaButton.handlers.click(); const applied=Object.values(all).find(el=>el.id==='eiaScenarioApplied'); console.log(JSON.stringify({production:makeEl('productionPerKw').value,rate:rateBefore,rateAfter:makeEl('rate').value,solarPrice:makeEl('solarPricePerWatt').value,city:makeEl('resultsLocation').textContent,solarStatus:makeEl('solarReferenceStatus').textContent,buttonExists:Boolean(eiaButton&&eiaButton.handlers.click),appliedVisible:Boolean(applied&&!applied.hidden),appliedText:applied?.textContent||''}));"
  with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(code);temp=Path(f.name)
  try:r=subprocess.run(['node',str(temp)],capture_output=True,text=True)
  finally:temp.unlink(missing_ok=True)
  if r.returncode:raise SystemExit(f'FAIL city benchmark prefill: {r.stderr}')
  city=json.loads(r.stdout)
- if (city['production'],city['rate'],city['solarPrice']) != ('1575.0','0.1651','2.75'):
-  raise SystemExit(f'FAIL city-based hybrid values: {city}')
+ if (city['production'],city['rate'],city['solarPrice']) != ('1575.0','','2.75'):
+  raise SystemExit(f'FAIL city-based hybrid values: EIA average must not auto-fill the marginal rate: {city}')
  if 'Berkeley Lab' not in city['solarStatus'] or '140 records' not in city['solarStatus']:
   raise SystemExit(f'FAIL city-price provenance not preserved: {city}')
- print('PASS city-based PVWatts/EIA/LBNL prefill overrides national fallback and remains editable')
+ if not city['buttonExists']:
+  raise SystemExit('FAIL explicit EIA illustrative-scenario opt-in button was not created')
+ if city['rateAfter'] != '0.1651':
+  raise SystemExit('FAIL EIA value should only enter marginal-rate field after explicit visitor click')
+ if not city['appliedVisible'] or 'illustrative scenario' not in city['appliedText']:
+  raise SystemExit('FAIL explicit EIA application provenance was not shown')
+ print('PASS city-based PVWatts/LBNL prefill leaves tariff blank until visitor explicitly applies EIA scenario')
 
  print(f'Passed {len(CASES)+3}/{len(CASES)+3} combined calculator scenarios.')
  print('Limit: deterministic DOM stubs exercise the real homepage JavaScript, not browser rendering, tariff accuracy or engineering validation.')

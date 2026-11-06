@@ -1,9 +1,11 @@
 import { reserveApiQuota } from '../_shared/quota.js';
+import { createLocationToken } from '../_shared/location-token.js';
 /**
- * Cloudflare Pages Function: US city/state -> Census representative place point.
- * Primary source: US Census Bureau TIGERweb Current (2026) Incorporated Places
- * and Census Designated Places layers. INTPTLAT/INTPTLON are representative
- * interior points, not property coordinates or utility service boundaries.
+ * Cloudflare Pages Function: nationwide Census place suggestions and exact
+ * city/state -> representative place-point verification.
+ * Primary source: US Census Bureau TIGERweb ACS2026 Incorporated Places
+ * and Census Designated Places. INTPTLAT/INTPTLON are representative interior
+ * points, not property coordinates or utility service boundaries.
  */
 const json = (body, status = 200, extra = {}) => new Response(JSON.stringify(body), {
   status,
@@ -21,44 +23,189 @@ const STATE_FIPS = {
   LA:'22', ME:'23', MD:'24', MA:'25', MI:'26', MN:'27', MS:'28', MO:'29', MT:'30',
   NE:'31', NV:'32', NH:'33', NJ:'34', NM:'35', NY:'36', NC:'37', ND:'38', OH:'39',
   OK:'40', OR:'41', PA:'42', RI:'44', SC:'45', SD:'46', TN:'47', TX:'48', UT:'49',
-  VT:'50', VA:'51', WA:'53', WV:'54', WI:'55', WY:'56', PR:'72',
+  VT:'50', VA:'51', WA:'53', WV:'54', WI:'55', WY:'56',
+  AS:'60', GU:'66', MP:'69', PR:'72', VI:'78',
 };
+const STATE_NAMES = {
+  AL:'Alabama', AK:'Alaska', AZ:'Arizona', AR:'Arkansas', CA:'California', CO:'Colorado',
+  CT:'Connecticut', DE:'Delaware', DC:'District of Columbia', FL:'Florida', GA:'Georgia',
+  HI:'Hawaii', ID:'Idaho', IL:'Illinois', IN:'Indiana', IA:'Iowa', KS:'Kansas', KY:'Kentucky',
+  LA:'Louisiana', ME:'Maine', MD:'Maryland', MA:'Massachusetts', MI:'Michigan', MN:'Minnesota',
+  MS:'Mississippi', MO:'Missouri', MT:'Montana', NE:'Nebraska', NV:'Nevada',
+  NH:'New Hampshire', NJ:'New Jersey', NM:'New Mexico', NY:'New York', NC:'North Carolina',
+  ND:'North Dakota', OH:'Ohio', OK:'Oklahoma', OR:'Oregon', PA:'Pennsylvania',
+  RI:'Rhode Island', SC:'South Carolina', SD:'South Dakota', TN:'Tennessee', TX:'Texas',
+  UT:'Utah', VT:'Vermont', VA:'Virginia', WA:'Washington', WV:'West Virginia',
+  WI:'Wisconsin', WY:'Wyoming',
+  AS:'American Samoa', GU:'Guam', MP:'Northern Mariana Islands',
+  PR:'Puerto Rico', VI:'U.S. Virgin Islands',
+};
+const STATE_ABBR_BY_FIPS = Object.fromEntries(Object.entries(STATE_FIPS).map(([abbr, fips]) => [fips, abbr]));
 
-const LAYER_URL = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_Current/MapServer';
+const LAYER_URL = 'https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/tigerWMS_ACS2026/MapServer';
 const validCoordinates = (lat, lon) => Number.isFinite(lat) && Number.isFinite(lon)
-  && lat >= -15 && lat <= 72 && lon >= -180 && lon <= -60;
+  && lat >= -15 && lat <= 72 && lon >= -180 && lon <= 180;
+const validPlaceText = (value) => value.length >= 2 && value.length <= 80
+  && /^[\p{L}\p{M}0-9 .’'&()\-]+$/u.test(value);
 
 async function queryLayer(layerId, city, stateFips) {
   const safeCity = city.replace(/'/g, "''");
   const params = new URLSearchParams({
-    where: `BASENAME = '${safeCity}' AND STATE = '${stateFips}'`,
+    where: "UPPER(BASENAME) = UPPER('" + safeCity + "') AND STATE = '" + stateFips + "'",
     outFields: 'BASENAME,NAME,STATE,INTPTLAT,INTPTLON,GEOID,LSADC',
     returnGeometry: 'false',
     f: 'json',
   });
-  const response = await fetch(`${LAYER_URL}/${layerId}/query?${params.toString()}`, {
+  const response = await fetch(LAYER_URL + '/' + layerId + '/query?' + params.toString(), {
     headers: { Accept: 'application/json' },
     cf: { cacheTtl: 604800, cacheEverything: true },
   });
-  if (!response.ok) throw new Error(`Census TIGERweb layer ${layerId} returned HTTP ${response.status}`);
+  if (!response.ok) throw new Error('Census TIGERweb layer ' + layerId + ' returned HTTP ' + response.status);
   const data = await response.json();
-  if (data.error) throw new Error(`Census TIGERweb layer ${layerId} returned an error`);
+  if (data.error) throw new Error('Census TIGERweb layer ' + layerId + ' returned an error');
   return (Array.isArray(data.features) ? data.features : []).map((feature) => feature.attributes || {});
+}
+
+async function querySuggestionLayer(layerId, search) {
+  const safeSearch = search.replace(/'/g, "''");
+  const pageSize = 1000;
+  const maximumPages = 5;
+  let offset = 0;
+  let truncated = false;
+  const rows = [];
+
+  // ACS2026 place layers advertise pagination and a 100,000-record service
+  // maximum. Use bounded 1,000-row pages rather than silently treating the
+  // first 100 records as the complete result. Very broad prefixes are flagged
+  // after 5,000 rows so the visitor can type more letters.
+  for (let page = 0; page < maximumPages; page += 1) {
+    const params = new URLSearchParams({
+      where: "UPPER(BASENAME) LIKE UPPER('" + safeSearch + "%')",
+      outFields: 'BASENAME,STATE,INTPTLAT,INTPTLON,GEOID,LSADC',
+      orderByFields: 'BASENAME ASC, STATE ASC, GEOID ASC',
+      resultRecordCount: String(pageSize),
+      resultOffset: String(offset),
+      returnGeometry: 'false',
+      f: 'json',
+    });
+    const response = await fetch(LAYER_URL + '/' + layerId + '/query?' + params.toString(), {
+      headers: { Accept: 'application/json' },
+      cf: { cacheTtl: 3600, cacheEverything: true },
+    });
+    if (!response.ok) throw new Error('Census TIGERweb ACS2026 suggestion layer ' + layerId + ' returned HTTP ' + response.status);
+    const data = await response.json();
+    if (data.error) throw new Error('Census TIGERweb ACS2026 suggestion layer ' + layerId + ' returned an error');
+    const features = Array.isArray(data.features) ? data.features : [];
+    rows.push(...features.map((feature) => feature.attributes || {}));
+    const hasMore = data.exceededTransferLimit === true;
+    if (!hasMore || features.length === 0) break;
+    offset += features.length;
+    if (page === maximumPages - 1) truncated = true;
+  }
+
+  return { rows, truncated };
+}
+
+async function getSuggestions(search, env) {
+  // A separate site-wide quota prevents type-ahead traffic consuming the exact
+  // city-verification allowance. The browser debounces and caches prefixes;
+  // the successful JSON response is also edge-cacheable.
+  let quota;
+  try {
+    quota = await reserveApiQuota(env?.API_QUOTA_DB, 'census_suggest', 120, 20000);
+  } catch {
+    return json({ error: 'City suggestions are temporarily paused because the shared request-quota guard is unavailable. Please try again later.' }, 503);
+  }
+  if (!quota) {
+    return json({ error: 'City suggestions have reached the shared request limit. Please try again later.' }, 429);
+  }
+
+  const results = await Promise.allSettled([
+    querySuggestionLayer(28, search), // incorporated places
+    querySuggestionLayer(30, search), // census-designated places
+  ]);
+  const successful = results.map((item, index) => ({
+    item,
+    geographyType: index === 0 ? 'Incorporated place' : 'Census-designated place',
+  })).filter(({ item }) => item.status === 'fulfilled');
+  if (!successful.length) {
+    return json({ error: 'The US Census city-suggestion service is temporarily unavailable. Please try again.' }, 502);
+  }
+
+  const byPlaceAndState = new Map();
+  for (const result of successful) {
+    for (const row of result.item.value.rows) {
+      const placeName = String(row.BASENAME || '').trim();
+      const stateFips = String(row.STATE || '').trim().padStart(2, '0');
+      const stateAbbreviation = STATE_ABBR_BY_FIPS[stateFips];
+      const geoid = String(row.GEOID || '').trim();
+      const latitude = Number(row.INTPTLAT);
+      const longitude = Number(row.INTPTLON);
+      if (!placeName || !stateAbbreviation || !geoid || !validCoordinates(latitude, longitude)) continue;
+      const key = placeName.toLocaleLowerCase('en-US') + '|' + stateAbbreviation;
+      const existing = byPlaceAndState.get(key);
+      if (existing) {
+        if (!existing.geographyTypes.includes(result.geographyType)) existing.geographyTypes.push(result.geographyType);
+        continue;
+      }
+      byPlaceAndState.set(key, {
+        placeName,
+        stateAbbreviation,
+        stateName: STATE_NAMES[stateAbbreviation],
+        geographyType: result.geographyType,
+        geographyTypes: [result.geographyType],
+        geoid,
+      });
+    }
+  }
+
+  const needle = search.toLocaleLowerCase('en-US');
+  const suggestions = Array.from(byPlaceAndState.values())
+    .sort((a, b) => {
+      const exactA = a.placeName.toLocaleLowerCase('en-US') === needle ? 0 : 1;
+      const exactB = b.placeName.toLocaleLowerCase('en-US') === needle ? 0 : 1;
+      return exactA - exactB
+        || a.placeName.localeCompare(b.placeName, 'en-US')
+        || a.stateName.localeCompare(b.stateName, 'en-US');
+    })
+    .slice(0, 60);
+
+  const warnings = [];
+  const truncated = successful.some(({ item }) => item.value.truncated);
+  if (successful.length < 2) warnings.push('One Census place layer was unavailable; suggestions may be incomplete.');
+  if (truncated) warnings.push('This city prefix matches more than 5,000 records in at least one Census layer. Results are incomplete; type more letters to narrow the search.');
+  const hasCompleteCount = successful.length === 2 && !truncated;
+
+  return json({
+    search,
+    suggestions,
+    totalMatches: hasCompleteCount ? byPlaceAndState.size : null,
+    source: 'US Census Bureau TIGERweb ACS2026 (January 1, 2026 vintage), Incorporated Places and Census Designated Places',
+    partialSourceWarning: warnings.length ? warnings.join(' ') : null,
+  }, 200, { 'Cache-Control': 'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400' });
 }
 
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
+  const search = (url.searchParams.get('search') || '').trim().replace(/\s+/g, ' ');
+  if (url.searchParams.has('search')) {
+    if (search.length < 3 || search.length > 80 || !validPlaceText(search)) {
+      return json({ error: 'Enter at least 3 letters of a city name using common punctuation.' }, 400);
+    }
+    return getSuggestions(search, env);
+  }
+
   const city = (url.searchParams.get('city') || '').trim().replace(/\s+/g, ' ');
   const state = (url.searchParams.get('state') || '').trim().toUpperCase();
-  if (city.length < 2 || city.length > 80 || !/^[\p{L}\p{M}0-9 .’'&()\-]+$/u.test(city)) {
+  if (!validPlaceText(city)) {
     return json({ error: 'Enter a city name using 2–80 letters, numbers, spaces or common punctuation.' }, 400);
   }
   const stateFips = STATE_FIPS[state];
   if (!stateFips) return json({ error: 'Choose a valid US state or territory abbreviation.' }, 400);
 
-  // This public, keyless lookup still consumes a Pages Function and makes two
-  // external Census requests. Reserve a site-wide quota before contacting Census.
-  // Conservative app-side cap: 60 per 15-minute bucket and 10,000 per UTC day.
+  // Exact verification remains separate from type-ahead suggestions. It obtains
+  // the representative coordinates for all same-name Census geographies in
+  // the selected state, after the user has explicitly selected city + state.
   let quota;
   try {
     quota = await reserveApiQuota(env?.API_QUOTA_DB, 'census', 60, 10000);
@@ -93,6 +240,7 @@ export async function onRequestGet({ request, env }) {
       places.push({
         placeName,
         stateAbbreviation: state,
+        stateName: STATE_NAMES[state],
         latitude,
         longitude,
         geographyType: result.geographyType,
@@ -102,17 +250,32 @@ export async function onRequestGet({ request, env }) {
   }
 
   if (!places.length) {
-    return json({ error: `No exact Census place named “${city}” was found in ${state}. Check the city spelling and state.` }, 404);
+    return json({ error: 'No exact Census place named “' + city + '” was found in ' + state + '. Check the city spelling and selected state.' }, 404);
   }
+
+  // Sign the exact Census representative point. Provider routes reject arbitrary
+  // coordinates unless they carry this short-lived server-verifiable proof.
+  const hasSigningSecret = Boolean(env?.LOCATION_TOKEN_SECRET || env?.PVWATTS_API_KEY || env?.OPENEI_API_KEY);
+  if (hasSigningSecret) {
+    const tokens = await Promise.all(places.map((place) => createLocationToken(place, env)));
+    places.forEach((place, index) => { place.locationToken = tokens[index]; });
+    if (tokens.some((token) => !token)) {
+      return json({ error: 'The location verification token could not be created. Please retry later.' }, 503);
+    }
+  }
+
+  // Exact lookup responses may contain a short-lived bearer proof. Do not edge-
+  // cache or store these responses; type-ahead suggestions use their own cache.
+  const responseHeaders = { 'Cache-Control': 'private, no-store' };
 
   return json({
     city,
     state,
     country: 'United States',
     places,
-    source: 'US Census Bureau TIGERweb Current (2026), Incorporated Places and Census Designated Places',
+    source: 'US Census Bureau TIGERweb ACS2026 (January 1, 2026 vintage), Incorporated Places and Census Designated Places',
     geographyType: 'Census place internal representative point; not a citywide solar average or rooftop coordinate',
     limitation: 'The selected point is a representative point for the Census place. It does not identify a parcel, roof plane, utility service territory, electricity tariff, building-permit jurisdiction or exact weather conditions at a property. City boundaries and service territories do not necessarily align.',
     partialSourceWarning: successful.length < 2 ? 'One Census place layer was unavailable; the returned matches may be incomplete.' : null,
-  });
+  }, 200, responseHeaders);
 }

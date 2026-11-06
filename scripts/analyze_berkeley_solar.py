@@ -32,7 +32,15 @@ REQUIRED = {
 }
 FALSE_VALUES = {"0", "0.0", "false", "no", "n"}
 TRUE_VALUES = {"1", "1.0", "true", "yes", "y"}
-MISSING = {"", "-1", "-1.0", "na", "n/a", "null", "none"}
+MISSING = {"", "-1", "-1.0", "na", "n/a", "null", "none", "unknown"}
+VALID_US_STATE_CODES = {
+    "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL",
+    "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME",
+    "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH",
+    "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI",
+    "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI",
+    "WY", "AS", "GU", "MP", "PR", "VI",
+}
 
 
 def num(raw: str | None) -> float | None:
@@ -158,6 +166,7 @@ def main() -> int:
     reasons: Counter[str] = Counter()
     city_coverage: Counter[tuple[str, str]] = Counter()
     residential_candidates = 0
+    residential_segment_counts: Counter[str] = Counter()
     eligible = 0
     years_seen: Counter[int] = Counter()
 
@@ -173,6 +182,7 @@ def main() -> int:
                 reasons["not_single_family_or_unspecified_residential_segment"] += 1
                 continue
             residential_candidates += 1
+            residential_segment_counts[segment] += 1
 
             year = installation_year(row.get("installation_date"))
             if year is None:
@@ -219,7 +229,7 @@ def main() -> int:
                 reasons["missing_or_nonpositive_installed_price"] += 1
                 continue
             state = (row.get("state") or "").strip().upper()
-            if not re.fullmatch(r"[A-Z]{2}", state):
+            if state not in VALID_US_STATE_CODES:
                 reasons["missing_or_invalid_state"] += 1
                 continue
             price_per_watt = price / (kw * 1000.0)
@@ -232,7 +242,7 @@ def main() -> int:
             state_groups[state][0].append(price_per_watt)
 
             city = (row.get("city") or "").strip()
-            if city:
+            if city and city.lower() not in MISSING:
                 key = (state, city_key(city))
                 if key not in city_groups:
                     city_groups[key] = (array("d"), city, set())
@@ -263,20 +273,40 @@ def main() -> int:
             })
 
     print(f"Residential candidates (RES/RES_SF): {residential_candidates:,}")
+    print("Residential customer_segment code counts: " + str(dict(sorted(residential_segment_counts.items()))))
     print(f"Rows passing strict homeowner cohort: {eligible:,}; installation years retained: {args.min_install_year}–{args.max_install_year}")
     print(f"Installation-year counts: {dict(sorted(years_seen.items()))}")
     print(f"City/state groups with at least {args.min_city_sample} eligible rows: {city_written}")
     print(f"States with at least {args.min_state_sample} eligible rows: {state_written}")
+    print(f"States with any strictly eligible project rows before state suppression: {len(state_groups)}")
+    print("STATE_ELIGIBLE_SAMPLE_COUNTS_BEFORE_MINIMUM_N:")
+    for state, (values, _display, _variants) in sorted(
+        state_groups.items(), key=lambda item: (-len(item[1][0]), item[0])
+    ):
+        print(f"  {state}: n={len(values)}; meets_n{args.min_state_sample}={len(values) >= args.min_state_sample}")
+    city_group_counts = [len(group[0]) for group in city_groups.values()]
+    print(f"CITY_GROUPS_WITH_ANY_STRICTLY_ELIGIBLE_ROWS: {len(city_group_counts)}")
+    print("CITY_SAMPLE_COVERAGE_BY_THRESHOLD: " + str({
+        threshold: sum(n >= threshold for n in city_group_counts)
+        for threshold in (50, 100, 200, 500)
+    }))
+    print("STATE_SAMPLE_COVERAGE_BY_THRESHOLD: " + str({
+        threshold: sum(len(group[0]) >= threshold for group in state_groups.values())
+        for threshold in (100, 250, 500, 1000)
+    }))
     print(f"City summary: {args.output}")
     print(f"State fallback summary: {args.state_output}")
     print(f"City coverage diagnostics: {args.coverage_output}")
     print("Strict filters: PV-only; rooftop only; RES/RES_SF; 1–25 kW DC by default; 2024–2025 by default; explicitly non-TPO (reported or inferred); explicitly not self-installed; explicitly not expansion; explicitly not multi-phase.")
+    print("RES is residential with no single-family/multifamily subtype specified by the provider; RES_SF is known residential single-family; RES_MF is excluded.")
     print("Filter counts:")
     for name, count in sorted(reasons.items()):
         print(f"  {name}: {count:,}")
     print("RESEARCH LIMITS:")
     print("- This is a filtered project-level sample from contributing programmes and utilities, not a probability sample of all U.S. installations.")
-    print("- Price is nominal pre-incentive dollars reported by providers/hosts/applicants; LBNL warns of self-reporting errors and varying verification. It is not a verified current cash quote.")
+    print("- The 2026 guide defines total_installed_price as pre-incentive dollars reported by the installer, host customer or incentive applicant. It may be estimated and is not an independently verified current cash quote.")
+    print("- RES includes residential with no single-family/multifamily subtype supplied; RES_SF is explicit single-family and RES_MF is explicit multifamily. RES+RES_SF is not a pure single-family cohort.")
+    print("- The guide warns installation_date may be a proxy such as an incentive-claim or inspection date; the selected 2024–2025 window is therefore a provider-reported date window, not an independently verified installation-date census.")
     print("- A recent installation-year window reduces stale-price mixing but does not inflation-adjust values or make them current quotes.")
     print("- City names receive only conservative cosmetic normalization; genuine aliases are not merged. A city may have incomplete provider coverage.")
     print("- City medians/quartiles are descriptive historical reference distributions. They do not account fully for roof, equipment, utility, permitting, financing or contractor scope differences.")

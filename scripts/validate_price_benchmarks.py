@@ -23,9 +23,24 @@ ROOF_APPROVALS = (
     "job_type_code_verified",
     "census_table_c16_reconciled",
     "variance_method_validated",
+    "statistical_precision_reviewed",
+    "nonsampling_risk_reviewed",
     "metro_geography_verified",
     "scope_and_imputation_disclosed",
 )
+
+AHS_2023_TOP15_CBSA_CODES = {
+    "12060", "14460", "16980", "19100", "19820",
+    "26420", "31080", "33100", "35620", "37980",
+    "38060", "40140", "41860", "42660", "47900",
+}
+AHS_2023_NEXT5_METROS = {
+    "17140": ("Cincinnati, OH-KY-IN", 62.9),
+    "17460": ("Cleveland-Elyria, OH", 51.9),
+    "19740": ("Denver-Aurora-Lakewood, CO", 59.6),
+    "33340": ("Milwaukee-Waukesha-West Allis, WI", 61.4),
+    "35380": ("New Orleans-Metairie, LA", 61.0),
+}
 
 
 def _official_host(url: object, suffix: str) -> bool:
@@ -95,12 +110,56 @@ def validate_record(row: object) -> list[str]:
         if row.get("metric") != "nominal_usd_whole_project":
             errors.append("AHS roof metric must be nominal_usd_whole_project; no $/sq-ft conversion")
         if n < 30:
-            errors.append("AHS metro sample_n must be at least 30 unweighted projects")
+            errors.append("AHS sample_n must be at least 30 distinct owner-occupied housing units with positive-cost professional roofing projects; this is an internal minimum floor, not proof of precision")
+        if row.get("jobdiy_scope") != "professional":
+            errors.append("AHS contractor-oriented roof reference must use JOBDIY='2' professional projects only; do not mix DIY and professional jobs")
+        if row.get("source_puf") not in {"national", "metropolitan"}:
+            errors.append("AHS roof row must identify source_puf as national or metropolitan")
+        try:
+            project_n = row["project_n"]
+            positive_project_n = row["positive_cost_project_n"]
+            positive_unit_n = row["positive_cost_housing_units_n"]
+            if any(isinstance(x, bool) or not isinstance(x, int) or x <= 0 for x in (project_n, positive_project_n, positive_unit_n)):
+                raise ValueError
+            if positive_project_n > project_n or positive_unit_n != n:
+                raise ValueError
+        except (KeyError, TypeError, ValueError):
+            errors.append("AHS row must report consistent positive integer project_n, positive_cost_project_n and positive_cost_housing_units_n; sample_n must equal positive-cost housing units")
+        try:
+            cvs = {metric: float(row[f"{metric}_cv"]) for metric in ("mean", "median", "p25", "p75")}
+            if any(not (0 <= cv < 0.30) for cv in cvs.values()):
+                errors.append("AHS mean/median/p25/p75 relative standard errors must each be below the 30% Table Creator suppression threshold")
+        except (KeyError, TypeError, ValueError):
+            errors.append("AHS row requires finite mean_cv, median_cv, p25_cv and p75_cv from all 160 Fay-BRR replicate weights")
+        if len(str(row.get("precision_review_note", "")).strip()) < 80:
+            errors.append("AHS row requires a substantive metric-specific precision and suppression review note")
+        if len(str(row.get("nonsampling_risk_note", "")).strip()) < 80:
+            errors.append("AHS row requires a substantive 2023 unit-nonresponse and nonsampling-risk review note")
         code = str(row.get("metro_omb13cbsa", ""))
+        source_puf = row.get("source_puf")
         if len(code) != 5 or not code.isdigit():
             errors.append("AHS metro row requires the five-digit 2013 OMB CBSA code")
         if not str(row.get("metro_name", "")).strip():
             errors.append("AHS metro row requires a metro_name")
+        if source_puf == "metropolitan":
+            expected = AHS_2023_NEXT5_METROS.get(code)
+            if expected is None:
+                errors.append("2023 Metropolitan PUF records must use one of the five Next-10 CBSA areas actually interviewed in 2023")
+            else:
+                expected_name, expected_rate = expected
+                if row.get("metro_name") != expected_name:
+                    errors.append("2023 Metropolitan PUF metro_name must match the official 2013 OMB CBSA label used by the analyzer")
+                try:
+                    observed_rate = float(row["weighted_response_rate_pct"])
+                    if abs(observed_rate - expected_rate) > 0.05:
+                        errors.append(f"weighted_response_rate_pct must match 2023 Census Table 2.2 ({expected_rate:.1f}%)")
+                except (KeyError, TypeError, ValueError):
+                    errors.append("2023 Metropolitan PUF rows require the area-specific weighted_response_rate_pct from Census Table 2.2")
+        elif source_puf == "national":
+            if code not in AHS_2023_TOP15_CBSA_CODES:
+                errors.append("2023 National PUF metro rows must use one of the 15 integrated Top-15 OMB13CBSA codes")
+        else:
+            errors.append("AHS source_puf must be national or metropolitan")
         if (row.get("period_start_year"), row.get("period_end_year")) != (2021, 2023):
             errors.append("AHS roof period must be stated as the 2021–2023 reference window")
         if not _official_host(row.get("source_url"), "census.gov"):

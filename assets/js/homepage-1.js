@@ -128,7 +128,7 @@
     const productionInput = document.getElementById('productionPerKw');
     const roofReferenceStatus = document.getElementById('roofReferenceStatus');
     const solarReferenceStatus = document.getElementById('solarReferenceStatus');
-    let roofRateBasis = 'User-entered local comparison rates.';
+    let roofRateBasis = 'No roof-price reference loaded; roof cost is not estimated.';
     let solarPriceBasis = 'User-entered quote.';
     let importRateBasis = 'User-entered marginal tariff rate.';
     let importedCityLabel = '';
@@ -166,10 +166,36 @@
     }
     const incomingStateRate = Number(handoff.get('stateAverageRate'));
     if (handoff.get('stateAverageSource') === 'EIA Electric Power Monthly Table 5.6.B' && Number.isFinite(incomingStateRate) && incomingStateRate > 0 && incomingStateRate <= 5) {
-      importRateInput.value = incomingStateRate.toFixed(4);
-      importRateBasis = `EIA state-average residential price prefill for ${handoff.get('state') || 'the selected state'}; illustrative only, not a household marginal tariff.`;
-      addFieldNote(importRateInput, 'importRatePrefillNote', `${importRateBasis} Replace with your actual utility bill's marginal energy charge. The prefilled number remains editable.`, 'https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_06_b');
-      refreshField(importRateInput);
+      const stateLabel = handoff.get('state') || 'the selected state';
+      const note = document.createElement('small');
+      note.id = 'importRatePrefillNote';
+      note.className = 'field-import-note';
+      note.textContent = `EIA state-average residential electricity price for ${stateLabel}: ${incomingStateRate.toFixed(4)} $/kWh. This is a statewide average, not your marginal utility tariff. It has not been applied.`;
+      const source = document.createElement('a');
+      source.href = 'https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_06_b';
+      source.target = '_blank';
+      source.rel = 'noopener noreferrer';
+      source.textContent = ' Source';
+      note.append(source);
+      const appliedNote = document.createElement('small');
+      appliedNote.className = 'field-import-note';
+      appliedNote.id = 'eiaScenarioApplied';
+      appliedNote.hidden = true;
+      const useButton = document.createElement('button');
+      useButton.type = 'button';
+      useButton.className = 'btn btn-outline eia-opt-in';
+      useButton.id = 'useEiaStateAverage';
+      useButton.textContent = 'Use EIA average as an illustrative scenario';
+      useButton.addEventListener('click', () => {
+        importRateInput.value = incomingStateRate.toFixed(4);
+        importRateBasis = `EIA state-average residential price used by explicit visitor choice for ${stateLabel}; illustrative scenario only, not the household marginal tariff.`;
+        appliedNote.textContent = `Applied ${incomingStateRate.toFixed(4)} $/kWh EIA state average for ${stateLabel}. This remains an illustrative scenario, not your household tariff.`;
+        appliedNote.hidden = false;
+        useButton.disabled = true;
+        useButton.textContent = 'EIA scenario value applied';
+        refreshField(importRateInput);
+      });
+      importRateInput.closest('.field').append(note, useButton, appliedNote);
     }
 
     function loadNationalRoofReference() {
@@ -177,7 +203,7 @@
       roofHighInput.value = '11';
       roofRateBasis = 'Angi broad national reference range (updated October 22, 2026); not city-specific, material-specific or a contractor quote.';
       roofReferenceStatus.hidden = false;
-      roofReferenceStatus.textContent = `${roofRateBasis} It is prefilled only as a planning fallback. Replace both rates with comparable local quotes; both values remain editable.`;
+      roofReferenceStatus.textContent = `${roofRateBasis} This is an optional national planning reference, not a local or material-specific price. Replace both rates with comparable local quotes; both values remain editable.`;
       refreshField(roofLowInput); refreshField(roofHighInput);
     }
     function loadNationalSolarReference() {
@@ -192,7 +218,8 @@
     // A national source is an explicit fallback where city-level installed-price records
     // have not passed publication gates. City-specific approved records can override it
     // through the location-data handoff; neither fallback is presented as a local quote.
-    loadNationalRoofReference();
+    // Do not silently anchor roof-cost estimates to a broad national range. Visitors
+    // must deliberately load it; otherwise the roof-cost component stays unestimated.
     loadNationalSolarReference();
 
     // An approved city/state historical LBNL distribution overrides the national
@@ -327,7 +354,7 @@
       document.getElementById('loanPayment').textContent = payment === null ? 'Not calculated' : `${money(payment)} / mo`;
       document.getElementById('loanDesc').textContent = loanDesc;
       document.getElementById('loanTerms').textContent = loanTerms;
-      document.getElementById('resultsLocation').textContent = importedCityLabel ? `City-model context: ${importedCityLabel}. Solar yield is from a representative Census place point; tariff input is a state-average scenario unless you replaced it with your bill rate.` : 'Based on visitor-entered assumptions. No address or ZIP lookup is performed.';
+      document.getElementById('resultsLocation').textContent = importedCityLabel ? `City-model context: ${importedCityLabel}. Solar yield is from a representative Census place point. The EIA state average is not used as your tariff unless you explicitly apply it as an illustrative scenario.` : 'Based on visitor-entered assumptions. No address or ZIP lookup is performed.';
       const assumptions = [
         `Roof material: ${document.getElementById('roofType').selectedOptions[0].text}. Roof age: ${age === null ? 'not entered' : `${age} years`} (descriptive input only; age does not diagnose condition or determine replacement urgency). Roof area: ${number(roofArea)} sq ft. ${mode === 'roof' ? 'You supplied a roof-surface area; pitch is not applied again.' : `Approximate building footprint = above-ground finished floor area ÷ ${stories} stories; surface multiplier for the selected ${pitch} pitch is ${CONFIG.pitchFactors[pitch].toFixed(3)}. This simplified method does not model overhangs or complex roof geometry.`}`,
         roofRateLow === null ? 'Roof replacement cost is not estimated because no local low/high installed rates were entered. The calculator does not invent city prices.' : `Roof material: ${document.getElementById('roofType').selectedOptions[0].text}. Roof cost = ${number(roofArea)} sq ft × ${money(roofRateLow,2)}–${money(roofRateHigh,2)} per roof sq ft. Rate basis: ${roofRateBasis} Confirm both rates match this material, measurement basis and project scope.`,

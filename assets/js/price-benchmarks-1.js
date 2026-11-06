@@ -3,6 +3,7 @@
 
   const solarPanel = document.getElementById('solarInstalledBenchmark');
   const roofSelect = document.getElementById('roofMetroBenchmark');
+  const roofField = document.getElementById('roofMetroBenchmarkField');
   const roofResult = document.getElementById('roofMetroBenchmarkResult');
   if (!solarPanel && !roofSelect && !roofResult) return;
 
@@ -139,13 +140,14 @@
       .sort((a, b) => String(a.metro_name).localeCompare(String(b.metro_name)));
     roofSelect.replaceChildren(new Option('Choose an available AHS metro reference', ''));
     roofSelect.disabled = rows.length === 0;
+    if (roofField) roofField.hidden = rows.length === 0;
     rows.forEach((row, index) => {
       const option = new Option(`${row.metro_name} · AHS 2013 metro geography`, String(index));
       roofSelect.add(option);
     });
     roofResult.replaceChildren();
     if (!rows.length) {
-      roofResult.append(text('strong', 'No metro roofing distribution is approved for display yet.'), text('p', 'The AHS relational microdata have not passed the required codebook, weighted-estimate, variance and Census Table C-16 reconciliation checks. The $10,000 national AHS figure shown above is historical survey context only; it is not a metro range, current quote or input to this calculator. Use comparable written local proposals for the calculation.'));
+      roofResult.append(text('strong', 'No AHS metro roofing distribution is currently approved for display.'), text('p', 'The 2023 AHS National PUF has been analyzed, and its national point estimates reproduce the Census Table C-16 PUF estimate column. Metro-level variance and margin-of-error reconciliation, precision thresholds and the 2013 CBSA geography crosswalk remain under review. The $10,000 national AHS figure shown above is historical survey context only; it is not a metro range, current quote or input to this calculator. Use comparable written local proposals for the calculation.'));
       return;
     }
     const update = () => {
@@ -192,6 +194,7 @@
   if (roofSelect && roofResult) {
     withRegistry().then(renderRoof).catch(() => {
       roofSelect.disabled = true;
+      if (roofField) roofField.hidden = true;
       roofResult.replaceChildren(text('p', 'The benchmark file could not be checked. No metro price range is shown; use comparable written proposals in the calculator above.'));
     });
   }

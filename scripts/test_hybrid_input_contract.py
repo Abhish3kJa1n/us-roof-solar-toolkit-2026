@@ -54,16 +54,41 @@ for marker in ('not facts inferred from your city','reference configuration','Re
     if marker.lower() not in loc.lower():
         fail('city estimator reference assumptions are not adequately disclosed')
 
+if 'site owner has configured its free server-side API key' not in loc:
+    fail('OpenEI page must disclose its required server-side API key configuration')
+
 home=(ROOT/'index.html').read_text(encoding='utf-8')
 home_js=(ROOT/'assets/js/homepage-1.js').read_text(encoding='utf-8')
 location_js=(ROOT/'assets/js/location-solar-1.js').read_text(encoding='utf-8')
-for phrase in ('City-based solar data','state average is not your household tariff','Every returned value remains editable'):
+for phrase in ('City-based solar data','It is not inserted into your tariff field','may deliberately apply it as an illustrative scenario'):
     if phrase.lower() not in home.lower(): fail(f'homepage lacks hybrid-data disclosure: {phrase}')
-for token in ("handoff.get('productionPerKw')", "handoff.get('stateAverageRate')", "PVWatts V8", "FieldValidation.refresh", "loadNationalRoofReference();", "loadNationalSolarReference();", "Berkeley Lab Tracking the Sun 2026"):
+for token in ("handoff.get('productionPerKw')", "handoff.get('stateAverageRate')", "useEiaStateAverage", "addEventListener('click'", "PVWatts V8", "FieldValidation.refresh", "loadNationalSolarReference();", "Berkeley Lab Tracking the Sun 2026"):
     if token not in home_js: fail(f'homepage hybrid handoff is missing {token}')
-for token in ('productionPerKw', 'stateAverageRate', 'cityModelSource', 'combinedLink.href', 'roofsolar:solar-price-benchmark'):
+if "getElementById('loadNationalRoofReference').addEventListener('click', loadNationalRoofReference);" not in home_js:
+    fail('broad national roof-price reference must be available through an explicit visitor click')
+if re.search(r"^\s*loadNationalRoofReference\(\);", home_js, re.MULTILINE):
+    fail('broad national roof-price reference must not be silently prefilled on page load')
+if 'No roof-price range is prefilled' not in home:
+    fail('homepage must disclose that roof-price assumptions are not prefilled')
+for token in ('productionPerKw', 'stateAverageRate', 'stateAverageSource', 'cityModelSource', 'combinedLink.href', 'roofsolar:solar-price-benchmark'):
     if token not in location_js: fail(f'city estimator handoff is missing {token}')
 
+# EIA statewide averages must never silently become a household marginal tariff.
+savings_js=(ROOT/'assets/js/solar-savings-1.js').read_text(encoding='utf-8')
+for source_js, field_name, value_name, button_name in (
+    (home_js, 'importRateInput', 'incomingStateRate', 'useButton'),
+    (savings_js, 'importRateEl', 'importedStateRate', 'button'),
+):
+    if 'Use EIA average as an illustrative scenario' not in source_js:
+        fail('EIA state-average rate must require a deliberate visitor opt-in')
+    if 'useEiaStateAverage' not in source_js:
+        fail('EIA state-average opt-in control is missing')
+    assignment = f'{field_name}.value = {value_name}.toFixed(4)'
+    assignment_pos = source_js.find(assignment)
+    click_anchor = button_name + '.addEventListener(\'click\''
+    click_pos = source_js.rfind(click_anchor, 0, assignment_pos)
+    if assignment_pos < 0 or click_pos < 0:
+        fail('EIA state average must only be applied from its explicit button click')
 registry=(ROOT/'data/price-benchmarks.json').read_text(encoding='utf-8')
 if '"status": "withheld"' not in registry and '"status":"withheld"' not in registry:
     fail('empty/unapproved price registry must remain explicitly withheld until real source records pass publication gates')
@@ -76,6 +101,24 @@ for token in ('warningMin:', 'warningMax:', 'validateScope', 'aria-describedby',
     if token not in (ROOT/'assets/js/field-validation-1.js').read_text(encoding='utf-8'):
         fail(f'shared validator missing expected feedback feature: {token}')
 
+# Currency inputs are whole-dollar amounts, not $100 increments. A min=1/step=100
+# pair makes common values such as $30,000 fail the step check (1 + 100*n only).
+currency_fields = {
+    'guides/solar-installation-cost.html': {'pvCashPrice'},
+    'guides/solar-loan-vs-lease-vs-ppa.html': {'cashPrice', 'loanPrincipal', 'downPayment'},
+}
+for relative_path, expected_ids in currency_fields.items():
+    parser = Controls()
+    parser.feed((ROOT / relative_path).read_text(encoding='utf-8'))
+    indexed = {attrs.get('id'): attrs for _, attrs in parser.controls if attrs.get('id')}
+    for field_id in expected_ids:
+        attrs = indexed.get(field_id)
+        if not attrs:
+            fail(f'{relative_path} is missing currency field #{field_id}')
+        if attrs.get('type') != 'number' or attrs.get('step') != '1':
+            fail(f'{relative_path} #{field_id} must accept whole-dollar increments (step=1)')
+
 print(f'PASS: {len(interactive_pages)} calculator/data-entry pages load shared field validation; all numeric fields define hard bounds and precision.')
-print('PASS: city + state PVWatts/EIA scenario values hand off to editable combined-calculator fields; source-labelled national roof/solar fallbacks load only as broad references when local solar price data are not approved.')
+print('PASS: solar cash price, loan principal, down payment and PV quote fields accept ordinary whole-dollar values without $100-step rejection.')
+print('PASS: city-based PVWatts and EIA state-average context are handed off; the EIA rate remains unused until a visitor explicitly applies it as an illustrative scenario.')
 print('PASS: only approval-gated, sufficiently sampled city/state solar records can replace the national solar reference; the current registry remains withheld and no city/metro prices are fabricated.')

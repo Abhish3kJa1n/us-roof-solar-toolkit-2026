@@ -1,10 +1,13 @@
 /** Cloudflare Pages Function: discovery of nearby OpenEI residential rate records only. */
 import { reserveApiQuota } from '../_shared/quota.js';
+import { verifyLocationToken } from '../_shared/location-token.js';
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: {
     'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': status === 200 ? 'public, max-age=300, s-maxage=86400' : 'no-store',
+    // Authorization is carried in a signed Census proof header; never cache the
+    // whole endpoint response by URL because CDN keys do not vary by that header.
+    'Cache-Control': 'private, no-store',
     'X-Content-Type-Options': 'nosniff',
   },
 });
@@ -17,8 +20,16 @@ export async function onRequestGet({ request, env }) {
   const params = new URL(request.url).searchParams;
   const lat = Number(params.get('lat'));
   const lon = Number(params.get('lon'));
-  if (!Number.isFinite(lat) || lat < -15 || lat > 72 || !Number.isFinite(lon) || lon < -180 || lon > -60) {
-    return json({ error: 'Valid US latitude and longitude are required.' }, 400);
+  const state = (params.get('state') || '').trim().toUpperCase();
+  const westernUsEnvelope = Number.isFinite(lat) && lat >= -15 && lat <= 72 && Number.isFinite(lon) && lon >= -180 && lon <= -60;
+  const guamEnvelope = state === 'GU' && Number.isFinite(lat) && lat >= 13 && lat <= 14.5 && Number.isFinite(lon) && lon >= 144 && lon <= 145.5;
+  const marianaEnvelope = state === 'MP' && Number.isFinite(lat) && lat >= 14 && lat <= 21.5 && Number.isFinite(lon) && lon >= 144 && lon <= 147;
+  if (!westernUsEnvelope && !guamEnvelope && !marianaEnvelope) {
+    return json({ error: 'Valid coordinates within a supported U.S. state or territory are required. Guam and Northern Mariana Islands require the matching selected Census location.' }, 400);
+  }
+  const locationProof = await verifyLocationToken(request.headers.get('X-Location-Proof'), env, { latitude: lat, longitude: lon, state });
+  if (!locationProof) {
+    return json({ error: 'Select and verify a city/state through the Census location search before requesting tariff candidates. Arbitrary coordinates are not accepted.' }, 400);
   }
 
   // OpenEI's reviewed public API documentation does not state a numeric

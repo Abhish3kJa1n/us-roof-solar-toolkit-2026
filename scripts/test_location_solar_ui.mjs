@@ -18,7 +18,7 @@ class FakeNode {
     this.rel = '';
   }
   addEventListener(name, callback) { this.listeners[name] = callback; }
-  emit(name) { return this.listeners[name]?.({ target: this }); }
+  emit(name, event = {}) { return this.listeners[name]?.({ target: this, ...event }); }
   replaceChildren(...children) { this.children = [...children]; }
   append(...children) { this.children.push(...children); }
   add(child) { this.children.push(child); }
@@ -27,18 +27,29 @@ class FakeNode {
 }
 
 const ids = [
-  'city','state','place','placeField','lookup','estimate','tariffs','result','locationStatus',
+  'city','state','stateDisplay','stateField','stateHelp','manualState','manualStateFallback','useManualState','citySuggestions','place','placeField','lookup','estimate','tariffs','result','locationStatus',
   'modelStatus','tariffStatus','tariffResults','savingsLink','panelCountLink','combinedLink','stateBenchmark','capacity','tilt','azimuth','losses',
 ];
 const nodes = Object.fromEntries(ids.map((id) => [id, new FakeNode(id === 'place' ? 'select' : 'div')]));
 nodes.savingsLink.hidden = true;
 nodes.panelCountLink.hidden = true;
 nodes.combinedLink.hidden = true;
+nodes.stateField.hidden = true;
+nodes.manualStateFallback.open = false;
+nodes.manualState.value = 'TX';
+nodes.manualState.selectedIndex = 0;
+nodes.manualState.options = [{ textContent: 'Texas' }];
+nodes.citySuggestions.hidden = true;
+nodes.lookup.disabled = true;
 const calls = [];
+const requestMetadata = [];
 let pendingResolve;
 let useDeferredModel = false;
+const suggestionPayload = {
+  search: 'Aust', totalMatches: 1, suggestions: [{ placeName: 'Austin', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', geographyTypes: ['Incorporated place'], geoid: '4805000' }],
+};
 const locationPayload = {
-  city: 'Austin', state: 'TX', places: [{ placeName: 'Austin', stateAbbreviation: 'TX', geographyType: 'Incorporated place', latitude: 30.2672, longitude: -97.7431 }],
+  city: 'Austin', state: 'TX', places: [{ placeName: 'Austin', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', latitude: 30.2672, longitude: -97.7431, locationToken: 'signed-location-token' }],
 };
 const modelPayload = {
   model: 'NLR PVWatts V8',
@@ -73,9 +84,15 @@ const context = {
   setTimeout,
   clearTimeout,
   encodeURIComponent,
-  fetch: async (url) => {
+  fetch: async (url, options = {}) => {
     calls.push(String(url));
-    if (String(url).includes('/api/location?')) return { ok: true, json: async () => locationPayload };
+    requestMetadata.push({ url: String(url), headers: options.headers || {} });
+    if (String(url).includes('/api/location?search=')) {
+      const search = new URL(String(url), 'https://example.test').searchParams.get('search') || '';
+      return { ok: true, json: async () => search.toLowerCase().startsWith('aus') ? suggestionPayload : search.toLowerCase().startsWith('par') ? { suggestions: [{ placeName: 'Partialville', stateAbbreviation: 'TX', stateName: 'Texas', geographyType: 'Incorporated place', geographyTypes: ['Incorporated place'], geoid: '4899998' }], totalMatches: null, partialSourceWarning: 'One Census layer was unavailable.' } : { suggestions: [] } };
+    }
+    if (String(url).includes('/api/location?city=')) return { ok: true, json: async () => locationPayload };
+    if (String(url).includes('/api/tariffs?')) return { ok: true, json: async () => ({ rates: [], returned: 0, searchRadiusMiles: 10 }) };
     if (String(url).includes('eia-residential-electricity-prices-2026-08-ytd.csv')) {
       return { ok: true, text: async () => 'area,code,jan_aug_2026_ytd_cents_per_kwh,jan_aug_2025_ytd_cents_per_kwh,yoy_change_percent,source,data_release_date\nTexas,TX,16.51,16.01,3.12,EIA Electric Power Monthly Table 5.6.B,2026-10-23\n' };
     }
@@ -90,17 +107,32 @@ const context = {
 const source = fs.readFileSync(new URL('../assets/js/location-solar-1.js', import.meta.url), 'utf8');
 vm.runInNewContext(source, context, { filename: 'location-solar-1.js' });
 
-// A city/state lookup selects a Census representative place, not a roof/address coordinate.
+// Typing a city returns nationwide Census suggestions. Selecting one fills its state.
 nodes.city.value = 'Austin';
-nodes.state.value = 'TX';
 await nodes.city.emit('input');
-await nodes.state.emit('change');
+await new Promise((resolve) => setTimeout(resolve, 475));
+assert.equal(nodes.citySuggestions.hidden, false);
+assert.equal(nodes.citySuggestions.children.length, 1);
+assert.match(nodes.locationStatus.textContent, /1 Census place\/state-or-territory matches/i);
+let prevented = false;
+await nodes.city.emit('keydown', { key: 'ArrowDown', preventDefault: () => { prevented = true; } });
+assert.equal(prevented, true, 'city suggestions should support keyboard navigation');
+assert.equal(nodes.citySuggestions.children[0].attributes['aria-selected'], 'true');
+await nodes.city.emit('keydown', { key: 'Enter', preventDefault: () => {} });
+assert.equal(nodes.state.value, 'TX');
+assert.equal(nodes.stateDisplay.value, 'Texas (TX)');
+assert.equal(nodes.stateField.hidden, false);
+assert.equal(nodes.lookup.disabled, false);
 await nodes.lookup.emit('click');
 await new Promise((resolve) => setTimeout(resolve, 0));
 assert.equal(nodes.estimate.disabled, false);
 assert.match(nodes.locationStatus.textContent, /Representative coordinates loaded/);
-assert.match(calls.find((call) => call.includes('/api/location?')), /city=Austin/);
-assert.match(calls.find((call) => call.includes('/api/location?')), /state=TX/);
+await nodes.tariffs.emit('click');
+await new Promise((resolve) => setTimeout(resolve, 0));
+assert.ok(calls.some((call) => call.includes('/api/tariffs?lat=30.2672&lon=-97.7431&state=TX')), 'OpenEI lookup must include the selected Census state code');
+assert.match(calls.find((call) => call.includes('/api/location?city=')), /city=Austin/);
+assert.match(calls.find((call) => call.includes('/api/location?city=')), /state=TX/);
+assert.ok(calls.some((call) => call.includes('/api/location?search=Austin')), 'city typing should call the nationwide suggestion route');
 assert.equal(nodes.stateBenchmark.hidden, false);
 assert.match(nodes.stateBenchmark.children.map((n) => n.textContent).join(' '), /16.51¢\/kWh/);
 assert.match(nodes.stateBenchmark.children.map((n) => n.textContent).join(' '), /not your utility’s marginal energy charge/);
@@ -135,6 +167,7 @@ assert.equal(nodes.savingsLink.hidden, false);
 assert.match(nodes.savingsLink.href, /production=1550\.0/);
 assert.match(nodes.savingsLink.href, /city=Austin/);
 assert.match(nodes.savingsLink.href, /state=TX/);
+assert.match(nodes.savingsLink.href, /stateAverageSource=EIA/);
 assert.equal(nodes.panelCountLink.hidden, false);
 assert.match(nodes.panelCountLink.href, /production=1550\.0/);
 assert.match(nodes.panelCountLink.href, /location=Austin%2C\+TX/);
@@ -144,6 +177,14 @@ assert.match(nodes.combinedLink.href, /city=Austin/);
 assert.match(nodes.combinedLink.href, /state=TX/);
 assert.match(nodes.combinedLink.href, /stateAverageRate=0.1651/);
 assert.match(nodes.combinedLink.href, /stateAverageSource=EIA/);
+const pvRequest = requestMetadata.find((call) => call.url.includes('/api/pvwatts?'));
+const tariffRequest = requestMetadata.find((call) => call.url.includes('/api/tariffs?'));
+assert.match(pvRequest?.url || '', /state=TX/);
+assert.equal(new URL(pvRequest.url, 'https://example.test').searchParams.has('locationToken'), false, 'PVWatts proof must not be placed in the URL');
+assert.equal(pvRequest?.headers?.['X-Location-Proof'], 'signed-location-token', 'PVWatts must send the signed Census proof in a request header');
+assert.match(tariffRequest?.url || '', /state=TX/);
+assert.equal(new URL(tariffRequest.url, 'https://example.test').searchParams.has('locationToken'), false, 'OpenEI proof must not be placed in the URL');
+assert.equal(tariffRequest?.headers?.['X-Location-Proof'], 'signed-location-token', 'OpenEI must send the signed Census proof in a request header');
 assert.match(nodes.combinedLink.href, /pvwattsFetchedAt=2026-11-01/);
 assert.match(nodes.combinedLink.href, /solarPricePerWatt=2.75/);
 assert.match(nodes.combinedLink.href, /solarPriceSource=Berkeley\+Lab\+Tracking\+the\+Sun\+2026/);
@@ -179,4 +220,51 @@ assert.equal(nodes.savingsLink.hidden, true);
 assert.equal(nodes.panelCountLink.hidden, true);
 assert.equal(nodes.combinedLink.hidden, true);
 
-console.log('PASS: location estimator validation, PVWatts output units, savings/panel-count/combined-calculator handoffs, editable benchmark assumptions, invalidation and stale-response protection.');
+// The manual-state fallback is explicit and still requires the exact Census lookup.
+nodes.city.value = 'Austin';
+await nodes.city.emit('input');
+nodes.manualState.value = 'TX';
+await nodes.useManualState.emit('click');
+assert.equal(nodes.state.value, 'TX');
+assert.equal(nodes.stateDisplay.value, 'Texas (TX)');
+assert.match(nodes.stateHelp.textContent, /selected manually/);
+assert.equal(nodes.lookup.disabled, false);
+await nodes.lookup.emit('click');
+await new Promise((resolve) => setTimeout(resolve, 0));
+assert.equal(nodes.estimate.disabled, false, 'manual state choice must still pass the exact Census location route');
+assert.match(nodes.locationStatus.textContent, /Representative coordinates loaded/);
+
+// A city change after PVWatts has returned but while the secondary benchmark
+// hand-off is still pending must not publish links for the now-stale location.
+useDeferredModel = false;
+nodes.city.value = 'Austin';
+await nodes.city.emit('input');
+assert.equal(nodes.citySuggestions.children.length, 1, 'previously fetched suggestions should be cached for this browser session');
+nodes.citySuggestions.children[0].emit('click');
+await nodes.lookup.emit('click');
+assert.equal(nodes.estimate.disabled, false);
+const staleSecondaryHandoff = nodes.estimate.emit('click');
+await new Promise((resolve) => setTimeout(resolve, 0));
+nodes.city.value = 'Dallas';
+await nodes.city.emit('input');
+await staleSecondaryHandoff;
+assert.equal(nodes.savingsLink.hidden, true, 'a stale secondary wait must not re-create the savings link');
+assert.equal(nodes.savingsLink.href, '');
+assert.equal(nodes.panelCountLink.hidden, true, 'a stale secondary wait must not re-create the panel-count link');
+assert.equal(nodes.panelCountLink.href, '');
+assert.equal(nodes.combinedLink.hidden, true, 'a stale secondary wait must not re-create the combined-calculator link');
+assert.equal(nodes.combinedLink.href, '');
+assert.match(nodes.result.children.map((n) => n.textContent).join(' '), /Model needs updating/);
+
+// A partial Census response can include usable suggestions without an exact total.
+// A null total must remain unknown; Number(null) must never become a false zero.
+nodes.city.value = 'Par';
+await nodes.city.emit('input');
+await new Promise((resolve) => setTimeout(resolve, 475));
+assert.equal(nodes.citySuggestions.hidden, false);
+assert.equal(nodes.citySuggestions.children.length, 1);
+assert.match(nodes.locationStatus.textContent, /complete total is unavailable/i);
+assert.match(nodes.locationStatus.textContent, /One Census layer was unavailable/i);
+assert.doesNotMatch(nodes.locationStatus.textContent, /^0 Census place/i);
+
+console.log('PASS: location estimator validation, PVWatts output units, editable handoffs, invalidation, stale-response protection, and partial Census-count handling.');

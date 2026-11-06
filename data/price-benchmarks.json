@@ -1,27 +1,31 @@
 {
   "schema_version": 1,
-  "last_updated": "2026-11-01",
+  "last_updated": "2026-11-06",
   "currency": "USD",
   "records": [],
   "source_status": {
     "solar_installed_price": {
       "status": "withheld",
-      "reason": "The August 2026 Berkeley Lab public file has not been obtained and reviewed as a real dataset, and current commercial reuse rights have not been confirmed in writing.",
+      "reason": "The August 2026 public CSV schema and strict residential cohort have been audited in a temporary research run. No explicit current commercial-reuse license or permission has been confirmed, and independent review remains incomplete.",
       "next_gates": [
-        "Obtain the exact August 2026 public CSV and preserve its source version.",
+        "Record the official source URL, guide version, archive member compression method, file size and checksum in the temporary audit results; rerun if the source changes.",
         "Obtain explicit current commercial reuse permission or a clearly applicable dataset licence.",
-        "Run and independently review the documented 2024\u20132025 residential PV-only, rooftop, host-owned cohort.",
+        "Run and independently review the documented 2024–2025 residential PV-only, rooftop, host-owned cohort.",
         "Publish only city samples with at least 100 projects or state samples with at least 500 projects, with quartiles, sample count, period and limitations."
       ]
     },
     "ahs_metro_roofing_job_cost": {
       "status": "withheld",
-      "reason": "The 2023 AHS relational PUF has not been analyzed. The roofing JOBTYPE code, project universe, weighted percentiles, replicate variance and Census Table C-16 reconciliation remain unresolved.",
+      "reason": "The National PUF supports integrated National/Top-15 analysis. The separate 2023 Metropolitan PUF's five Next-10 OMB13CBSA frequencies match Census Table 2.2 interviewed-unit counts. Table 2.2 reports area-specific weighted response rates of 51.9%–62.9% for these five areas. The report's separate 59.2% unit nonresponse figure is survey-wide and is not substituted for an area-specific rate. Nonresponse adjustment may not fully remove bias; no AHS records are approved for publication.",
       "next_gates": [
-        "Obtain and inspect the official 2023 relational PROJECT and HOUSEHOLD PUF files and value-label package.",
-        "Verify the roofing JOBTYPE code and replicate-weight method.",
-        "Reconcile the PUF metro estimates and uncertainty against official Census Table C-16 outputs.",
-        "Publish metro-only whole-project nominal-dollar distributions with a validated 2013 OMB CBSA identity, unweighted sample count and imputation/scope disclosures."
+        "Complete and review the separate National PUF Top-15 and Metropolitan PUF five-area outputs; never pool records or replicate weights from the two PUFs.",
+        "For contractor-oriented references, use only positive-cost JOBDIY=2 professional projects. Preserve DIY and all-project distributions as separate research outputs.",
+        "Report project counts and distinct contributing housing units separately; sample_n must represent positive-cost housing units, not project rows.",
+        "Require mean, median, p25 and p75 Fay-BRR CV values below 30%, plus manual precision and suppression approval. The 30% screen mirrors the AHS Table Creator suppression rule; a PUF pass is not equivalent to Table Creator approval.",
+        "Record the area-specific 2023 Census Table 2.2 weighted response rate on each Next-5 Metropolitan PUF row: Cincinnati, OH-KY-IN 62.9%; Cleveland-Elyria, OH 51.9%; Denver-Aurora-Lakewood, CO 59.6%; Milwaukee-Waukesha-West Allis, WI 61.4%; New Orleans-Metairie, LA 61.0%.",
+        "Keep the survey-wide 59.2% unit nonresponse figure distinct from area-specific response rates and document the possible nonresponse-bias impact.",
+        "Validate selected-city-to-metro assignment against the matching February 2013 OMB CBSA geography. Never label a metro-wide distribution as an individual-city price.",
+        "Publish only metro-level nominal-dollar whole-project distributions with source PUF, survey period, positive-cost project and housing-unit counts, scope, imputation and response limitations. Never convert AHS whole-project spending to dollars per square foot."
       ]
     }
   }

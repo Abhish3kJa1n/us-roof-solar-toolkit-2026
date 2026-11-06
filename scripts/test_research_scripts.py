@@ -2,9 +2,11 @@
 """Test data research scripts against small synthetic CSV fixtures (not source data)."""
 from __future__ import annotations
 import csv
+import runpy
 import subprocess
 import sys
 import tempfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,6 +59,9 @@ with tempfile.TemporaryDirectory() as tmp:
             {**base, "expansion_system": "1"},
             {**base, "multiple_phase_system": "1"},
             {**base, "city": ""},
+            {**base, "city": "-1"},
+            {**base, "state": "-1", "city": "Not a state"},
+            {**base, "state": "ZZ", "city": "Not a state"},
         ]
         w.writerows(records + cases)
     output = tmp / "berkeley-city-out.csv"
@@ -80,6 +85,12 @@ with tempfile.TemporaryDirectory() as tmp:
     assert city_rows[0]["installation_year_min"] == "2024" and city_rows[0]["installation_year_max"] == "2025"
     assert city_rows[0]["publication_status"] == "RESEARCH_ONLY_LICENSE_AND_EXTERNAL_VALIDATION_HOLD"
     assert len(state_rows) == 1 and state_rows[0]["state"] == "TX"
+    assert "States with any strictly eligible project rows before state suppression: 1" in stdout
+    assert "TX: n=102; meets_n100=True" in stdout, "State coverage includes blank and -1 city rows; city coverage does not"
+    assert "RES is residential with no single-family/multifamily subtype specified" in stdout
+    assert "CITY_SAMPLE_COVERAGE_BY_THRESHOLD: {50: 1, 100: 1, 200: 0, 500: 0}" in stdout
+    assert "STATE_SAMPLE_COVERAGE_BY_THRESHOLD: {100: 1, 250: 0, 500: 0, 1000: 0}" in stdout
+    assert "Residential customer_segment code counts: {'RES_SF': 113}" in stdout
     assert len(coverage_rows) == 1 and coverage_rows[0]["meets_minimum_sample"] == "True"
     assert "third_party_owned_confirmed: 1" in stdout
     assert "third_party_ownership_unknown: 2" in stdout
@@ -109,9 +120,10 @@ with tempfile.TemporaryDirectory() as tmp:
             "CONTROL": control, "TENURE": "'1'", "INTSTATUS": "'1'", "WEIGHT": "'1'", "OMB13CBSA": "'12060'",
             **{field: "'1'" for field in replicate_fields},
         })
-    # Edge cases: zero cost is retained by the Table C-16-OO PUF universe;
-    # non-roof type, invalid cost, unknown JOBDIY, renter, non-interview, and
-    # unmatched project records are excluded.
+    # C-16 counts eligible projects regardless of cost validity. Mean/median
+    # and quartiles use positive costs only; total expenditures use nonnegative
+    # costs. Give the zero-cost record a dominant weight to prove it cannot
+    # contaminate the positive-cost median/mean.
     project_rows.extend([
         {"CONTROL": "h060", "JOBTYPE": "16", "JOBCOST": "0", "JOBDIY": "2"},
         {"CONTROL": "h061", "JOBTYPE": "17", "JOBCOST": "5000", "JOBDIY": "2"},
@@ -119,10 +131,14 @@ with tempfile.TemporaryDirectory() as tmp:
         {"CONTROL": "h063", "JOBTYPE": "16", "JOBCOST": "5000", "JOBDIY": "9"},
         {"CONTROL": "h064", "JOBTYPE": "16", "JOBCOST": "5000", "JOBDIY": "2"},
         {"CONTROL": "h065", "JOBTYPE": "16", "JOBCOST": "5000", "JOBDIY": "2"},
+        # A second project from the same household proves that project records
+        # and distinct respondent households are not interchangeable.
+        {"CONTROL": "'h000'", "JOBTYPE": "16", "JOBCOST": "0", "JOBDIY": "2"},
         {"CONTROL": "unmatched", "JOBTYPE": "16", "JOBCOST": "25000", "JOBDIY": "2"},
     ])
     household_rows.extend([
-        {"CONTROL": "h060", "TENURE": "1", "INTSTATUS": "1", "WEIGHT": "1", "OMB13CBSA": "12060", **{field: "1" for field in replicate_fields}},
+        {"CONTROL": "h060", "TENURE": "1", "INTSTATUS": "1", "WEIGHT": "1000", "OMB13CBSA": "12060", **{field: "1000" for field in replicate_fields}},
+        {"CONTROL": "h062", "TENURE": "1", "INTSTATUS": "1", "WEIGHT": "1", "OMB13CBSA": "12060", **{field: "1" for field in replicate_fields}},
         {"CONTROL": "h064", "TENURE": "2", "INTSTATUS": "1", "WEIGHT": "1", **{field: "1" for field in replicate_fields}},
         {"CONTROL": "h065", "TENURE": "1", "INTSTATUS": "2", "WEIGHT": "1", **{field: "1" for field in replicate_fields}},
     ])
@@ -133,24 +149,193 @@ with tempfile.TemporaryDirectory() as tmp:
         w = csv.DictWriter(f, fieldnames=["CONTROL", "TENURE", "INTSTATUS", "WEIGHT", "OMB13CBSA", *replicate_fields])
         w.writeheader(); w.writerows(household_rows)
     output = tmp / "ahs-out.csv"
-    stdout = run([ROOT / "scripts/analyze_ahs_roof.py", "--project-input", project, "--household-input", household, "--output", output, "--metro-output", tmp / "ahs-metro-out.csv", "--minimum-unweighted-n", "30", "--minimum-metro-unweighted-n", "30", "--roof-job-type-code", "16"])
+    stdout = run([ROOT / "scripts/analyze_ahs_roof.py", "--project-input", project, "--household-input", household, "--output", output, "--metro-output", tmp / "ahs-metro-out.csv", "--minimum-unweighted-n", "30", "--minimum-metro-unweighted-n", "30", "--roof-job-type-code", "16", "--sample-source", "Synthetic National PUF fixture"])
     with output.open(encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     with (tmp / "ahs-metro-out.csv").open(encoding="utf-8") as f:
         metro_rows = list(csv.DictReader(f))
     assert {row["group"] for row in rows} == {"all_roofing_projects", "household_did_not_do_most_work_JOBDIY_2", "household_did_most_work_JOBDIY_1"}
+    assert all(row["sample_source"] == "Synthetic National PUF fixture" for row in rows)
+    professional = next(row for row in rows if row["group"] == "household_did_not_do_most_work_JOBDIY_2")
+    diy = next(row for row in rows if row["group"] == "household_did_most_work_JOBDIY_1")
+    assert professional["jobdiy_scope"] == "professional" and diy["jobdiy_scope"] == "diy"
+    assert professional["positive_cost_housing_units_n"] == "30"
+    assert next(row for row in metro_rows if row["group"] == "all_roofing_projects")["sample_source"] == "Synthetic National PUF fixture"
     metro_all = next(row for row in metro_rows if row["group"] == "all_roofing_projects")
     assert metro_all["metro_omb13cbsa"] == "12060"
     assert metro_all["metro_name"] == "Atlanta-Sandy Springs-Roswell, GA"
-    assert metro_all["unweighted_n"] == "61"
-    assert all(row["publication_status"] == "RESEARCH_ONLY_INCLUDES_CENSUS_EDITED_OR_IMPUTED_VALUES_NOT_RECONCILED" for row in rows)
-    assert all(float(row["median_nominal_survey_usd"]) > 0 for row in rows)
-    assert all(float(row["mean_nominal_survey_usd"]) > 0 for row in rows)
+    assert metro_all["unweighted_n"] == "63"
+    assert metro_all["unweighted_housing_units_n"] == "62"
+    all_rows = next(row for row in rows if row["group"] == "all_roofing_projects")
+    assert all_rows["unweighted_n"] == "63"
+    assert all_rows["unweighted_housing_units_n"] == "62"
+    assert all_rows["weighted_project_count"] == "1062"
+    assert all_rows["positive_cost_unweighted_n"] == "60"
+    assert all_rows["positive_cost_housing_units_n"] == "60"
+    assert all_rows["zero_cost_unweighted_n"] == "2"
+    assert all_rows["nonnegative_cost_unweighted_n"] == "62"
+    assert all_rows["mean_nominal_survey_usd"] == "39500.0"
+    assert all_rows["median_nominal_survey_usd"] == "39000.0", "zero-cost jobs must not enter the C-16 median"
+    assert float(all_rows["total_expenditure_nominal_survey_usd"]) == 2370000, "total must include nonnegative-cost jobs"
+    assert all(row["precision_screen_status"] == "PASS_CV_SCREEN_NOT_MANUAL_APPROVAL" for row in rows)
+    assert all(row["mean_cv"] == "0.0" and row["median_cv"] == "0.0" for row in rows)
     assert all(float(row["median_replicate_se_usd"]) == 0 for row in rows)
     assert all(float(row["mean_replicate_se_usd"]) == 0 for row in rows)
-    assert "JOBTYPE 16 eligible roofing jobs summarized: 61" in stdout
-    assert "Zero-cost projects included: 1" in stdout
+    assert "eligible roofing project records: 63" in stdout
+    assert "distinct respondent housing units: 62" in stdout
+    assert "zero-cost records retained in count/total: 2" in stdout
+    assert "missing_or_negative_cost: 1" in stdout
     assert "owner_occupancy_or_interview_excluded: 2" in stdout
     assert "unmatched_household: 1" in stdout
 
-print("PASS: Berkeley and AHS research scripts on synthetic fixtures; city/state and metro grouping, weighted quantiles and research-only flags verified.")
+
+# The two LBNL TPO fields represent independent yes/no judgements. Unknown
+# must not be treated as affirmative evidence or as an explicit negative.
+lbnl_audit = runpy.run_path(str(ROOT / "scripts" / "audit_lbnl_source_files.py"))
+assert lbnl_audit["valid_state_code"]("tx") is True
+assert lbnl_audit["valid_state_code"]("ZZ") is False
+assert lbnl_audit["valid_state_code"]("-1") is False
+assert lbnl_audit["valid_city_label"]("-1") is False
+assert lbnl_audit["valid_city_label"]("Austin") is True
+flag_state = lbnl_audit["ownership_flag_state"]
+evidence_bucket = lbnl_audit["ownership_evidence_bucket"]
+assert flag_state("0") == "no" and flag_state("1.0") == "yes" and flag_state("-1") == "unknown"
+assert evidence_bucket("no", "no") == "both_flags_explicitly_non_tpo"
+assert evidence_bucket("no", "unknown") == "one_explicit_non_tpo_other_unknown"
+assert evidence_bucket("unknown", "no") == "one_explicit_non_tpo_other_unknown"
+assert evidence_bucket("yes", "no") == "contains_positive_tpo_evidence"
+assert evidence_bucket("unknown", "unknown") == "both_flags_unknown"
+
+# Exercise the method-9 streaming path with a tiny stored-block Deflate stream.
+# Stored Deflate blocks are valid Deflate64 streams too; this checks the ZIP
+# method dispatch and decoder integration without committing a large binary.
+# Also verify fail-closed handling for malformed and unsupported archives.
+locate_data_file = lbnl_audit["locate_data_file"]
+with tempfile.TemporaryDirectory() as archive_tmp_name:
+    archive_tmp = Path(archive_tmp_name)
+    valid_zip = archive_tmp / "method-9-deflate64.zip"
+    with zipfile.ZipFile(valid_zip, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=0) as archive:
+        archive.writestr("source.csv", b"a,b\n1,2\n")
+    method9_bytes = bytearray(valid_zip.read_bytes())
+    local_header = method9_bytes.find(b"PK\x03\x04")
+    central_header = method9_bytes.find(b"PK\x01\x02")
+    assert local_header >= 0 and central_header >= 0
+    assert method9_bytes[local_header + 8:local_header + 10] == (8).to_bytes(2, "little")
+    assert method9_bytes[central_header + 10:central_header + 12] == (8).to_bytes(2, "little")
+    method9_bytes[local_header + 8:local_header + 10] = (9).to_bytes(2, "little")
+    method9_bytes[central_header + 10:central_header + 12] = (9).to_bytes(2, "little")
+    valid_zip.write_bytes(method9_bytes)
+    extracted = locate_data_file(valid_zip, archive_tmp)
+    assert extracted.read_bytes() == b"a,b\n1,2\n"
+
+    malformed_zip = archive_tmp / "truncated.zip"
+    malformed_zip.write_bytes(b"PK\x03\x04truncated")
+    try:
+        locate_data_file(malformed_zip, archive_tmp)
+    except RuntimeError as error:
+        assert "malformed or truncated" in str(error)
+    else:
+        raise AssertionError("ZIP-signature input with a truncated archive must fail closed")
+
+    unsupported_zip = archive_tmp / "unsupported.zip"
+    archive_bytes = bytearray(method9_bytes)
+    local_header = archive_bytes.find(b"PK\x03\x04")
+    central_header = archive_bytes.find(b"PK\x01\x02")
+    archive_bytes[local_header + 8:local_header + 10] = (93).to_bytes(2, "little")
+    archive_bytes[central_header + 10:central_header + 12] = (93).to_bytes(2, "little")
+    unsupported_zip.write_bytes(archive_bytes)
+    try:
+        locate_data_file(unsupported_zip, archive_tmp)
+    except RuntimeError as error:
+        assert "Unsupported ZIP compression method 93 (Zstandard)" in str(error)
+    else:
+        raise AssertionError("Zstandard ZIP input must not be passed to an unsupported decoder")
+
+# The source audit must identify National and Metropolitan PUF relational files
+# independently. The Metro PUF geography field must not be assumed to be OMB13CBSA.
+audit = runpy.run_path(str(ROOT / "scripts/audit_ahs_source_files.py"))
+locate_relational_csvs = audit["locate_relational_csvs"]
+replicate_fields = [f"REPWEIGHT{i}" for i in range(1, 161)]
+project_csv = "CONTROL,JOBTYPE,JOBCOST,JOBDIY\nh1,16,10000,2\n"
+# Guard against accidentally writing literal backslash-n sequences instead of CSV row breaks.
+assert project_csv.count("\n") == 2, "PROJECT fixture must contain a header and one data row"
+assert r"\n" not in project_csv, "PROJECT fixture contains literal backslash-n text"
+for filename, geography_field, require_omb in [
+    ("national-source.zip", "OMB13CBSA", True),
+    ("metro-source.zip", "OMB13CBSA", True),
+]:
+    source_zip = Path(tempfile.gettempdir()) / filename
+    household_fields = ["CONTROL", "TENURE", "INTSTATUS", "WEIGHT", geography_field, *replicate_fields]
+    household_csv = ",".join(household_fields) + "\nh1,1,1,1,12060," + ",".join(["1"] * 160) + "\n"
+    assert household_csv.count("\n") == 2, "HOUSEHOLD fixture must contain a header and one data row"
+    assert r"\n" not in household_csv, "HOUSEHOLD fixture contains literal backslash-n text"
+    with zipfile.ZipFile(source_zip, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr("PROJECT.csv", project_csv)
+        archive.writestr("HOUSEHOLD.csv", household_csv)
+    project_name, household_name, project_header, household_header = locate_relational_csvs(source_zip, require_omb13cbsa=require_omb)
+    assert project_name == "PROJECT.csv" and household_name == "HOUSEHOLD.csv"
+    assert geography_field in household_header
+    if filename == "metro-source.zip":
+        observed_geo = audit["inspect_geography_distributions"](source_zip, household_name, household_header)
+        assert observed_geo["OMB13CBSA"] == {"12060": 1}
+    source_zip.unlink()
+
+# A cost distribution's minimum-n screen must count distinct housing units with
+# positive costs, not every unit that reported a roofing project. 31 units
+# report roofing work here but only 29 contribute a positive JOBCOST.
+with tempfile.TemporaryDirectory() as low_tmp_name:
+    low_tmp = Path(low_tmp_name)
+    low_project = low_tmp / "ahs-low-positive-cost-project.csv"
+    low_household = low_tmp / "ahs-low-positive-cost-household.csv"
+    with low_project.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=project_fields)
+        writer.writeheader()
+        for i in range(31):
+            writer.writerow({
+                "CONTROL": f"low{i:03d}", "JOBTYPE": "16",
+                "JOBCOST": "0" if i >= 29 else str(9000 + i * 100),
+                "JOBDIY": "2",
+            })
+    with low_household.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["CONTROL", "TENURE", "INTSTATUS", "WEIGHT", "OMB13CBSA", *replicate_fields])
+        writer.writeheader()
+        for i in range(31):
+            writer.writerow({
+                "CONTROL": f"low{i:03d}", "TENURE": "1", "INTSTATUS": "1",
+                "WEIGHT": "1", "OMB13CBSA": "12060",
+                **{field: "1" for field in replicate_fields},
+            })
+    low_output = low_tmp / "ahs-low-positive-cost-out.csv"
+    low_metro_output = low_tmp / "ahs-low-positive-cost-metro.csv"
+    run([
+        ROOT / "scripts/analyze_ahs_roof.py",
+        "--project-input", low_project, "--household-input", low_household,
+        "--output", low_output, "--metro-output", low_metro_output,
+        "--minimum-unweighted-n", "30", "--minimum-metro-unweighted-n", "30",
+        "--roof-job-type-code", "16", "--sample-source", "Synthetic low-positive-cost-n fixture",
+    ])
+    with low_output.open(encoding="utf-8") as f:
+        assert list(csv.DictReader(f)) == [], "29 positive-cost housing units must fail the overall 30-unit floor"
+    with low_metro_output.open(encoding="utf-8") as f:
+        assert list(csv.DictReader(f)) == [], "29 positive-cost housing units must fail the metro 30-unit floor"
+
+# Independently verify the Census Fay-BRR multiplier: 4/160 times the sum of
+# squared replicate/full-sample estimate deviations.
+analyzer = runpy.run_path(str(ROOT / "scripts" / "analyze_ahs_roof.py"))
+weighted_mean_with_brr = analyzer["weighted_mean_with_brr"]
+rep_a = tuple([0.5] * 80 + [1.5] * 80)
+rep_b = tuple([1.5] * 80 + [0.5] * 80)
+brr = weighted_mean_with_brr([(100.0, 1.0, rep_a), (200.0, 1.0, rep_b)])
+assert brr is not None
+assert abs(brr[0] - 150.0) < 1e-9 and abs(brr[1] - 50.0) < 1e-9, "Fay-BRR must use the 4/160 variance multiplier"
+metro_names = analyzer["METRO_NAMES"]
+expected_next5_names = {
+    "17140": "Cincinnati, OH-KY-IN",
+    "17460": "Cleveland-Elyria, OH",
+    "19740": "Denver-Aurora-Lakewood, CO",
+    "33340": "Milwaukee-Waukesha-West Allis, WI",
+    "35380": "New Orleans-Metairie, LA",
+}
+assert {code: metro_names.get(code) for code in expected_next5_names} == expected_next5_names
+assert audit["EXPECTED_2023_METRO_WEIGHTED_RESPONSE_RATES"] == {"17140": 62.9, "17460": 51.9, "19740": 59.6, "33340": 61.4, "35380": 61.0}
+print("PASS: Berkeley/AHS research scripts on synthetic fixtures, including separate PUF source provenance, distinct-household counts and replicate CV outputs.")

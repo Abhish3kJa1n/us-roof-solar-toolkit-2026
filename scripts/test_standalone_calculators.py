@@ -45,7 +45,7 @@ global.document={getElementById(id){return elements[id]||(elements[id]={id,value
         present=[x for x in must_not if x in out]
         if missing or present: raise SystemExit(f"FAIL {filename}: missing={missing}; unwanted={present}\n{out}")
         passed+=1; print(f"PASS {filename} :: {values}")
-    # The Angi national fallback is prefilled, transparently labelled, and becomes visitor-owned if edited.
+    # The broad Angi reference is not auto-loaded; the visitor must deliberately request it.
     js=(ROOT/"assets/js/roof-replacement-cost-1.js").read_text(encoding="utf-8")
     values={"material":"asphalt","area":"1800","low":"","high":""}
     harness=r"""
@@ -55,6 +55,8 @@ for(const id of ['run','reset','result','loadReference','referenceStatus']) if(!
 global.document={getElementById(id){return elements[id]||(elements[id]={id,value:'',innerHTML:'',textContent:'',hidden:true,selectedOptions:[{textContent:'Not specified'}],handlers:{},addEventListener(type,fn){this.handlers[type]=fn;}})}};
 """.replace("__VALUES__",json.dumps(values))
     runner=harness+js+r"""
+const initial={low:elements.low.value,high:elements.high.value,status:elements.referenceStatus.textContent};
+elements.loadReference.handlers.click();
 elements.run.handlers.click();
 const loaded={low:elements.low.value,high:elements.high.value,status:elements.referenceStatus.textContent,output:elements.result.innerHTML};
 elements.low.value='5'; elements.low.handlers.input(); elements.run.handlers.click();
@@ -68,11 +70,11 @@ console.log(JSON.stringify({loaded,edited}));
     if result.returncode: raise SystemExit(f"FAIL roof-cost national-reference preset: {result.stderr}")
     state=json.loads(result.stdout)
     loaded,edited=state["loaded"],state["edited"]
-    if loaded["low"]!="4" or loaded["high"]!="11" or "not a city estimate" not in loaded["status"] or "$7,200 – $19,800" not in loaded["output"] or "Angi national published reference range" not in loaded["output"]:
+    if loaded["low"]!="4" or loaded["high"]!="11" or "not a local or material-specific price" not in loaded["status"] or "$7,200 – $19,800" not in loaded["output"] or "Angi broad national" not in loaded["output"]:
         raise SystemExit(f"FAIL roof-cost national-reference load mismatch: {loaded}")
-    if "Visitor-edited rates" not in edited["output"] or "Angi national published reference range" in edited["output"] or "You edited at least one rate" not in edited["status"]:
+    if "Mixed/custom rate pair" not in edited["output"] or "Original reference: Angi broad national" not in edited["output"] or "You edited the low rate" not in edited["status"]:
         raise SystemExit(f"FAIL roof-cost custom-rate provenance mismatch: {edited}")
-    passed += 1; print("PASS roof-cost Angi national fallback prefills on load and provenance changes after visitor edit")
+    passed += 1; print("PASS roof-cost Angi national fallback requires explicit opt-in and provenance changes after visitor edit")
 
     # Metal system references are material/system-specific, opt-in, and disclose their publisher basis.
     js=(ROOT/"assets/js/roof-replacement-cost-1.js").read_text(encoding="utf-8")
@@ -100,7 +102,7 @@ console.log(JSON.stringify({loaded,edited}));
     state=json.loads(result.stdout); loaded=state["loaded"]; edited=state["edited"]
     if loaded["low"]!="9" or loaded["high"]!="16" or "HomeGuide" not in loaded["status"] or "$18,000 – $32,000" not in loaded["output"]:
         raise SystemExit(f"FAIL standing-seam metal reference mismatch: {loaded}")
-    if "Visitor-edited rates" not in edited["output"] or "HomeGuide published installed range" in edited["output"]:
+    if "Mixed/custom rate pair" not in edited["output"] or "low endpoint was edited by the visitor" not in edited["output"] or "Original reference: HomeGuide published installed range for standing seam" not in edited["output"]:
         raise SystemExit(f"FAIL metal reference provenance after visitor edit: {edited}")
     passed += 1; print("PASS metal-system selection preloads source-specific HomeGuide range and switches to visitor provenance after edit")
 

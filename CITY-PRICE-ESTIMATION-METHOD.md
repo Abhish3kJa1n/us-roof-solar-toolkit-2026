@@ -1,6 +1,6 @@
 # City-level price estimation policy
 
-**Version:** November 1, 2026  
+**Version:** November 4, 2026  
 **Product objective:** Give homeowners a useful *planning estimate* without presenting a weak proxy as an observed local market price.  
 **Commercial model:** Free tools and independently useful content, primarily funded by display ads. No contractor leads or quote-selling.
 
@@ -19,7 +19,7 @@ Do not combine these categories or make them look equally reliable.
 
 ### Best candidate source
 
-Berkeley Lab's August 7, 2026 Tracking the Sun public file documents approximately 4.0 million grid-connected PV projects through year-end 2025. It includes city, state, system DC size, installation date, total installed price, customer segment, ground-mounted status, PV vs storage technology, third-party ownership and self-installation flags. The guide says most fields are incomplete, city names are not standardized, and reported prices can include self-reported or intermediate/appraised values.
+Berkeley Lab's official August 2026 publication record states that the update contains roughly 5.3 million systems through year-end 2025 overall; that is not the row count of its non-confidential public CSV. The official 2026 user guide has now been downloaded and text-extracted on a temporary runner (926,394 bytes; SHA-256 `1a287692b6abe5532c53b6a8117d9be4dece4edf66978f88b1a2ea20c29da298`). It documents the cohort's core fields, including system size, installed price, customer segment, ground-mounted status, technology type and ownership/scope flags. The public CSV link redirects to a Google Drive file preview; the first attempt retrieved HTML rather than the CSV. A temporary-runner downloader now handles that redirect; actual row count, value codes and analyzer compatibility remain unverified. The dataset includes residential, roof-mounted non-residential and qualifying ground-mounted projects, not only residential rooftop PV.
 
 ### Current research cohort
 
@@ -38,7 +38,7 @@ These filters create a cleaner *host-owned residential rooftop* cohort, not a re
 
 ### Proposed live-estimator use (not yet implemented or approved)
 
-After LBNL confirms written commercial reuse rights, the owner supplies the CSV, and a reviewer verifies filters against the guide and real records:
+After LBNL confirms written commercial reuse rights, the current public CSV is successfully downloaded, and a reviewer validates every field/value against the 2026 guide and real rows (the cohort script has not yet been run against this release):
 
 - City + state historical median and p25/p75 may be displayed as a historical local-price reference, with visible `n`, installation years, nominal-dollar basis, cohort filters and date.
 - A DOE/NREL national residential system benchmark may be shown as a separate national planning anchor. Do not imply it is a city quote.
@@ -88,12 +88,12 @@ The Census TIGERweb city/state resolver supplies a representative place coordina
 | Component | Status |
 |---|---|
 | City/state Census lookup | Implemented; API tests mocked; live request not executed from this environment |
-| PVWatts city-point production model | Implemented; requires NLR key and Cloudflare D1 quota binding; live API not tested |
-| LBNL city/state solar-price aggregation script | Implemented and synthetic-test passed; real data absent; licensing gate open |
+| PVWatts city-point production model | Implemented; Preview secret/D1 configured; live Austin smoke test passed (1,483 kWh/year for 1 kW DC); multi-region and station-distance validation remain pending |
+| LBNL city/state solar-price aggregation script | Implemented and synthetic-test passed; 2026 guide retrieved and key fields confirmed; public CSV retrieval/row count and live cohort compatibility still pending; commercial reuse gate open |
+| AHS 2023 National PUF | Real PUF processed; national C-16 point estimates reconcile; margin-of-error and metro/city crosswalk remain open; no site pricing rows approved |
 | Roof local-permit research | San Francisco PermitSF metadata and Miami-Dade ArcGIS schema inspected; no row-level cohort, price distribution or commercial estimator validated |
 | Live city installed-price estimates | Not enabled; solar data licence/real CSV review is outstanding; roofing has no city price dataset |
 | City-to-AHS metro crosswalk | Not implemented; must use the AHS-matching February 2013 CBSA geography and disclose metro—not city—scope |
-| Cloudflare hosting migration | Not required; existing Cloudflare Pages architecture remains suitable and free-tier-first |
 
 ## 6. Commercial/SEO guardrail
 
@@ -102,7 +102,9 @@ A city page should exist only when it adds genuinely distinct local information:
 ## Source links
 
 - [LBNL Tracking the Sun](https://emp.lbl.gov/tracking-the-sun)
-- [LBNL 2026 public-data user guide](https://emp.lbl.gov/sites/default/files/2026-08/LBNL_PublicDataFile_UserGuide_8.07.26.pdf)
+- [Official Berkeley Lab 2026 update record](https://emp.lbl.gov/publications/us-distributed-solar-and-storage-0)
+- [2026 public-data user guide listed with the official 2026 record](https://eta-publications.lbl.gov/sites/default/files/2026-08/lbnl_publicdatafile_userguide_8.07.26.pdf)
+- [2026 public CSV link listed in the guide](https://bit.ly/trackingthesun2026)
 - [NLR PVWatts V8](https://developer.nlr.gov/docs/solar/pvwatts/v8/)
 - [US Census TIGERweb](https://tigerweb.geo.census.gov/tigerweb/)
 - [Miami-Dade County ArcGIS permit layer](https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/arcgis/rest/services/miamidade_permit_data/FeatureServer/0)

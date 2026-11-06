@@ -13,10 +13,11 @@ This checklist deliberately separates what can be built in code from facts that 
 
 ## B. Brand and domain clearance — cannot be certified by a quick web search
 
-- [x] Working domain selected and registered: `getroofsolarcalculator.online` (Hostinger; not yet connected to hosting). Final brand/legal clearance remains open.
+- [x] Working domain selected and registered: `getroofsolarcalculator.online` through Hostinger. The Cloudflare DNS zone is active, but apex and `www` currently route to the older static Pages project `roofcalc`, not the new Git-connected `roof-solar-toolkit-2026` project. A deliberate domain cutover remains. Final brand/legal clearance remains open.
 - [ ] Search the USPTO Trademark Search system for exact, phonetic and confusingly similar marks in relevant classes; inspect live applications and registrations in TSDR.
 - [ ] Search common-law use, corporate names, state business registries, search engines, social accounts and relevant industry directories.
-- [x] Domain purchased through Hostinger; verify exact expiry date and renewal terms in hPanel before the end of the current paid year.
+- [x] Domain purchased through Hostinger.
+- [ ] Verify the exact expiry date and renewal terms in Hostinger hPanel before the end of the paid period.
 - [ ] Have a trademark professional assess likely confusion and the actual goods/services. A domain being available does not mean the name is legally clear.
 - [ ] Do not revive **Roofwise** as the brand without fresh clearance; an existing U.S. roofing business was found using that name during the previous audit. The current **Roof & Solar Toolkit** label remains a working title, not a cleared mark.
 
@@ -38,7 +39,7 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 - [ ] Update the EIA state-average electricity price page from the next EIA release. The current dataset is January–August 2026 and is preliminary for 2026.
 - [ ] Never use EIA statewide average prices as a homeowner's utility tariff or as the default solar savings import/export rate.
 - [ ] Have the annual solar model independently checked against several real tariff structures and example bills, including TOU and different export rules. The current model is annual and does not reproduce hourly billing.
-- [ ] Validate the roof pitch geometry and cost-input experience with measured examples. The site deliberately contains no generic national roof-price rate.
+- [ ] Validate the roof pitch geometry and cost-input experience with measured examples. The combined and standalone roof tools currently use a disclosed, editable Angi national $4–$11 per roof-surface sq-ft context range when no comparable local quote is supplied. This is not a local or material-specific installed-price dataset; verify the source, scope and user-facing wording before launch.
 - [ ] Reconcile calculator results against independent tools or professional proposals and publish test methodology, not just screenshots.
 
 ## E. Privacy, advertising and consumer law
@@ -56,7 +57,7 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 
 ## F. Production engineering and accessibility
 
-- [ ] Deploy through the runbook in `CLOUDFLARE-DEPLOYMENT.md` or a deliberately selected equivalent.
+- [x] Deploy an isolated, noindex Preview through the runbook in `CLOUDFLARE-DEPLOYMENT.md` using the Git-connected Cloudflare Pages project. Production deployment and domain cutover are still pending.
 - [ ] Confirm HTTPS, HTTP-to-HTTPS redirect, canonical host and security headers.
 - [ ] Test desktop, tablet and mobile browsers with real rendering. Check no horizontal overflow or clipped calculator results.
 - [ ] Test keyboard-only operation, focus visibility, zoom at 200%/400%, screen reader form labels, result announcements and table navigation.
@@ -83,12 +84,14 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 
 ## Location API release gate
 
-- [ ] Obtain free NLR PVWatts and (only if useful) OpenEI API keys; do not buy API access.
-- [ ] Before adding either provider API key, create the `roof-solar-quota` D1 database with a U.S. primary-location hint (initially `ENAM`), apply `migrations/0001_create_api_quota.sql`, bind it to the Pages project as `API_QUOTA_DB` in Preview and Production, and redeploy. All three API endpoints fail closed without this shared global quota guard; PVWatts and OpenEI additionally require provider keys.
+- [x] Free NLR PVWatts and OpenEI API keys are configured as server-side **Preview-only** Cloudflare secrets. Live smoke checks passed on November 4, 2026. No API keys are configured in Production; do not put keys in Git or client code.
+- [x] The live D1 database `roof-solar-api-quota` exists; migrations `0001_create_api_quota.sql` and `0002_add_census_suggest_quota.sql` have been applied; `API_QUOTA_DB` is bound in both Preview and Production. Both provider secrets are configured in Preview only. Production provider secrets and production deployments remain disabled. All three API endpoints require the shared quota guard; PVWatts and OpenEI additionally require their respective provider keys.
 - [ ] Optionally add tested per-IP WAF rate limiting for `/api/*` as a secondary defense only; Free-plan counters are not global and do not replace D1.
-- [ ] Set Pages **Settings → Runtime → Fail open / closed** to Fail open so static pages remain served if the Free Functions quota is exhausted.
-- [ ] Confirm Pages Functions usage remains within the current Workers Free daily request allowance (currently 100,000/day) and D1 stays below 100,000 rows written/day / 5 million rows read/day; recheck live Cloudflare limits. The site-side guards cap Census at 10,000 lookups/day and 300/hour, PVWatts at 15,000/day and 900/hour, and OpenEI at 5,000/day and 300/hour.
-- [ ] Run a real PVWatts API test using the owner's key, verify the selected station distance is within 100 miles, verify annual and monthly output, then remove test logs containing sensitive operational data.
+- [x] Pages Runtime **Fail open / closed** is set to Fail open in the current `roof-solar-toolkit-2026` Preview and Production project configurations. Recheck after any project replacement or environment change.
+- [ ] Monitor actual Pages Functions and D1 usage and recheck Cloudflare's current account-level Free allowances before launch. The application's D1 guards currently cap exact Census lookups at 10,000/day, Census autocomplete at 20,000/day, PVWatts at 15,000/day and OpenEI at 5,000/day; the 15-minute bucket guards also constrain burst rates. Account usage has not yet been audited over a representative traffic period.
+- [x] Run a live Austin PVWatts V8 Preview smoke test using the server-side key. It returned 1,483 kWh/year for the 1 kW DC test scenario, with monthly output and weather-station identifier 677404.
+- [x] Hardened the provider proxy boundary: PVWatts and OpenEI require a short-lived HMAC-signed location proof issued by exact Census city/state verification; raw or modified coordinates are rejected before quota reservation/upstream calls. The mocked QA suite passed on November 4, 2026. A fresh live Preview smoke test of this proof flow is pending.
+- [ ] Separately record and verify the returned weather-station distance is within the configured 100-mile search radius for representative test locations; the smoke log currently records the station identifier, not its distance.
 - [ ] If no climate station is available within 100 miles, keep the calculation unavailable for that location rather than expanding to an unrestricted distant station.
 - [ ] Verify current OpenEI candidate records against actual utility tariff documents and a sample customer bill; do not auto-apply a candidate rate to dollar savings.
 
@@ -97,7 +100,8 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 - [x] Production canonical/OG URLs configured for `https://getroofsolarcalculator.online` while retaining page-level noindex and the global noindex response header. This is not a live DNS/HTTPS check.
 - [x] Clean public staging script added: `sh scripts/prepare_deploy.sh`; generates `dist/` with 26 visitor-facing HTML documents and only their public static dependencies. Internal Markdown research, QA scripts, migrations and owner notes are excluded.
 - [x] Deployment-stage regression test added: verifies 482 local references, no internal-file leakage and retained noindex.
-- [ ] For Cloudflare Pages Git integration, set root directory `/`, build command `sh scripts/prepare_deploy.sh`, build output directory `dist`, framework preset `None`. Keep `/functions` in the repository root. No `package.json` or `package-lock.json` is required.
-- [ ] If selecting Direct Upload instead, run `sh scripts/prepare_deploy.sh` and deploy with Wrangler CLI from the repository root so `/functions` is compiled. Do not use dashboard drag-and-drop for this project because it does not compile Pages Functions. Direct Upload cannot later be converted to Git integration for the same Pages project.
-- [ ] Create/configure the Cloudflare account and Pages project, D1 database and binding; only then add any provider secrets. No Cloudflare account or project is currently connected.
-- [ ] After deployment, verify Pages Functions compile, public static URLs work, `_headers` are live, 404 responses are correct, HTTPS and canonical-host redirects work, and no `scripts/`, Markdown research files, migrations or owner records are exposed.
+- [x] Cloudflare Pages Git integration is configured: root directory `/`, build command `sh scripts/prepare_deploy.sh`, build output `dist`, framework preset None; `/functions` remains at repository root. Preview deployment from the audit branch completed successfully. This project does not require `package.json` or `package-lock.json`.
+- [x] Direct Upload was not selected; the project uses Git integration. Do not create a second Direct Upload project or use dashboard drag-and-drop for this Functions-enabled build.
+- [x] Cloudflare account, Git-connected Pages project, D1 database/binding and Preview provider secrets are configured. Important routing distinction: the apex and `www` custom domains are still attached to the separate legacy `roofcalc` project; neither is attached to the new `roof-solar-toolkit-2026` project. No production deployment has been created.
+- [x] The new Preview build completed and Pages Functions compiled; live Census, PVWatts and OpenEI endpoints passed the November 4, 2026 smoke test. The clean-build QA also checked public-file packaging and noindex retention.
+- [ ] Still verify real-browser static URLs, actual response headers, 404 behavior, HTTPS and canonical-host redirects after the final domain cutover; confirm no `scripts/`, internal Markdown, migrations or owner records are publicly exposed.

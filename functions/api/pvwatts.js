@@ -1,10 +1,13 @@
 /** Cloudflare Pages Function: server-side proxy for NLR PVWatts V8. */
 import { reserveApiQuota } from '../_shared/quota.js';
+import { verifyLocationToken } from '../_shared/location-token.js';
 const json = (body, status = 200) => new Response(JSON.stringify(body), {
   status,
   headers: {
     'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': status === 200 ? 'public, max-age=300, s-maxage=2592000' : 'no-store',
+    // Authorization is carried in a signed Census proof header; never cache the
+    // whole endpoint response by URL because CDN keys do not vary by that header.
+    'Cache-Control': 'private, no-store',
     'X-Content-Type-Options': 'nosniff',
   },
 });
@@ -15,6 +18,17 @@ const numberParam = (params, name, min, max) => {
   const value = Number(raw);
   if (!Number.isFinite(value) || value < min || value > max) return { error: `${name} must be between ${min} and ${max}.` };
   return { value };
+};
+
+const isSupportedUsCoordinate = (lat, lon, state) => {
+  // Western longitudes cover the contiguous states, Alaska, Hawaii, Puerto Rico,
+  // U.S. Virgin Islands and American Samoa. Guam and the Northern Mariana Islands
+  // use positive longitudes and are admitted only inside their rough territory
+  // envelopes, with the selected Census state/territory code present.
+  const westernUsEnvelope = lat >= -15 && lat <= 72 && lon >= -180 && lon <= -60;
+  const guamEnvelope = state === 'GU' && lat >= 13 && lat <= 14.5 && lon >= 144 && lon <= 145.5;
+  const marianaEnvelope = state === 'MP' && lat >= 14 && lat <= 21.5 && lon >= 144 && lon <= 147;
+  return westernUsEnvelope || guamEnvelope || marianaEnvelope;
 };
 
 // Keep the NLR key below its published 1,000-request rolling-hour ceiling.
@@ -33,13 +47,25 @@ export async function onRequestGet({ request, env }) {
     // The public estimator only supports broad US/territory coordinates returned
     // by the Census city/place resolver. Prevent unrelated direct API calls from
     // consuming the owner's NLR key.
-    lat: [-15, 72], lon: [-180, -60], capacity: [0.05, 100], tilt: [0, 90], azimuth: [0, 359.99], losses: [0, 99],
+    lat: [-90, 90], lon: [-180, 180], capacity: [0.05, 100], tilt: [0, 90], azimuth: [0, 359.99], losses: [0, 99],
   };
   const values = {};
   for (const [name, [min, max]] of Object.entries(specs)) {
     const parsed = numberParam(params, name, min, max);
     if (parsed.error) return json({ error: parsed.error }, 400);
     values[name] = parsed.value;
+  }
+  const state = (params.get('state') || '').trim().toUpperCase();
+  if (!isSupportedUsCoordinate(values.lat, values.lon, state)) {
+    return json({ error: 'Coordinates must be within a supported U.S. state or territory location. For Guam or the Northern Mariana Islands, select the corresponding Census place first.' }, 400);
+  }
+  const locationProof = await verifyLocationToken(request.headers.get('X-Location-Proof'), env, {
+    latitude: values.lat,
+    longitude: values.lon,
+    state,
+  });
+  if (!locationProof) {
+    return json({ error: 'Select and verify a city/state through the Census location search before requesting solar production. Arbitrary coordinates are not accepted.' }, 400);
   }
 
   // Fail closed: never send an upstream request when the shared quota guard is

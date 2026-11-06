@@ -1,77 +1,252 @@
 const roofMoney=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0}).format(value);
 const roofRateMoney=value=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(value);
-const materialEl=document.getElementById('material'),metalSystemField=document.getElementById('metalSystemField'),metalSystemEl=document.getElementById('metalSystem'),areaEl=document.getElementById('area'),lowEl=document.getElementById('low'),highEl=document.getElementById('high'),resultEl=document.getElementById('result');
-const referenceButton=document.getElementById('loadReference'),referenceStatus=document.getElementById('referenceStatus');
-const metalReferences={
-  corrugated:{low:'5',high:'12',label:'corrugated sheet metal',source:'HomeGuide metal roof cost guide (November 21, 2025)'},
-  standing_seam:{low:'9',high:'16',label:'standing seam',source:'HomeGuide metal roof cost guide (November 21, 2025)'},
-  metal_shingles:{low:'6',high:'14',label:'metal shingles',source:'HomeGuide metal roof cost guide (November 21, 2025)'},
-  steel:{low:'5',high:'13',label:'galvanized / Galvalume steel',source:'HomeGuide metal roof cost guide (November 21, 2025)'}
+const materialEl=document.getElementById('material');
+const metalSystemField=document.getElementById('metalSystemField');
+const metalSystemEl=document.getElementById('metalSystem');
+const areaEl=document.getElementById('area');
+const lowEl=document.getElementById('low');
+const highEl=document.getElementById('high');
+const resultEl=document.getElementById('result');
+const referenceButton=document.getElementById('loadReference');
+const referenceStatus=document.getElementById('referenceStatus');
+
+const nationalReference={
+  type:'national',
+  key:'angi-national',
+  label:'broad national Angi roof-replacement reference',
+  low:'4',
+  high:'11',
+  source:'Angi national roof-replacement cost guide (updated October 22, 2026)',
+  basis:'Angi broad national $4–$11 per roof sq ft reference (updated October 22, 2026); not local, material-specific or property-specific.'
 };
-let rateBasis='Visitor-entered rates; source not asserted.';
-const customRateEdit=()=>{if(rateBasis.startsWith('Angi')||rateBasis.startsWith('HomeGuide')){rateBasis='Visitor-edited rates after loading a published reference.';referenceStatus.textContent='You edited at least one rate. The calculation now uses your custom values, not the original publisher range.';}};
-function clearLoadedReference(){
-  if(!rateBasis.startsWith('Angi')&&!rateBasis.startsWith('HomeGuide')) return;
-  lowEl.value='';highEl.value='';rateBasis='Visitor-entered rates; source not asserted.';
-  referenceStatus.hidden=true;referenceStatus.textContent='';
-}
-function setReference(low,high,basis,message){
-  lowEl.value=low;highEl.value=high;rateBasis=basis;
-  referenceStatus.hidden=false;referenceStatus.textContent=message;
-}
-function applyNationalReference(force=false){
-  if(rateBasis.startsWith('Visitor-edited') || (!force && (lowEl.value.trim()!=='' || highEl.value.trim()!==''))) return;
-  setReference('4','11',
-    'Angi national published reference range (article updated October 22, 2026), not local or material-specific.',
-    'Prefilled Angi’s broad national $4–$11 per roof sq ft reference. This is not a city estimate, material-specific quote or project prediction. Both rates are editable; replace them with comparable local proposals.');
-}
-function applyMetalReference(force=false){
-  if(rateBasis.startsWith('Visitor-edited') || (!force && (lowEl.value.trim()!=='' || highEl.value.trim()!==''))) return;
-  const ref=metalReferences[metalSystemEl.value];
-  if(!ref){
-    clearLoadedReference();
-    referenceStatus.hidden=false;
-    referenceStatus.textContent='The broad general-roofing reference was cleared because Metal is selected. Choose the exact metal system to prefill its published range, or enter your own comparable rates.';
-    return;
+const metalSource='HomeGuide metal roof cost guide (November 21, 2025)';
+const metalReferences={
+  // Roof-style / system reference categories.
+  corrugated:{type:'metal',group:'style',key:'corrugated',low:'5',high:'12',label:'corrugated sheet metal',source:metalSource},
+  standing_seam:{type:'metal',group:'style',key:'standing_seam',low:'9',high:'16',label:'standing seam',source:metalSource},
+  metal_shingles:{type:'metal',group:'style',key:'metal_shingles',low:'6',high:'14',label:'metal shingles',source:metalSource},
+  metal_slate:{type:'metal',group:'material',key:'metal_slate',low:'6',high:'14',label:'metal slate',source:metalSource},
+  stone_coated_steel:{type:'metal',group:'material',key:'stone_coated_steel',low:'7',high:'13',label:'stone-coated steel',source:metalSource},
+  // Base-metal material categories; never combine these with style ranges.
+  galvanized_steel:{type:'metal',group:'material',key:'galvanized_steel',low:'5',high:'13',label:'galvanized steel',source:metalSource},
+  galvalume_steel:{type:'metal',group:'material',key:'galvalume_steel',low:'5',high:'13',label:'Galvalume steel',source:metalSource},
+  aluminum:{type:'metal',group:'material',key:'aluminum',low:'7',high:'17',label:'aluminum',source:metalSource},
+  copper:{type:'metal',group:'material',key:'copper',low:'13',high:'30',label:'copper',source:metalSource},
+  zinc:{type:'metal',group:'material',key:'zinc',low:'10',high:'20',label:'zinc',source:metalSource},
+  tin_terne:{type:'metal',group:'material',key:'tin_terne',low:'6',high:'18',label:'tin / terne',source:metalSource},
+  stainless_steel:{type:'metal',group:'material',key:'stainless_steel',low:'10',high:'21',label:'stainless steel',source:metalSource},
+  corten_steel:{type:'metal',group:'material',key:'corten_steel',low:'6',high:'11',label:'Corten / weathering steel',source:metalSource}
+};
+
+let activeReference=null;
+let carriedReference=null;
+let editedEndpoints=new Set();
+let manualRatesEntered=false;
+let customNotice='';
+let previousMaterial=materialEl.value;
+let previousMetalSystem=metalSystemEl.value;
+
+const hasAnyRate=()=>lowEl.value.trim()!==''||highEl.value.trim()!=='';
+const referenceBasis=reference=>reference.basis||(reference.type==='metal'?'HomeGuide published installed range for '+reference.label+' ('+reference.source+'); not local or property-specific.':(reference.source||'Publisher reference; not local or property-specific.'));
+const setStatus=message=>{
+  referenceStatus.textContent=message||'';
+  referenceStatus.hidden=!message;
+};
+const clearRateState=()=>{
+  activeReference=null;
+  carriedReference=null;
+  editedEndpoints.clear();
+  manualRatesEntered=false;
+  customNotice='';
+};
+const endpointDescription=(name,reference)=>{
+  const value=name==='low'?lowEl.value:highEl.value;
+  if(editedEndpoints.has(name)) return name+' endpoint was edited by the visitor to '+(value===''?'blank':'$'+value);
+  return name+' endpoint remains '+(value===''?'blank':'$'+value)+' from '+reference.label;
+};
+const carriedNotice=(nextLabel)=>{
+  if(!carriedReference) return customNotice;
+  return 'Mixed/custom rate pair retained after changing from '+carriedReference.label+' to '+nextLabel+'. '+endpointDescription('low',carriedReference)+'; '+endpointDescription('high',carriedReference)+'. These values are not a published range for '+nextLabel+'. Original source: '+referenceBasis(carriedReference)+' Click the reload button to replace both values with the selected category reference, or edit both rates to match your written proposal.';
+};
+const rateBasis=()=>{
+  if(activeReference){
+    if(editedEndpoints.size===0) return activeReference.basis;
+    return 'Mixed/custom rate pair. '+endpointDescription('low',activeReference)+'; '+endpointDescription('high',activeReference)+'. This is no longer the publisher’s complete published interval. Original reference: '+referenceBasis(activeReference);
   }
-  setReference(ref.low,ref.high,
-    `HomeGuide published installed range for ${ref.label} (${ref.source}); not local or property-specific.`,
-    `Prefilled HomeGuide’s ${ref.label} range of $${ref.low}–$${ref.high} per roof sq ft (${ref.source}). This is a broad publisher estimate, not a local quote or guarantee. Both rates are editable.`);
-}
+  if(carriedReference) return carriedNotice(materialEl.value==='metal'&&metalReferences[metalSystemEl.value]?metalReferences[metalSystemEl.value].label:'the selected material');
+  if(customNotice) return customNotice;
+  return 'Visitor-entered rates; source not asserted.';
+};
+const setReference=(reference,message)=>{
+  reference.basis=referenceBasis(reference);
+  lowEl.value=reference.low;
+  highEl.value=reference.high;
+  activeReference=reference;
+  carriedReference=null;
+  editedEndpoints.clear();
+  manualRatesEntered=false;
+  customNotice='';
+  setStatus(message);
+};
+const clearReferenceValues=(message)=>{
+  lowEl.value='';
+  highEl.value='';
+  clearRateState();
+  setStatus(message);
+};
+
 function updateReferenceControls(){
   const isMetal=materialEl.value==='metal';
   metalSystemField.hidden=!isMetal;
   if(isMetal){
     const ref=metalReferences[metalSystemEl.value];
     referenceButton.disabled=!ref;
-    referenceButton.textContent=ref?`Reload ${ref.label} reference ($${ref.low}–$${ref.high} / sq ft)`:'Choose a metal system to load its reference';
+    referenceButton.textContent=ref
+      ?'Reload '+ref.label+' reference ($'+ref.low+'–$'+ref.high+' / sq ft)'
+      :'Choose a metal category to load its reference';
   }else{
     referenceButton.disabled=false;
-    referenceButton.textContent='Reload broad national reference ($4–$11 / sq ft)';
+    referenceButton.textContent='Load broad national reference ($4–$11 / sq ft)';
   }
 }
-lowEl.addEventListener('input',customRateEdit);highEl.addEventListener('input',customRateEdit);
-materialEl.addEventListener('change',()=>{
-  clearLoadedReference();
+
+function applyNationalReference(force=false){
+  if(!force&&(hasAnyRate()||activeReference||carriedReference||manualRatesEntered)) return;
+  setReference(nationalReference,
+    'Loaded Angi’s broad national $4–$11 per roof sq ft reference. It is not a local or material-specific price. Both endpoints are editable; changing one makes the pair mixed/custom. Reload to restore this published range.');
+}
+function applyMetalReference(force=false){
+  const ref=metalReferences[metalSystemEl.value];
+  if(!ref) return;
+  if(!force&&(hasAnyRate()||activeReference||carriedReference||manualRatesEntered)) return;
+  setReference(ref,
+    'Loaded HomeGuide’s '+ref.label+' category reference range of $'+ref.low+'–$'+ref.high+' per roof sq ft ('+ref.source+'). This is a broad publisher estimate, not a local quote or guarantee. Both endpoints are editable; changing one makes the pair mixed/custom.');
+}
+
+function handleRateEdit(endpoint){
+  if(lowEl.value.trim()===''&&highEl.value.trim()===''){
+    clearRateState();
+    setStatus('Both rate fields are blank. Enter comparable rates or deliberately load a published reference.');
+    return;
+  }
+  if(activeReference){
+    editedEndpoints.add(endpoint);
+    const other=endpoint==='low'?'high':'low';
+    setStatus('You edited the '+endpoint+' rate. The '+other+' endpoint remains from the original '+activeReference.label+' reference. The pair is now mixed/custom, not the published range. Click Reload to restore the complete reference.');
+    return;
+  }
+  if(carriedReference){
+    editedEndpoints.add(endpoint);
+    const nextLabel=materialEl.value==='metal'&&metalReferences[metalSystemEl.value]?metalReferences[metalSystemEl.value].label:'the selected material';
+    setStatus(carriedNotice(nextLabel));
+    return;
+  }
+  manualRatesEntered=true;
+  customNotice='These are visitor-entered rates; the site does not source or verify them. Confirm both endpoints match the selected material/system and the written project scope.';
+  setStatus(customNotice);
+}
+
+function handleMaterialChange(){
+  const nextMaterial=materialEl.value;
+  if(nextMaterial===previousMaterial) return;
+  const oldMaterial=previousMaterial||'unspecified material';
+  previousMaterial=nextMaterial;
+  metalSystemEl.value='';
+  previousMetalSystem='';
+  const oldReference=activeReference||carriedReference;
+  if(oldReference){
+    clearReferenceValues('The '+oldReference.label+' rates were cleared because the roof material changed from '+oldMaterial+' to '+(nextMaterial||'unspecified material')+'. Choose one published metal category if applicable, or enter rates for the newly selected material.');
+  }else if(hasAnyRate()){
+    manualRatesEntered=true;
+    customNotice='Visitor-entered rates were retained after changing the material from '+oldMaterial+' to '+(nextMaterial||'unspecified material')+'. Verify that both rates match the newly selected material and project scope; they are not a published reference.';
+    setStatus(customNotice);
+  }else{
+    clearRateState();
+    setStatus('');
+  }
   updateReferenceControls();
-  if(materialEl.value==='metal') applyMetalReference();
-  else applyNationalReference();
-});
-metalSystemEl.addEventListener('change',()=>{
-  clearLoadedReference();
+}
+
+function handleMetalSystemChange(){
+  const nextKey=metalSystemEl.value;
+  if(nextKey===previousMetalSystem) return;
+  previousMetalSystem=nextKey;
   updateReferenceControls();
-  if(materialEl.value==='metal') applyMetalReference();
-});
-updateReferenceControls();
-if(materialEl.value==='metal') applyMetalReference(); else applyNationalReference();
+  if(materialEl.value!=='metal') return;
+  const nextReference=metalReferences[nextKey];
+  if(!nextReference){
+    if(activeReference||carriedReference){
+      const oldReference=activeReference||carriedReference;
+      clearReferenceValues('The '+oldReference.label+' reference was cleared because no metal category is selected. Choose a category to load its matching reference.');
+    }
+    return;
+  }
+  if(activeReference&&activeReference.type==='metal'&&editedEndpoints.size===0){
+    setReference(nextReference,
+      'Metal category changed. Loaded HomeGuide’s '+nextReference.label+' reference range of $'+nextReference.low+'–$'+nextReference.high+' per roof sq ft ('+nextReference.source+').');
+    return;
+  }
+  if(activeReference&&editedEndpoints.size>0){
+    carriedReference=activeReference;
+    activeReference=null;
+    manualRatesEntered=false;
+    setStatus(carriedNotice(nextReference.label));
+    return;
+  }
+  if(carriedReference){
+    setStatus(carriedNotice(nextReference.label));
+    return;
+  }
+  if(hasAnyRate()||manualRatesEntered){
+    manualRatesEntered=true;
+    customNotice='Your visitor-entered rates were retained after changing the metal reference category to '+nextReference.label+'. They are not a published reference for the new category. Verify both values or click Reload to apply its HomeGuide reference.';
+    setStatus(customNotice);
+    return;
+  }
+  applyMetalReference(true);
+}
+
+lowEl.addEventListener('input',()=>handleRateEdit('low'));
+highEl.addEventListener('input',()=>handleRateEdit('high'));
+materialEl.addEventListener('change',handleMaterialChange);
+metalSystemEl.addEventListener('change',handleMetalSystemChange);
 referenceButton.addEventListener('click',()=>{
   if(materialEl.value==='metal'){
     const ref=metalReferences[metalSystemEl.value];
-    if(!ref){referenceStatus.hidden=false;referenceStatus.textContent='Choose a metal system first. You can also enter your own comparable written-quote rates.';return;}
+    if(!ref){
+      setStatus('Choose a metal price-reference category before loading a published range.');
+      return;
+    }
     applyMetalReference(true);
     return;
   }
   applyNationalReference(true);
 });
-document.getElementById('run').addEventListener('click',()=>{const area=Number(areaEl.value),low=Number(lowEl.value),high=Number(highEl.value);if(!(Number.isFinite(area)&&area>=100&&area<=100000&&Number.isFinite(low)&&low>=0.1&&low<=100&&Number.isFinite(high)&&high>=low&&high<=100)){resultEl.innerHTML='<div class="big">Check inputs</div><p>Enter an area of 100–100,000 sq ft, a low installed rate of $0.10–$100 per sq ft, and a high rate at least as large as the low rate.</p>';return;}const totalLow=area*low,totalHigh=area*high;const systemLabel=materialEl.value==='metal'&&metalSystemEl.value?` · Metal system: ${metalSystemEl.selectedOptions[0].textContent}`:'';resultEl.innerHTML=`<div class="kicker">Illustrative roof replacement range</div><div class="big">${roofMoney(totalLow)} – ${roofMoney(totalHigh)}</div><p>${area.toLocaleString('en-US')} sq ft × ${roofRateMoney(low)}–${roofRateMoney(high)} installed per sq ft. Material label: ${materialEl.value ? materialEl.selectedOptions[0].textContent : 'not specified'}${systemLabel}.</p><p>Rate basis: ${rateBasis} It does not verify local labor, material, roof complexity or proposal scope.</p>`;});
-document.getElementById('reset').addEventListener('click',()=>{areaEl.value='';materialEl.value='';metalSystemEl.value='';lowEl.value='';highEl.value='';rateBasis='Visitor-entered rates; source not asserted.';referenceStatus.hidden=true;referenceStatus.textContent='';resultEl.innerHTML='<div class="kicker">Estimated range</div><div class="big">Ready to calculate</div><p>Enter comparable low and high installed rates, or deliberately load a published reference, then calculate.</p>';updateReferenceControls();});
+document.getElementById('run').addEventListener('click',()=>{
+  const area=Number(areaEl.value);
+  const low=Number(lowEl.value);
+  const high=Number(highEl.value);
+  if(!(Number.isFinite(area)&&area>=100&&area<=100000&&Number.isFinite(low)&&low>=0.1&&low<=100&&Number.isFinite(high)&&high>=low&&high<=100)){
+    resultEl.innerHTML='<div class="big">Check inputs</div><p>Enter an area of 100–100,000 sq ft, a low installed rate of $0.10–$100 per sq ft, and a high rate at least as large as the low rate.</p>';
+    return;
+  }
+  const totalLow=area*low,totalHigh=area*high;
+  const materialLabel=materialEl.value?materialEl.selectedOptions[0].textContent:'not specified';
+  const categoryLabel=materialEl.value==='metal'&&metalSystemEl.value?' · Metal reference category: '+metalSystemEl.selectedOptions[0].textContent:'';
+  resultEl.innerHTML='<div class="kicker">Illustrative roof replacement range</div><div class="big">'+roofMoney(totalLow)+' – '+roofMoney(totalHigh)+'</div><p>'+area.toLocaleString('en-US')+' sq ft × '+roofRateMoney(low)+'–'+roofRateMoney(high)+' installed per sq ft. Material label: '+materialLabel+categoryLabel+'.</p><p>Rate basis: '+rateBasis()+' It does not verify local labor, material, roof complexity or proposal scope.</p>';
+});
+document.getElementById('reset').addEventListener('click',()=>{
+  areaEl.value='';
+  lowEl.value='';
+  highEl.value='';
+  materialEl.value='';
+  metalSystemEl.value='';
+  previousMaterial='';
+  previousMetalSystem='';
+  clearRateState();
+  setStatus('');
+  resultEl.innerHTML='<div class="kicker">Estimated range</div><div class="big">Ready to calculate</div><p>Enter comparable low and high installed rates, or deliberately load a published reference, then calculate.</p>';
+  updateReferenceControls();
+});
+updateReferenceControls();
+if(materialEl.value==='metal'&&metalSystemEl.value) applyMetalReference();
