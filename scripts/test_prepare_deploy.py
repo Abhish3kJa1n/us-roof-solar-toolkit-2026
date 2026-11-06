@@ -55,6 +55,9 @@ def main() -> int:
     allowed_root_files = {"_headers", "_routes.json", "robots.txt", "ads.txt"}
     root_files = {p.name for p in DIST.iterdir() if p.is_file()}
     root_html = {p.name for p in html_pages if p.parent == DIST}
+    if (DIST / "ads.txt").read_text(encoding="utf-8").strip() != "google.com, pub-6193507831935325, DIRECT, f08c47fec0942fa0":
+        fail("AdSense seller authorization record is missing or incorrect")
+
     if root_files != allowed_root_files | root_html:
         fail(f"unexpected or missing root files: {sorted(root_files)}")
 
@@ -112,5 +115,6 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
 
 
