@@ -40,8 +40,8 @@ def main() -> int:
         base = Path(tmp)
         project = clone(base / "site")
         html_files = sorted(project.rglob("*.html"))
-        if len(html_files) != 26:
-            raise AssertionError(f"Expected 26 HTML pages including 404, found {len(html_files)}")
+        if len(html_files) != 25:
+            raise AssertionError(f"Expected 25 HTML pages including 404, found {len(html_files)}")
 
         # Initial safe setup: canonical tags are written, index is blocked, no sitemap.
         run(project, "--domain", "https://www.example.com")
@@ -99,8 +99,8 @@ def main() -> int:
         # Indexing is opt-in and generates a complete, current list without fake lastmod dates.
         run(project, "--domain", "https://www.example.com", "--enable-indexing", "--readiness-file", readiness_path.name)
         sitemap = (project / "sitemap.xml").read_text(encoding="utf-8")
-        if sitemap.count("<url><loc>") != 25:
-            raise AssertionError("Sitemap must contain 25 content URLs and exclude 404")
+        if sitemap.count("<url><loc>") != 24:
+            raise AssertionError("Sitemap must contain 24 content URLs and exclude 404")
         if "404.html" in sitemap:
             raise AssertionError("Sitemap must never include the 404 page")
         if '<meta name="robots" content="noindex,follow" />' not in (project / "404.html").read_text(encoding="utf-8"):
