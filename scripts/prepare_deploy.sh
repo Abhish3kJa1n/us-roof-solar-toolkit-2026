@@ -13,7 +13,7 @@ if [ -f "$ROOT/ads.txt" ]; then cp "$ROOT/ads.txt" "$OUT/"; fi
 # for the main-branch Production build after the owner requested launch indexing.
 if [ "${CF_PAGES_BRANCH:-}" = "main" ]; then
   find "$OUT" -type f -name '*.html' ! -name '404.html' -exec sed -i 's/<meta name="robots" content="noindex,follow"/<meta name="robots" content="index,follow"/g' {} \;
-  sed -i '/^[[:space:]]*X-Robots-Tag:/Id' "$OUT/_headers"
+  sed -i '/X-Robots-Tag:/d' "$OUT/_headers"
   cp "$ROOT/sitemap.xml" "$OUT/"
   printf '\nSitemap: https://getroofsolarcalculator.online/sitemap.xml\n' >> "$OUT/robots.txt"
 fi
