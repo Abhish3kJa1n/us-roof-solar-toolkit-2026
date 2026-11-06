@@ -339,3 +339,4 @@ expected_next5_names = {
 assert {code: metro_names.get(code) for code in expected_next5_names} == expected_next5_names
 assert audit["EXPECTED_2023_METRO_WEIGHTED_RESPONSE_RATES"] == {"17140": 62.9, "17460": 51.9, "19740": 59.6, "33340": 61.4, "35380": 61.0}
 print("PASS: Berkeley/AHS research scripts on synthetic fixtures, including separate PUF source provenance, distinct-household counts and replicate CV outputs.")
+
