@@ -211,3 +211,4 @@ Sources:
 - The source-gated price registry remains deliberately empty. Approved city/state solar installed-price rows: 0. Approved AHS metro whole-project roof spending rows: 0. No city roofing prices or synthetic benchmark rows are published.
 - Field-level validation is shared across eight calculator/data-entry pages. It performs inline hard-error checks and non-blocking warnings, shows per-field ranges/units/precision, handles paired/conditional fields and repeats validation at calculation time.
 - Full local QA passed after these changes. This remains deterministic code/DOM testing only; no live API, actual local pricing, browser/device, professional, legal or production validation is implied.
+
