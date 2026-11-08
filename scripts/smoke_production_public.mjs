@@ -54,6 +54,7 @@ assertSecurityHeaders(home.response, "/");
 const www = await getText(`${WWW}/`, "text/html");
 assert.equal(www.response.status, 200, "www hostname must serve the site or redirect to the canonical host");
 assert.match(www.response.headers.get("content-type") || "", /^text\/html\b/i);
+assertSecurityHeaders(www.response, "www /");
 assert.match(www.body, /<link\s+rel=["']canonical["']\s+href=["']https:\/\/getroofsolarcalculator\.online\//i);
 
 const ads = await getText(`${ORIGIN}/ads.txt`, "text/plain");
@@ -77,13 +78,13 @@ assert.ok(!urls.some((url) => /404\.html?$/i.test(url)));
 
 for (const url of urls) {
   const response = await get(url, "text/html");
-  assert.equal(response.status, 200, \`Sitemap URL must resolve: \${url}\`);
-  assert.match(response.headers.get("content-type") || "", /^text\/html\b/i, \`\${url}: expected HTML response\`);
+  assert.equal(response.status, 200, `Sitemap URL must resolve: ${url}`);
+  assert.match(response.headers.get("content-type") || "", /^text\/html\b/i, `${url}: expected HTML response`);
   assertSecurityHeaders(response, url);
-  assert.doesNotMatch(response.headers.get("x-robots-tag") || "", /noindex/i, \`\${url}: unexpected crawler block\`);
+  assert.doesNotMatch(response.headers.get("x-robots-tag") || "", /noindex/i, `${url}: unexpected crawler block`);
   const html = await response.text();
-  assert.match(html, /<meta\s+name=["']robots["']\s+content=["']index,follow["']/i, \`\${url}: page must be indexable\`);
-  assert.doesNotMatch(html, /<meta\s+name=["']robots["'][^>]*noindex/i, \`\${url}: page has noindex meta\`);
+  assert.match(html, /<meta\s+name=["']robots["']\s+content=["']index,follow["']/i, `${url}: page must be indexable`);
+  assert.doesNotMatch(html, /<meta\s+name=["']robots["'][^>]*noindex/i, `${url}: page has noindex meta`);
 }
 
 const privacy = await getText(`${ORIGIN}/privacy.html`, "text/html");
