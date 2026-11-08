@@ -80,3 +80,7 @@ See `OWNER-LAUNCH-CHECKLIST.md` for the full record. The main outstanding catego
 8. Representative Pages Functions/D1 usage monitoring. Preview and Production share a D1 quota database.
 
 This file is a state snapshot, not legal advice or a monetization approval. Recheck Cloudflare and Google state before future production changes.
+
+## Production API follow-up after PR #20
+
+A one-time CI smoke on the dedicated `test/production-provider-smoke-20261108` branch will verify that the merged Census retry/incomplete-source behavior is deployed and that the Production Census -> signed proof -> PVWatts/OpenEI path still works. It uses one representative Austin, TX scenario and the existing Production quota guard; it does not change secrets, D1, DNS, CSP, ad-serving switches or Production configuration. Results will be recorded in this PR. This is not a nationwide or tariff-accuracy test.
