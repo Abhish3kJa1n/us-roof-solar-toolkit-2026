@@ -73,7 +73,7 @@ for (const path of [
   readNonce(response, html, path);
   assert.equal(
     new URL(response.url).pathname,
-    path.replace(/\.html$/, ""),
+    path === "/index.html" ? "/" : path.replace(/\.html$/, ""),
     `${path}: Pages should redirect .html to its extensionless canonical path`,
   );
 }
