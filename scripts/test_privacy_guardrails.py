@@ -104,6 +104,21 @@ story_options = p.select_options.get("stories", [])
 if not story_options or story_options[0].get("value") != "" or "selected" not in story_options[0]:
     fail("homepage story-count select does not start with an explicit blank option")
 
+privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
+for required_disclosure in (
+    "no adsense ad-serving script, display ads or analytics script is active",
+    "page being viewed",
+    "visitor's ip address",
+    "cookies or other identifiers",
+    "third-party advertising vendors may place and read cookies",
+    "web beacons",
+    "policies.google.com/technologies/partner-sites",
+    "adssettings.google.com",
+    "www.aboutads.info/choices",
+):
+    if required_disclosure not in privacy_notice:
+        fail(f"Privacy Notice is missing required future AdSense disclosure: {required_disclosure}")
+
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
 if "Replace the bracketed items" in source_all:
     fail("privacy notice still contains an obsolete bracketed-placeholder instruction")
