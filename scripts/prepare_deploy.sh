@@ -20,7 +20,7 @@ else
   # Exercise nonce-based CSP only on Preview HTML routes. Production keeps static
   # delivery for HTML and invokes Pages Functions only for the existing /api/* routes.
   {
-    printf '{\n  "version": 1,\n  "include": ["/api/*", "/"]'
+    printf '{\n  "version": 1,\n  "include": ["/api/*", "/"'
     find "$OUT" -type f -name '*.html' -print | LC_ALL=C sort | while IFS= read -r page; do
       route="/${page#"$OUT"/}"
       printf ',\n    "%s"' "$route"
