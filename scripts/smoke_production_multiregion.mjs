@@ -26,6 +26,30 @@ async function getJson(path, headers = {}) {
   return { response, body };
 }
 
+async function getExactLocation(path, cityLabel) {
+  // Census may temporarily return an incomplete-layer 502/503/504. Retry
+  // once only for transient failures; never retry a definitive 404.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const result = await getJson(path);
+      if (attempt === 0 && [502, 503, 504].includes(result.response.status)) {
+        console.log("RETRY: transient Census response for " + cityLabel + " (HTTP " + result.response.status + ").");
+        await new Promise((resolve) => setTimeout(resolve, 750));
+        continue;
+      }
+      return result;
+    } catch (error) {
+      if (attempt === 0) {
+        console.log("RETRY: Census request failed transiently for " + cityLabel + ": " + error.message);
+        await new Promise((resolve) => setTimeout(resolve, 750));
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw new Error(cityLabel + ": Census lookup did not return after one retry.");
+}
+
 const results = [];
 for (const target of PLACES) {
   // Deliberately sequential: each successful exact lookup/model/rate query
@@ -34,7 +58,7 @@ for (const target of PLACES) {
     city: target.city,
     state: target.state,
   }).toString();
-  const census = await getJson(locationPath);
+  const census = await getExactLocation(locationPath, target.city + ", " + target.state);
   assert.equal(
     census.response.status,
     200,
