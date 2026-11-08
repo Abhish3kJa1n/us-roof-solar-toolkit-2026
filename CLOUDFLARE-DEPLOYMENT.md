@@ -1,6 +1,6 @@
 # Cloudflare Pages deployment runbook
 
-**Current host:** Cloudflare Pages using Git integration. The account already contains the Git-connected `roof-solar-toolkit-2026` project and a deployed Preview with Pages Functions and D1. Its Production deployments remain disabled. The registered custom domain is active in the Cloudflare zone but is still attached to the separate legacy `roofcalc` Pages project, not this Git-connected project. Most pages are static HTML/CSS/JavaScript; three optional Pages Functions provide Census city/state place lookup, PVWatts production modelling and nearby utility-tariff candidate discovery. All three API routes require one small Cloudflare D1 database for shared request-quota guards. Census place lookup needs no provider secret; PVWatts and OpenEI each require their own server-side provider secret. Every route fails closed until D1 and its migration/binding are configured; the PVWatts and OpenEI routes also require their respective keys.
+**Current host and verified state (November 8, 2026):** Cloudflare Pages Git integration is active for `Abhish3kJa1n/us-roof-solar-toolkit-2026` on project `roof-solar-toolkit-2026`, with `main` as the Production branch. Latest Production deployment: merge commit `7b90b230ed0eb60011424b565eea5a0b43397551`, status successful; aliases are `https://getroofsolarcalculator.online` and `https://www.getroofsolarcalculator.online`. Build command is `sh scripts/prepare_deploy.sh`, output is `dist`, root is `/`. Three Pages Functions handle Census place lookup, PVWatts and OpenEI candidate discovery. All require the shared D1 quota binding; PVWatts/OpenEI also require server-side keys. Live Production tests on November 8 confirmed the signed Census -> PVWatts/OpenEI path. Preview and Production share D1 database `2128d4c7-1031-4029-9629-d6e1abb602d1`; counters are aggregated, so environment-level attribution is unavailable. Do not change that binding without a tested migration/rollback plan. The current source has AdSense ownership verification meta + root `ads.txt`, but no ad-serving loader, ad units, Auto ads, analytics or CMP. Production ad serving remains disabled.
 
 ## Why this hosting choice
 
@@ -16,10 +16,9 @@ Official documentation:
 
 ## Before you deploy
 
-1. Complete the publisher section in `OWNER-LAUNCH-CHECKLIST.md`.
-2. The current site already exists in `Abhish3kJa1n/us-roof-solar-toolkit-2026` and is connected to Cloudflare. That repository is currently public; no API keys should ever be committed. Changing repository visibility is an owner decision, not a deployment prerequisite.
-3. Review the entire site and its policy drafts. The current build is intentionally `noindex` and the `_headers` file also sends `X-Robots-Tag: noindex, follow`.
-4. Do not add AdSense, analytics, affiliate scripts, a CMP or other third-party code yet. The current Content Security Policy only allows the current first-party site code.
+**For this existing project, deployment and domain attachment are already configured.** Do not create another Pages project, re-attach the custom domains, change DNS, create a second D1 database or switch deployment mode as part of routine work. Use `OWNER-LAUNCH-CHECKLIST.md` and `PREVIEW-DEPLOYMENT-STATUS.md` for the current operational state.
+
+For a new or replacement environment only: complete owner-side identity, contact, legal and technical gates first; keep secrets out of Git/client code; test on Preview before Production; and remember that the main-branch Production build is indexable while Preview stays noindex. No AdSense loader, ad units, Auto ads, analytics or CMP currently run. Do not add them before Google approval and the privacy/consent/legal gates.
 
 ## Connect GitHub to Cloudflare Pages
 
@@ -59,9 +58,9 @@ The HTML pages all contain `noindex,follow`. `_headers` also adds an `X-Robots-T
 
 Review the preview at desktop and mobile widths. Test every calculator in a real browser, check the browser console, verify all links, and inspect the response headers. A `pages.dev` preview is not the final canonical domain.
 
-## Add the production domain
+## Add the production domain (completed for this project)
 
-1. Complete trademark clearance before using the brand commercially. The owner registered `getroofsolarcalculator.online` through Hostinger, and the domain's DNS zone/nameservers are now active on Cloudflare. However, the apex and `www` domains are attached to the separate legacy `roofcalc` Pages project. They are **not** attached to `roof-solar-toolkit-2026`. Do not remove or reassign them until a deliberate cutover and rollback plan is approved. Do not buy another domain or transfer the registration as part of this setup.
+The apex and `www` hosts are already attached to `roof-solar-toolkit-2026`; Cloudflare reports both as Production aliases. Do not follow historical cutover steps or re-attach DNS/Pages domains. The normal-browser custom-domain path and canonical redirect still need checking because the non-browser CI runner receives a Cloudflare JavaScript challenge. Trademark clearance remains a separate owner/legal task. The remaining instructions in this subsection are reference steps only for a genuinely new replacement environment.
 2. In Cloudflare Pages, open the project → **Custom domains → Set up a domain**. Do this in the Pages dashboard; do not only create a DNS CNAME manually.
 3. For an apex domain, Cloudflare requires the domain to be a zone in that Cloudflare account and its nameservers to point to Cloudflare. For a subdomain, use the CNAME target shown by the dashboard.
 4. Choose one canonical host (`example.com` or `www.example.com`) and redirect the other to it. Do not split indexing signals between both.
@@ -71,60 +70,38 @@ Review the preview at desktop and mobile widths. Test every calculator in a real
 
 The script `scripts/configure_site.py` automates canonical URL insertion and later sitemap creation.
 
-First, configure canonical URLs while retaining noindex:
-
-```bash
-python scripts/configure_site.py --domain https://getroofsolarcalculator.online
-```
-
-This writes canonical and `og:url` tags but retains `noindex,follow` and does not create `sitemap.xml`.
-
-Only after every gate in `OWNER-LAUNCH-CHECKLIST.md` is complete, intentionally enable indexing:
-
-```bash
-python scripts/configure_site.py --domain https://getroofsolarcalculator.online --enable-indexing
-```
-
-That command:
-
-- changes every HTML page from `noindex,follow` to `index,follow`;
-- removes the global `X-Robots-Tag: noindex` directive from `_headers`;
-- creates `sitemap.xml` from the actual HTML files;
-- adds the sitemap URL to `robots.txt`.
-
-Do not run the second command before the real publisher identity, legal review, technical review and production checks are complete. If the site is not ready, the safe command is the first one.
+**Current project status:** the `main` build already publishes `index,follow` for public pages, removes the noindex response header and copies the 24-URL sitemap. Preview builds retain noindex. On November 8, 2026 the stable Production Pages hostname passed live crawler-response checks. Do not rerun either configuration command or revert indexing blindly. If a future, evidence-based decision requires suppressing indexing, create and test a dedicated change with an explicit rollback plan. The generic commands below describe a new site only.
 
 ## Security headers included
 
-`_headers` adds:
+`_headers` applies the current enforced production security policy:
 
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `X-Frame-Options: DENY`
-- a restrictive `Permissions-Policy`
-- a Content Security Policy with no third-party script, connection, image, font or frame origins; JavaScript is externalized into first-party files and `script-src` does not permit inline scripts
-- `X-Robots-Tag: noindex, follow` during pre-launch
+- restrictive `Permissions-Policy`
+- first-party-only enforced CSP, including `script-src 'self'`
 
-The current CSP allows first-party scripts only (`script-src 'self'`); all browser JavaScript is externalized under `assets/js/`. The three API calls are same-origin and the Functions make provider requests server-side, so the browser CSP can remain `connect-src 'self'`. Inline CSS/style attributes remain allowed (`style-src 'self' 'unsafe-inline'`) because the HTML still uses inline styling. No third-party browser scripts, direct browser API calls or ad tags are included. The three Pages Functions call their provider APIs server-side. Before adding ad tags, analytics, CMP scripts, remotely hosted assets, embedded widgets or a third-party API, extend the policy only for the vendors actually selected, prefer nonces/hashes where feasible, and re-test the entire website. Do not copy broad wildcards into the policy.
+Production has no `X-Robots-Tag: noindex`; the Production build makes public pages indexable. Preview HTML is routed through the nonce middleware only on generated eligible HTML routes. It keeps the enforced policy unchanged and adds a Google-compatible strict nonce CSP in **report-only** mode, gives each HTML response a fresh nonce, sets `private, no-store` and keeps Preview noindex. This probe is not an AdSense integration. No AdSense loader, ad unit or other third-party browser script is active. Google recommends strict nonce-based CSP where a publisher chooses to use CSP; do not replace the current policy with a broad Google-domain allowlist. Any future ad/CMP integration requires a reviewed Preview change and tests before Production routing is altered.
 
 Cloudflare's default serving behavior and custom header support can change. Verify actual response headers after deployment with browser developer tools or a header scanner. HSTS is deliberately not included in this pre-launch file.
 
 The project includes a first-party SVG favicon. The local QA script checks stylesheet, script and icon paths before deployment.
 
-## Production launch sequence
+## Remaining Production launch work
 
-1. Run `python scripts/run_all_checks.py` locally; resolve every reported issue. This also tests the Pages Function proxies with mocked provider responses and the research scripts with synthetic CSV fixtures.
-2. Deploy the preview and run all browser, mobile, keyboard and screen-reader checks.
-3. Add the approved custom domain and verify HTTPS and redirects.
-4. Run `scripts/configure_site.py` in safe mode with the final canonical domain.
-5. Complete and publish the real Privacy Notice, Terms, About, Contact and Editorial Policy.
-6. Add genuine author bylines and qualified technical reviewers; do not fabricate credentials or review dates.
-7. Add only the analytics, advertising and consent technology that has been selected. Update CSP and privacy disclosures to match.
-8. Test consent, opt-out signals, ad rendering, performance and user controls on production.
-9. Decide whether the editorial content is genuinely ready for indexing. Only then run the `--enable-indexing` command, submit `sitemap.xml` in Search Console and inspect the index coverage reports.
-10. Apply to an ad network only after the site contains substantial original value and the policy pages and consent stack are complete.
+1. Complete real owner identity and monitored privacy/editorial contact details. No identity or address should be invented.
+2. Clear the working brand through proper USPTO/common-law review and obtain qualified advice as needed.
+3. Add genuine author bylines and obtain qualified roofing/PV review. Do not fabricate qualifications or review dates.
+4. Independently validate solar model assumptions against representative utility tariffs and bills; OpenEI returns candidates, not confirmed tariffs. Validate roof cost references against comparable written proposals and measured examples.
+5. Complete qualified privacy, advertising, IP/copyright, accessibility and applicable U.S. state-law review. Determine whether opt-out/GPC controls are required before activating targeted advertising.
+6. In a normal browser, verify both custom hosts, HTTPS, canonical redirects and Browser Integrity Check behavior. The automated runner receives a challenge.
+7. Submit the published sitemap to Search Console if not already submitted, then monitor real index coverage. An indexable build and a sitemap do not prove indexing.
+8. The owner reports AdSense site review submission; approval remains unverified. Keep the ad loader absent. After approval and completion of privacy/consent/legal gates, configure actual manual ad units with real IDs or Auto ads deliberately, and test editorial-page rendering before broader rollout. No ad slots or Auto ads dashboard setup are included today.
+9. Measure field Core Web Vitals after traffic exists and continue monitoring Pages Functions/D1 usage. Preview and Production share the D1 quota database.
 
-**Important:** a technically successful Cloudflare deployment is not legal approval, Google indexing, AdSense approval, evidence of search demand or an income forecast.
+**Important:** deployment success is not legal approval, Google indexing, AdSense approval, evidence of search demand or an income forecast.
+
 
 
 ## Pages Functions: Census place lookup, PVWatts and tariff candidates
@@ -138,7 +115,7 @@ The repository now contains a root-level `functions/` directory:
 
 `_routes.json` deliberately invokes Functions only for `/api/*`. This matters for zero-cost hosting: Cloudflare says static asset requests are free and unlimited, while Function invocations count against the Workers Free daily quota. Cloudflare documentation last updated October 29, 2026 lists 100,000 Workers requests per day on the Free plan, shared across Workers and Pages Functions, with a 10 ms CPU time limit per invocation. This is an account-level limit and can change. Do not remove `_routes.json` or expand its include pattern casually. A static HTML/CSS/JS request should not invoke these Functions. Check the live limits before deployment.
 
-### API secrets (only after the owner chooses to enable the endpoints)
+### API secrets (current Production and Preview state)
 
 The Census place resolver needs no provider secret, but all three API routes fail closed until the shared D1 quota binding is available. PVWatts and OpenEI additionally require their respective provider keys. The current separate `roof-solar-toolkit-2026` Pages project has the D1 binding and both `PVWATTS_API_KEY` and `OPENEI_API_KEY` configured as Preview secrets. The November 4, 2026 real API smoke test passed Census, NLR PVWatts V8 and OpenEI URDB. A subsequent security change added a 24-hour HMAC-signed location proof: exact Census city/state verification issues the proof, while PVWatts and OpenEI reject arbitrary or altered coordinates before reserving D1 quota or calling upstream providers. The 20-check local QA run passed on commit `e05283bf52440795b5a33b04d0730adc4a60a8d6`; a fresh live smoke of the signed-proof contract is pending. The proof derives from an existing server-side provider secret; no additional secret needs to be added. Production deployments remain disabled and neither provider key is configured in Production. The numbered steps below describe a new/manual setup, not outstanding work for the current Preview. Complete them in this order only when creating another environment:
 
@@ -170,17 +147,17 @@ A local static web server such as `python -m http.server` will **not** execute P
 - Re-test all endpoints, error paths, cache behavior and privacy disclosures after deployment.
 
 
-## Current Pages Preview configuration — November 4, 2026
+## Current Pages Production and Preview configuration — November 8, 2026
 
-The repository is connected to the separate Cloudflare Pages project `roof-solar-toolkit-2026`, building the `audit/stage1-20261103` branch from Git integration. The project is preview-only:
-- Production deployment automation is disabled.
-- No custom domain is attached to this separate project; the apex and `www` remain attached to the legacy static `roofcalc` project.
-- `API_QUOTA_DB` is bound in Preview and Production; the live D1 database has migrations `0001` and `0002` applied.
-- `PVWATTS_API_KEY` and `OPENEI_API_KEY` are configured as Preview secrets only. Production has neither provider key.
-- Exact Census location lookup returns a 24-hour HMAC-signed location proof. PVWatts and OpenEI require the proof to match the submitted latitude, longitude and state before they reserve quota or contact the provider.
-- The Preview remains noindex. Do not enable production deployments, attach the domain, or change DNS without owner approval.
+- Project: `roof-solar-toolkit-2026`; repository: `Abhish3kJa1n/us-roof-solar-toolkit-2026`; Production branch: `main`.
+- Current Production merge commit: `7b90b230ed0eb60011424b565eea5a0b43397551`; Cloudflare deployment `b0c8c0d3-dd1b-4ae8-ad4a-e0426b089166` reports successful deployment and aliases for the apex and `www` custom domains.
+- Stable Pages-hostname public smoke passed the homepage, 24 sitemap URLs, canonical/indexable metadata, security headers, `ads.txt`, `robots.txt`, sitemap, real 404, API validation and internal-file-isolation checks. Apex/`www` automated requests received a Cloudflare JavaScript challenge; normal-browser behavior still requires confirmation.
+- Production `_routes.json` remains limited to `/api/*`; the HTML nonce middleware is not enabled on Production. Preview builds generate eligible HTML routes so nonce middleware can emit strict nonce CSP in report-only mode; Preview stays noindex.
+- `API_QUOTA_DB` is bound in both environments to the same D1 database ID `2128d4c7-1031-4029-9629-d6e1abb602d1`. Production and Preview provider credentials are held as Cloudflare secrets. The November 8 Production API smoke confirmed they work without exposing secret values.
+- `index.html` contains the publisher verification meta tag and root `ads.txt` contains the matching publisher record. No AdSense loader, ad units, Auto ads, analytics or CMP is enabled. Approval and owner-side privacy/consent/legal gates remain outstanding.
+- PR #16's full local QA suite, dedicated Chromium calculator regression and live Production public smoke passed on November 8. Real devices, assistive technologies and custom-domain normal-browser behavior remain separate manual checks.
 
-The `.github/workflows/qa.yml` workflow runs the 20-check local suite on audit-branch pushes and PRs. A separate live Preview smoke job runs only when a push commit message contains [live-smoke]. The November 4, 2026 baseline smoke passed ACS2026 Census autocomplete/exact lookup, NLR PVWatts (1,483 kWh/year for the 1 kW DC Austin test scenario) and OpenEI (49 nearby Austin tariff candidates). The new signed-proof contract has passed local QA; its fresh live smoke is pending. Browser, mobile, screen-reader, pricing and production certification remain separate gates.
+
 
 ## API quota hardening — implemented for provider proxies
 
