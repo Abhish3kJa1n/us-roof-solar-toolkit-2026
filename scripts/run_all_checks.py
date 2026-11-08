@@ -10,6 +10,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CHECKS = [
     "audit_site.py",
     "test_prepare_deploy.py",
+    "test_preview_csp.mjs",
     "audit_eia_data.py",
     "test_standalone_calculators.py",
     "test_roof_cost_reference_state.mjs",
