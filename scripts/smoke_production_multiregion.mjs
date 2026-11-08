@@ -8,7 +8,7 @@ const PLACES = [
   { city: "Miami", state: "FL", region: "Southeast" },
   { city: "Boston", state: "MA", region: "Northeast" },
   { city: "Anchorage", state: "AK", region: "Alaska" },
-  { city: "Honolulu", state: "HI", region: "Hawaii" },
+  { city: "Urban Honolulu", state: "HI", region: "Hawaii" },
 ];
 
 async function getJson(path, headers = {}) {
