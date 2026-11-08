@@ -114,6 +114,24 @@ const notFound = await get(PAGES_ORIGIN + "/__production-smoke-not-found-2026110
 assert.equal(notFound.status, 404, "Unknown paths must return a real HTTP 404");
 assert.match(await notFound.text(), /not found|page not found/i);
 
+// Build-internal files must never be served from the public document root.
+for (const path of [
+  "/README.md",
+  "/OWNER-LAUNCH-CHECKLIST.md",
+  "/scripts/run_all_checks.py",
+  "/scripts/smoke_production_providers.mjs",
+  "/functions/api/location.js",
+  "/functions/_shared/location-token.js",
+  "/migrations/0001_create_api_quota.sql",
+  "/.github/workflows/qa.yml",
+  "/.git/config",
+  "/_headers",
+  "/_routes.json",
+]) {
+  const response = await get(PAGES_ORIGIN + path, "*/*");
+  assert.equal(response.status, 404, "Internal build file must not be publicly served: " + path);
+}
+
 const api = await get(PAGES_ORIGIN + "/api/location?search=xy", "application/json");
 assert.equal(api.status, 400, "Invalid short city suggestions should be rejected before reserving a D1 quota unit");
 assert.match(api.headers.get("content-type") || "", /application\/json/i);
