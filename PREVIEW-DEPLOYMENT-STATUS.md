@@ -7,9 +7,9 @@ Last verified: November 8, 2026
 - Project: `roof-solar-toolkit-2026`
 - Repository: `Abhish3kJa1n/us-roof-solar-toolkit-2026`
 - Production branch: `main`
-- Latest Production merge commit: `7b90b230ed0eb60011424b565eea5a0b43397551`
-- Latest Cloudflare Production deployment: `b0c8c0d3-dd1b-4ae8-ad4a-e0426b089166` — successful
-- Pages deployment URL: https://b0c8c0d3.roof-solar-toolkit-2026.pages.dev
+- Latest Production merge commit: `907de6f37610136572bea80bac2626051b640941`
+- Latest Cloudflare Production deployment: `815de0b3-026b-4b79-a4ea-00df771f34f6` — active; deploy stage succeeded
+- Pages deployment URL: https://815de0b3.roof-solar-toolkit-2026.pages.dev
 - Custom-domain aliases reported by Cloudflare:
   - https://getroofsolarcalculator.online
   - https://www.getroofsolarcalculator.online
@@ -42,15 +42,15 @@ The live smoke test against the stable Pages project hostname passed:
 - Database ID: `2128d4c7-1031-4029-9629-d6e1abb602d1`
 - Migrations: `0001_create_api_quota.sql` and `0002_add_census_suggest_quota.sql`
 - Preview and Production share this database ID. Quota totals therefore aggregate both environments; D1 counters cannot be attributed to Preview vs. Production from current records alone.
-- Production smoke on November 8 verified exact Census place lookup, issuance/acceptance of the signed location proof, PVWatts V8 response and OpenEI candidate response. The Austin test scenario returned 1,483 kWh/year for 1 kW DC and 49 nearby rate candidates. PR #18 then passed a sequential four-region Production sample: Seattle, WA 1,088 kWh/year (station 0.84 mi; 50 candidates), Phoenix, AZ 1,755 kWh/year (0.58 mi; 50 candidates), Miami, FL 1,558 kWh/year (0.80 mi; 40 candidates), and Boston, MA 1,275 kWh/year (0.38 mi; 50 candidates), each for a 1 kW DC scenario. All four passed exact Census lookup, signed proof, positive annual/12-month output, the enforced 100-mile PVWatts station constraint and OpenEI response-shape checks. This is a small integration sample only, not nationwide coverage, property-level production, utility-territory matching or bill-savings validation.
+- Production smoke on November 8 verified exact Census place lookup, issuance/acceptance of the signed location proof, PVWatts V8 response and OpenEI candidate response. The Austin test scenario returned 1,483 kWh/year for 1 kW DC and 49 nearby rate candidates. PR #18 then passed a sequential four-region Production sample: Seattle, WA 1,088 kWh/year (station 0.84 mi; 50 candidates), Phoenix, AZ 1,755 kWh/year (0.58 mi; 50 candidates), Miami, FL 1,558 kWh/year (0.80 mi; 40 candidates), and Boston, MA 1,275 kWh/year (0.38 mi; 50 candidates), each for a 1 kW DC scenario. All four passed exact Census lookup, signed proof, positive annual/12-month output, the enforced 100-mile PVWatts station constraint and OpenEI response-shape checks. PR #20 later passed the same 18-request integration flow on Preview across six representative places: Seattle (1,088 kWh/year/kW DC; station 0.84 mi; 50 candidates), Phoenix (1,755; 0.58 mi; 50), Miami (1,558; 0.80 mi; 40), Boston (1,275; 0.38 mi; 50), Anchorage (951; 1.02 mi; 6) and Urban Honolulu (1,586; 0.90 mi; 50). These six-place results are Preview validation, not a six-place Production test. They remain a small representative sample, not nationwide coverage, property-level production, utility-territory matching or bill-savings validation. The PR #20 code is now deployed in Production, but a post-merge Production API smoke remains open.
 - Provider secret values were not read or printed. Keep `PVWATTS_API_KEY`, `OPENEI_API_KEY` and any signing secret in Cloudflare secret bindings only.
 
 ## CSP and AdSense state
 
 - Production static HTML keeps the existing enforced CSP; Production Pages Functions routing remains `/api/*` only.
-- Preview HTML uses the nonce middleware only on generated eligible HTML routes. It keeps the enforced CSP unchanged and adds a strict nonce-based CSP in report-only mode; nonce-bearing HTML is `private, no-store`; Preview stays noindex.
+- Preview public HTML routes use the nonce middleware. Eligible guide/EIA pages enforce strict nonce CSP and also emit a report-only candidate policy; other HTML routes retain their current enforced CSP. Nonce-bearing HTML is `private, no-store`; API routes bypass the middleware; Preview stays noindex.
 - AdSense site-verification meta tag and root `ads.txt` record are present and match the confirmed publisher ID.
-- No AdSense ad-serving loader, manual ad units, Auto ads, analytics or consent-management script is active. AdSense approval is not verified; the owner reports that review was submitted.
+- A guarded AdSense bootstrap exists in source but remains inactive in Production. The runtime `ADSENSE_ENABLED` variable is not configured; Production routes remain API-only unless the separate build-time `ADSENSE_MIDDLEWARE_ENABLED=true` switch is set. No manual ad-slot IDs are defined in source; dashboard Auto ads status is not independently verified. Cloudflare Web Analytics is configured at project level; its Preview beacon script loaded in Chromium, but its telemetry POST was rejected for the unregistered `pages.dev` hostname. Production custom-domain beacon delivery still needs a normal-browser check. AdSense approval is not verified; the owner reports that review was submitted.
 - Do not enable ad serving or change Production routing/CSP until Google approval and owner-side privacy, consent/opt-out and legal checks are complete. Manual slots require actual ad-unit IDs; Auto ads require a deliberate dashboard decision.
 
 ## Browser and calculator QA
