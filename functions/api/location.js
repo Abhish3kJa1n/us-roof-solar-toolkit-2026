@@ -56,14 +56,38 @@ async function queryLayer(layerId, city, stateFips) {
     returnGeometry: 'false',
     f: 'json',
   });
-  const response = await fetch(LAYER_URL + '/' + layerId + '/query?' + params.toString(), {
-    headers: { Accept: 'application/json' },
-    cf: { cacheTtl: 604800, cacheEverything: true },
-  });
-  if (!response.ok) throw new Error('Census TIGERweb layer ' + layerId + ' returned HTTP ' + response.status);
-  const data = await response.json();
-  if (data.error) throw new Error('Census TIGERweb layer ' + layerId + ' returned an error');
-  return (Array.isArray(data.features) ? data.features : []).map((feature) => feature.attributes || {});
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(LAYER_URL + '/' + layerId + '/query?' + params.toString(), {
+        headers: { Accept: 'application/json' },
+        cf: { cacheTtl: 604800, cacheEverything: true },
+      });
+      if (!response.ok) {
+        const error = new Error('Census TIGERweb layer ' + layerId + ' returned HTTP ' + response.status);
+        error.retryable = response.status === 429 || response.status >= 500;
+        throw error;
+      }
+      const data = await response.json();
+      if (data.error) {
+        const error = new Error('Census TIGERweb layer ' + layerId + ' returned an error');
+        error.retryable = true;
+        throw error;
+      }
+      return (Array.isArray(data.features) ? data.features : []).map((feature) => feature.attributes || {});
+    } catch (error) {
+      lastError = error;
+      const retryable = error?.retryable !== false;
+      if (attempt === 0 && retryable) {
+        // TIGERweb occasionally has a transient layer-level error. Retry only
+        // that layer once; do not repeat successful queries or client errors.
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        continue;
+      }
+      break;
+    }
+  }
+  throw lastError || new Error('Census TIGERweb layer ' + layerId + ' failed.');
 }
 
 async function querySuggestionLayer(layerId, search) {
