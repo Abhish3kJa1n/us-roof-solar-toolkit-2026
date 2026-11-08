@@ -216,7 +216,6 @@ assert.equal(result.body.places[0].latitude, 13.4745);
 assert.equal(result.body.places[0].longitude, 144.7504);
 assert.match(calls[0].url, /tigerWMS_ACS2026/);
 
-let result;
 // Distinguish a genuine place miss from a partial Census-source failure.
 // If the incorporated-place layer fails while the CDP layer returns no rows,
 // do not mislabel the result as a definitive 404.
