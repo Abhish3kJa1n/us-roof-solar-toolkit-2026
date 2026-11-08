@@ -73,6 +73,24 @@ jobs:
       - name: Verify the public Production domains and URLs
         run: node scripts/smoke_production_public.mjs
 
+  production-provider-smoke:
+    name: One-time live Production Census, PVWatts and OpenEI check
+    if: github.event_name == 'pull_request' && github.head_ref == 'test/production-provider-smoke-20261108'
+    needs: qa
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Check Production provider configuration and live model responses
+        run: node scripts/smoke_production_providers.mjs
+
   live-preview-smoke:
     name: Live Census, PVWatts and OpenEI preview smoke test
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[live-smoke]')
