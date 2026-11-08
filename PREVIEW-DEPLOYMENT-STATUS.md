@@ -8,8 +8,8 @@ Last verified: November 8, 2026
 - Repository: `Abhish3kJa1n/us-roof-solar-toolkit-2026`
 - Production branch: `main`
 - Runtime application changes include PR #20 merge commit: `907de6f37610136572bea80bac2626051b640941`.
-- Latest verified Cloudflare Production deployment at the time of the November 8 post-PR #20 smoke: `16308215-d353-496c-8bf2-7cad59e70944` from documentation-only commit `0664e60921254c87eeaf6341c1ca2e4789351d23` — active; deploy stage succeeded.
-- Pages deployment URL at that verification point: https://16308215.roof-solar-toolkit-2026.pages.dev
+- Latest Cloudflare Production deployment: `3f237f8e-6def-4c6a-955e-32c77a64a34b` from main commit `36c010129f92c4aca5c93b1a5929a1c93064deeb` — active; deploy stage succeeded.
+- Pages deployment URL: https://3f237f8e.roof-solar-toolkit-2026.pages.dev
 - Custom-domain aliases reported by Cloudflare:
   - https://getroofsolarcalculator.online
   - https://www.getroofsolarcalculator.online
@@ -33,7 +33,7 @@ The live smoke test against the stable Pages project hostname passed:
 - Internal repository files (QA scripts, Markdown owner files, migrations, `_headers`, `_routes.json`, workflow files and source Functions) are not exposed from the public document root.
 - Invalid short city autocomplete input is rejected before quota reservation.
 
-**Custom-domain limitation:** automated non-browser requests to the apex and `www` hosts received a Cloudflare JavaScript challenge while Browser Integrity Check was active. That is not proof ordinary Chrome visitors are blocked, nor is it proof they are served correctly. Verify both hosts in a normal browser and confirm HTTPS, canonical redirects and actual visitor access. Do not disable Browser Integrity Check just to satisfy a non-browser runner.
+**Custom-domain limitation (November 8, 2026):** automated non-browser requests to the apex and `www` hosts received a Cloudflare JavaScript challenge. A separate read-only headless Chromium test remained on `Just a moment...` after 30 seconds (HTTP 200 challenge response). Read-only zone settings showed Browser Integrity Check `on`, Bot Fight Mode `true`, Security Level `medium` and Challenge Page TTL `1800` seconds. The exact trigger is not isolated, and this does not establish whether ordinary human visitors are blocked. Do not disable or weaken those protections to satisfy CI. A real Chrome check on the owner's normal network remains outstanding, including canonical redirects and Analytics `/cdn-cgi/rum` delivery.
 
 ## API / D1 configuration
 
@@ -50,7 +50,7 @@ The live smoke test against the stable Pages project hostname passed:
 - Production static HTML keeps the existing enforced CSP; Production Pages Functions routing remains `/api/*` only.
 - Preview public HTML routes use the nonce middleware. Eligible guide/EIA pages enforce strict nonce CSP and also emit a report-only candidate policy; other HTML routes retain their current enforced CSP. Nonce-bearing HTML is `private, no-store`; API routes bypass the middleware; Preview stays noindex.
 - AdSense site-verification meta tag and root `ads.txt` record are present and match the confirmed publisher ID.
-- A guarded AdSense bootstrap exists in source but remains inactive in Production. The runtime `ADSENSE_ENABLED` variable is not configured; Production routes remain API-only unless the separate build-time `ADSENSE_MIDDLEWARE_ENABLED=true` switch is set. No manual ad-slot IDs are defined in source; dashboard Auto ads status is not independently verified. Cloudflare Web Analytics is configured at project level; its Preview beacon script loaded in Chromium, but its telemetry POST was rejected for the unregistered `pages.dev` hostname. Production custom-domain beacon delivery still needs a normal-browser check. AdSense approval is not verified; the owner reports that review was submitted.
+- A guarded AdSense bootstrap exists in source but remains inactive in Production. The runtime `ADSENSE_ENABLED` variable is not configured; Production routes remain API-only unless the separate build-time `ADSENSE_MIDDLEWARE_ENABLED=true` switch is set. No manual ad-slot IDs are defined in source; dashboard Auto ads status is not independently verified. Cloudflare Web Analytics is configured at project level; its Preview beacon script loaded in Chromium, but its telemetry POST was rejected for the unregistered `pages.dev` hostname. Production custom-domain beacon delivery still needs a normal-browser check; headless Chromium could not reach the content behind the challenge. AdSense approval is not verified; the owner reports that review was submitted.
 - Do not enable ad serving or change Production routing/CSP until Google approval and owner-side privacy, consent/opt-out and legal checks are complete. Manual slots require actual ad-unit IDs; Auto ads require a deliberate dashboard decision.
 
 ## Browser and calculator QA
