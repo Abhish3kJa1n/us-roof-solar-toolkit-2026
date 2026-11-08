@@ -148,12 +148,12 @@ A local static web server such as `python -m http.server` will **not** execute P
 ## Current Pages Production and Preview configuration — November 8, 2026
 
 - Project: `roof-solar-toolkit-2026`; repository: `Abhish3kJa1n/us-roof-solar-toolkit-2026`; Production branch: `main`.
-- Current Production merge commit: `7b90b230ed0eb60011424b565eea5a0b43397551`; Cloudflare deployment `b0c8c0d3-dd1b-4ae8-ad4a-e0426b089166` reports successful deployment and aliases for the apex and `www` custom domains.
+- Current Production merge commit: `b99694ba8b2539bf1dadec9116151d08ae21fe03`; Cloudflare deployment `921ee8ce-810c-4ab9-9d04-a62116f04567` reports successful deployment and aliases for the apex and `www` custom domains.
 - Stable Pages-hostname public smoke passed the homepage, 24 sitemap URLs, canonical/indexable metadata, security headers, `ads.txt`, `robots.txt`, sitemap, real 404, API validation and internal-file-isolation checks. Apex/`www` automated requests received a Cloudflare JavaScript challenge; normal-browser behavior still requires confirmation.
 - Production `_routes.json` remains limited to `/api/*`; the HTML nonce middleware is not enabled on Production. Preview builds generate eligible HTML routes so nonce middleware can emit strict nonce CSP in report-only mode; Preview stays noindex.
 - `API_QUOTA_DB` is bound in both environments to the same D1 database ID `2128d4c7-1031-4029-9629-d6e1abb602d1`. Production and Preview provider credentials are held as Cloudflare secrets. The November 8 Production API smoke confirmed they work without exposing secret values.
 - `index.html` contains the publisher verification meta tag and root `ads.txt` contains the matching publisher record. No AdSense loader, ad units, Auto ads, analytics or CMP is enabled. Approval and owner-side privacy/consent/legal gates remain outstanding.
-- PR #16's full local QA suite, dedicated Chromium calculator regression and live Production public smoke passed on November 8. Real devices, assistive technologies and custom-domain normal-browser behavior remain separate manual checks.
+- PR #16's full local QA suite, dedicated Chromium calculator regression and live Production public smoke passed on November 8. PR #18's full QA, four-city live Production Census -> signed proof -> PVWatts/OpenEI sample and Production public smoke also passed. The sample validates only four representative points, not national coverage or tariff accuracy. Real devices, assistive technologies and custom-domain normal-browser behavior remain separate manual checks.
 
 
 
