@@ -48,6 +48,7 @@ def parse_page(path: Path) -> PublicPageParser:
 def main() -> int:
     env = os.environ.copy()
     env["CF_PAGES_BRANCH"] = "preview"
+env.pop("ADSENSE_MIDDLEWARE_ENABLED", None)
     result = subprocess.run(
         ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
     )
