@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
 
-const BASE = process.env.PRODUCTION_BASE_URL || "https://roof-solar-toolkit-2026.pages.dev";
+const BASE = process.env.PREVIEW_BASE_URL || "https://test-production-six-region-s.roof-solar-toolkit-2026.pages.dev";
 const PLACES = [
   { city: "Seattle", state: "WA", region: "Pacific Northwest" },
   { city: "Phoenix", state: "AZ", region: "Southwest" },
