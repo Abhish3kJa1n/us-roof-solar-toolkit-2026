@@ -13,7 +13,7 @@ This checklist deliberately separates what can be built in code from facts that 
 
 ## B. Brand and domain clearance — cannot be certified by a quick web search
 
-- [x] Working domain selected and registered: `getroofsolarcalculator.online` through Hostinger. Cloudflare currently reports both the apex and `www` custom domains as active on the Git-connected `roof-solar-toolkit-2026` Pages project (checked November 6, 2026). This confirms Pages project attachment/status, not end-to-end DNS, redirect or visitor HTTP behavior. Final brand/legal clearance remains open.
+- [x] Working domain selected and registered: `getroofsolarcalculator.online` through Hostinger. Cloudflare currently reports both the apex and `www` custom domains as active on the Git-connected `roof-solar-toolkit-2026` Pages project (checked November 8, 2026). This confirms Pages project attachment/status, not end-to-end DNS, redirect or visitor HTTP behavior. Final brand/legal clearance remains open.
 - [ ] Search the USPTO Trademark Search system for exact, phonetic and confusingly similar marks in relevant classes; inspect live applications and registrations in TSDR.
 - [ ] Search common-law use, corporate names, state business registries, search engines, social accounts and relevant industry directories.
 - [x] Domain purchased through Hostinger.
@@ -58,7 +58,7 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 
 ## F. Production engineering and accessibility
 
-- [x] Deploy an isolated Preview and a `main` Production deployment through the Git-connected Cloudflare Pages project. Cloudflare reports the November 6, 2026 Production deployment from commit `65bc5ab70adfcaa81c949b484df60462ae824933` as successful, with both custom domains active on this project. Live HTTP, redirects, headers and crawler access remain unverified.
+- [x] Deploy an isolated Preview and a `main` Production deployment through the Git-connected Cloudflare Pages project. Cloudflare reports the November 8, 2026 Production deployment from merge commit `7b90b230ed0eb60011424b565eea5a0b43397551` as successful, with both custom domains attached to this project. The stable Pages hostname passed live HTTP, crawler, sitemap, `ads.txt`, 404, security-header and internal-file-isolation checks. Apex/`www` automated checks receive a Cloudflare JavaScript challenge; normal-browser custom-domain behavior remains unverified.
 - [ ] Confirm HTTPS, HTTP-to-HTTPS redirect, canonical host and security headers.
 - [ ] Test desktop, tablet and mobile browsers with real rendering. Check no horizontal overflow or clipped calculator results.
 - [ ] Test keyboard-only operation, focus visibility, zoom at 200%/400%, screen reader form labels, result announcements and table navigation.
@@ -69,18 +69,19 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 
 ## G. Search and advertising launch
 
-- [ ] Use `scripts/audit_site.py` and fix every error.
-- [ ] Run the EIA and calculator scenario tests, plus `scripts/test_configure_site.py`, from the project root; keep the safe noindex mode until every release gate is closed.
-- [ ] Use `scripts/configure_site.py --domain https://YOUR-DOMAIN` while retaining noindex.
-- [ ] Ensure every indexed page provides original, useful, complete content—not just an ad slot or a template.
-- [ ] Publish completed About, Contact, Editorial Policy, Privacy and Terms pages.
-- [ ] Only then remove noindex with `--enable-indexing`, submit the generated sitemap in Search Console and monitor coverage/manual actions.
-- [ ] Add ad code only when the ad network approves the domain and the site meets its current policies.
+- [x] Run `scripts/audit_site.py` and the full repository QA suite through GitHub Actions. PR #16 completed all 22 project checks successfully on November 8, 2026; its run also passed the dedicated Chromium homepage-calculator regression and live Production public-page smoke.
+- [x] Verify that the `main` build publishes `index,follow`, serves `robots.txt` and `sitemap.xml`, and returns HTTP 200 for all 24 sitemap URLs on the stable Production Pages hostname. Preview remains noindex. Do not rerun `configure_site.py` or change indexing state blindly; Production is already indexable.
+- [ ] In a normal browser, verify both custom hosts, HTTPS, canonical redirects and visitor access through Cloudflare Browser Integrity Check. Automated non-browser checks received a JavaScript challenge and cannot establish the normal-browser result.
+- [ ] Submit the verified sitemap in Google Search Console (if not already submitted) and monitor indexing/coverage. A published sitemap does not prove pages are indexed.
+- [x] Confirm the homepage AdSense verification meta tag and root `ads.txt` publisher record match the owner-confirmed ID `ca-pub-6193507831935325` / `pub-6193507831935325`. The root `ads.txt` and homepage meta were verified on the stable Pages hostname.
+- [x] The owner reports submitting the AdSense site review request. This records submission only; Google approval has not been verified.
+- [ ] Wait for AdSense approval and resolve any policy/review issues. Do not activate ads before approval and completion of the privacy, consent/opt-out and legal checks.
+- [ ] After approval, choose manual ad units with real IDs or deliberately configure Auto ads in the AdSense dashboard. Neither ad units nor Auto ads are currently configured. Keep ads outside the calculator input/result workflow and validate layout/performance before activation.
 - [ ] Never buy traffic, incentivize clicks or place ads where they can be mistaken for calculator buttons or navigation.
 
 ## Release decision
 
-**Current state: the Production Pages build, indexability, security headers, root `ads.txt`, `robots.txt`, sitemap and all 24 sitemap pages were verified through the stable Cloudflare Pages project hostname on November 8, 2026. The custom apex and `www` hosts returned Cloudflare JavaScript challenges to the non-browser CI runner because Browser Integrity Check is enabled; the actual normal-Chrome custom-domain path still needs a browser check. The owner has submitted the AdSense review request, but approval is not established. The site is NOT READY for monetized ad serving.** Owner identity/contact, genuine authorship and qualified review, independent calculator validation, privacy/consent/legal review, and browser/accessibility checks remain unresolved. Do not interpret a successful deployment or indexable Pages hostname as AdSense approval or full launch readiness.
+**Current state (November 8, 2026):** Production `main` commit `7b90b230ed0eb60011424b565eea5a0b43397551` is deployed successfully. The stable Pages hostname passed live public-page, indexability, 24-URL sitemap, `ads.txt`, `robots.txt`, security-header, 404 and internal-file-isolation checks. PR #16 passed full QA, Chromium calculator regression and Production public smoke. Apex/`www` automated checks receive a Cloudflare JavaScript challenge, so normal-browser custom-domain access remains open. The owner reports submitting AdSense for review; approval is not established. **Ad serving is not enabled.** Publisher identity/contact, genuine authorship and qualified review, independent calculator/tariff validation, privacy/consent/legal review, manual accessibility checks and Search Console monitoring remain unresolved.
 
 
 ## Location API release gate
@@ -106,5 +107,5 @@ Read-only D1 snapshot checked November 8, 2026 after the Production provider smo
 - [x] Cloudflare Pages Git integration is configured: root directory `/`, build command `sh scripts/prepare_deploy.sh`, build output `dist`, framework preset None; `/functions` remains at repository root. Preview deployment from the audit branch completed successfully. This project does not require `package.json` or `package-lock.json`.
 - [x] Direct Upload was not selected; the project uses Git integration. Do not create a second Direct Upload project or use dashboard drag-and-drop for this Functions-enabled build.
 - [x] Cloudflare account, Git-connected Pages project and D1 binding are configured. As checked November 8, 2026, Cloudflare reports the apex and `www` custom domains active on `roof-solar-toolkit-2026`; the latest Production deployment from commit `14f19bb9d940edd8a114d5ebf069332bab53adfe` succeeded. Do not repeat the old `roofcalc` routing claim. End-to-end custom-domain behavior still requires a normal-browser check because non-browser CI receives a Cloudflare JavaScript challenge.
-- [x] Preview build and Pages Functions compilation completed; live Census, PVWatts and OpenEI Preview smoke tests passed November 4, 2026. On November 8, the Production Census -> signed proof -> PVWatts/OpenEI smoke test passed; Production returned 1,483 kWh/year for the 1 kW DC Austin test and 49 nearby OpenEI candidate records. The Production Pages/crawler smoke also verified 24 sitemap pages, root `ads.txt`, `robots.txt`, sitemap, security headers, privacy notice and 404 behavior on the stable Pages hostname.
+- [x] Preview build and Pages Functions compilation completed; live Census, PVWatts and OpenEI Preview smoke tests passed November 4, 2026. On November 8, the Production Census -> signed proof -> PVWatts/OpenEI smoke test passed; Production returned 1,483 kWh/year for the 1 kW DC Austin test and 49 nearby OpenEI candidate records. The Production Pages/crawler smoke also verified 24 sitemap pages, root `ads.txt`, `robots.txt`, sitemap, security headers, privacy notice, 404 behavior and internal-file isolation on the stable Pages hostname. PR #16 subsequently passed real Chromium regression for the combined homepage calculator and standalone calculators.
 - [ ] In a normal Chrome browser, verify apex and `www` custom-domain pages, HTTPS, canonical redirect, headers and actual user access through Cloudflare Browser Integrity Check. The stable Production Pages hostname already returned expected content for the homepage, `ads.txt`, `robots.txt`, sitemap and all 24 sitemap pages. Also confirm internal `scripts/`, Markdown research, migrations and owner records are not publicly exposed.
