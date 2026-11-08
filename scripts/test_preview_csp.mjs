@@ -53,16 +53,16 @@ assert.equal(htmlFiles.length, 25, "expected all 25 public HTML documents");
 for (const file of htmlFiles) {
   const html = readFileSync(file, "utf8");
   const rel = relative(root, file);
-  const scripts = [...html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi)];
+  const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
   for (const [, attributes, body] of scripts) {
-    if (!/\\bsrc\\s*=/i.test(attributes) && body.trim()) {
+    if (!/\bsrc\s*=/i.test(attributes) && body.trim()) {
       throw new Error(`${rel}: inline script must be reviewed before nonce policy enforcement`);
     }
   }
-  if (/\\son[a-z]+\\s*=/i.test(html)) {
+  if (/\son[a-z]+\s*=/i.test(html)) {
     throw new Error(`${rel}: inline event handler found`);
   }
-  if (/(?:href|src)\\s*=\\s*["']\\s*javascript:/i.test(html)) {
+  if (/(?:href|src)\s*=\s*["']\s*javascript:/i.test(html)) {
     throw new Error(`${rel}: javascript: URL found`);
   }
 }
