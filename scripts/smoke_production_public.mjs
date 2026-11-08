@@ -10,7 +10,7 @@ async function get(url, accept = "*/*") {
   return fetch(url, {
     headers: {
       Accept: accept,
-      "User-Agent": "RoofSolarToolkit-ProductionSmokeTest/1.0",
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
       "Cache-Control": "no-cache",
     },
     redirect: "follow",
@@ -36,6 +36,39 @@ function assertSecurityHeaders(response, path) {
 }
 
 const home = await getText(`${ORIGIN}/`, "text/html");
+if (home.response.status !== 200) {
+  const diagnostics = [];
+  for (const url of [
+    `${WWW}/`,
+    "https://1166fd5d.roof-solar-toolkit-2026.pages.dev/",
+  ]) {
+    try {
+      const response = await get(url, "text/html");
+      const body = await response.text();
+      diagnostics.push({
+        url,
+        status: response.status,
+        finalUrl: response.url,
+        server: response.headers.get("server"),
+        cfRay: response.headers.get("cf-ray"),
+        location: response.headers.get("location"),
+        contentType: response.headers.get("content-type"),
+        body: body.slice(0, 900),
+      });
+    } catch (error) {
+      diagnostics.push({ url, error: error.message });
+    }
+  }
+  throw new Error(`Apex homepage returned HTTP ${home.response.status}; response diagnostics: ${JSON.stringify({
+    finalUrl: home.response.url,
+    server: home.response.headers.get("server"),
+    cfRay: home.response.headers.get("cf-ray"),
+    location: home.response.headers.get("location"),
+    contentType: home.response.headers.get("content-type"),
+    body: home.body.slice(0, 900),
+    alternateHosts: diagnostics,
+  })}`);
+}
 assert.equal(home.response.status, 200, "Apex homepage must return HTTP 200");
 assert.match(home.response.headers.get("content-type") || "", /^text\/html\b/i);
 assertSecurityHeaders(home.response, "/");
