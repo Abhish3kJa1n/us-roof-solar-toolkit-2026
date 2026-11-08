@@ -106,7 +106,7 @@ jobs:
       - name: Test deployed Cloudflare Pages Preview responses
         run: node scripts/smoke_preview_csp.mjs
         env:
-          PREVIEW_BASE_URL: https://audit-guarded-adsense-bootstrap-20261108.roof-solar-toolkit-2026.pages.dev
+          PREVIEW_BASE_URL: https://audit-guarded-adsense-bootst.roof-solar-toolkit-2026.pages.dev
 
   production-public-smoke:
     name: Live Production Pages and custom-domain edge smoke test

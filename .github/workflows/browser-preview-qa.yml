@@ -32,7 +32,7 @@ jobs:
       - name: Run real-browser Preview checks
         run: node scripts/browser_preview_smoke.mjs
         env:
-          PREVIEW_BASE_URL: https://audit-guarded-adsense-bootstrap-20261108.roof-solar-toolkit-2026.pages.dev
+          PREVIEW_BASE_URL: https://audit-guarded-adsense-bootst.roof-solar-toolkit-2026.pages.dev
           PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
           AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
           QA_SCREENSHOT_DIR: browser-qa-output
