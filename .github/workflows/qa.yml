@@ -35,6 +35,33 @@ jobs:
       - name: Run complete QA suite
         run: python scripts/run_all_checks.py
 
+
+  homepage-calculator-smoke:
+    name: Browser regression for combined homepage calculator
+    if: github.event_name == 'pull_request' && github.head_ref == 'test/homepage-calculator-v2-20261108'
+    needs: qa
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Install pinned Playwright library
+        run: |
+          npm init -y
+          npm install --no-save --no-package-lock playwright@1.65.0
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test all public pages and combined calculator interactions
+        run: node scripts/smoke_calculator_browser.mjs
+        env:
+          PREVIEW_BASE_URL: https://test-homepage-calculator-v2.roof-solar-toolkit-2026.pages.dev
+
   browser-calculator-smoke:
     name: Browser calculator and interaction regression smoke
     if: github.event_name == 'pull_request' && github.head_ref == 'test/browser-calculator-smoke-20261108'
