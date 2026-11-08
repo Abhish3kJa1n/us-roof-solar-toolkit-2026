@@ -60,11 +60,9 @@ Review the preview at desktop and mobile widths. Test every calculator in a real
 
 ## Add the production domain (completed for this project)
 
-The apex and `www` hosts are already attached to `roof-solar-toolkit-2026`; Cloudflare reports both as Production aliases. Do not follow historical cutover steps or re-attach DNS/Pages domains. The normal-browser custom-domain path and canonical redirect still need checking because the non-browser CI runner receives a Cloudflare JavaScript challenge. Trademark clearance remains a separate owner/legal task. The remaining instructions in this subsection are reference steps only for a genuinely new replacement environment.
-2. In Cloudflare Pages, open the project → **Custom domains → Set up a domain**. Do this in the Pages dashboard; do not only create a DNS CNAME manually.
-3. For an apex domain, Cloudflare requires the domain to be a zone in that Cloudflare account and its nameservers to point to Cloudflare. For a subdomain, use the CNAME target shown by the dashboard.
-4. Choose one canonical host (`example.com` or `www.example.com`) and redirect the other to it. Do not split indexing signals between both.
-5. Confirm HTTPS works for all variants before enabling HSTS. Do not enable HSTS preload or `includeSubDomains` until every covered host is permanently HTTPS-capable.
+The apex and `www` hosts are already attached to `roof-solar-toolkit-2026`; Cloudflare reports both as Production aliases. Do not re-attach DNS/Pages domains, create a replacement project, or change the registrar/nameservers as part of routine work. The normal-browser custom-domain path and canonical redirect still need checking because the non-browser CI runner receives a Cloudflare JavaScript challenge. Trademark clearance remains a separate owner/legal task.
+
+For a genuinely new replacement environment, create a separate cutover plan with owner approval, an explicit rollback route, HTTPS/certificate checks and canonical-host verification before moving traffic. These are not outstanding setup steps for the current project.
 
 ## Configure canonical URLs safely
 
