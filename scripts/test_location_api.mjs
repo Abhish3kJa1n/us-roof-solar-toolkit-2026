@@ -100,6 +100,30 @@ assert.match(calls[0].url, /tigerWMS_ACS2026/);
 assert.ok(calls.some((call) => new URL(call.url).searchParams.get('resultOffset') === '1'), 'Census suggestions must continue after an exceeded-transfer-limit page');
 assert.equal(calls.length, 3, 'one broad prefix should page the first layer and query the second layer once');
 
+// Hawaii has no incorporated places; common "Honolulu" input should resolve
+// to the official Census-designated place name "Urban Honolulu".
+calls = [];
+globalThis.fetch = async (url) => {
+  calls.push({ url: String(url) });
+  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
+  const where = new URL(String(url)).searchParams.get('where') || '';
+  if (layer === '30' && /Urban Honolulu/i.test(where)) return jsonResponse({ features: [{ attributes: {
+    BASENAME: 'Urban Honolulu', STATE: '15', INTPTLAT: '21.3257028', INTPTLON: '-157.8453437', GEOID: '1571550', LSADC: '57',
+  } }] });
+  if (layer === '28' || layer === '30') return jsonResponse({ features: [] });
+  throw new Error('Unexpected Census layer URL: ' + url);
+};
+const honoluluSuggestionQuotaDb = quotaDb();
+const honoluluSuggestions = await read(await locationGet({ request: request('/api/location?search=Honolulu'), env: { API_QUOTA_DB: honoluluSuggestionQuotaDb } }));
+assert.equal(honoluluSuggestions.status, 200);
+assert.equal(honoluluSuggestionQuotaDb.values[0], 'census_suggest');
+assert.equal(honoluluSuggestions.body.suggestions.length, 1);
+assert.equal(honoluluSuggestions.body.suggestions[0].placeName, 'Urban Honolulu');
+assert.equal(honoluluSuggestions.body.suggestions[0].stateAbbreviation, 'HI');
+assert.equal(honoluluSuggestions.body.suggestions[0].geographyType, 'Census-designated place');
+assert.equal(honoluluSuggestions.body.totalMatches, 1);
+assert.equal(calls.length, 3, 'Honolulu alias lookup must search both usual layers plus the official Urban Honolulu CDP name');
+
 calls = [];
 globalThis.fetch = async (url) => {
   calls.push({ url: String(url) });
