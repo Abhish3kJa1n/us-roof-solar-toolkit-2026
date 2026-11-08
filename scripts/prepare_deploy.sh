@@ -16,6 +16,17 @@ if [ "${CF_PAGES_BRANCH:-}" = "main" ]; then
   sed -i '/X-Robots-Tag:/d' "$OUT/_headers"
   cp "$ROOT/sitemap.xml" "$OUT/"
   printf '\nSitemap: https://getroofsolarcalculator.online/sitemap.xml\n' >> "$OUT/robots.txt"
+else
+  # Exercise nonce-based CSP only on Preview HTML routes. Production keeps static
+  # delivery for HTML and invokes Pages Functions only for the existing /api/* routes.
+  {
+    printf '{\n  "version": 1,\n  "include": ["/api/*", "/"]'
+    find "$OUT" -type f -name '*.html' -print | LC_ALL=C sort | while IFS= read -r page; do
+      route="/${page#"$OUT"/}"
+      printf ',\n    "%s"' "$route"
+    done
+    printf '\n  ],\n  "exclude": []\n}\n'
+  } > "$OUT/_routes.json"
 fi
 # Deliberately do not copy scripts, migrations, audit notes, source-status records,
 # owner launch checklists, or example secrets. Production receives the reviewed sitemap.
