@@ -17,6 +17,9 @@ fs.mkdirSync(screenshotDir, { recursive: true });
 
 const browserErrors = [];
 const requestFailures = [];
+const previewBeaconCorsErrors = [];
+const beaconScriptResponses = [];
+const previewOrigin = new URL(base).origin;
 const results = [];
 
 async function waitForPreview() {
@@ -51,7 +54,24 @@ const context = await browser.newContext({
 const page = await context.newPage();
 page.on('pageerror', error => browserErrors.push(error.message));
 page.on('console', message => {
-  if (message.type() === 'error') browserErrors.push(message.text());
+  if (message.type() !== 'error') return;
+  const text = message.text();
+  // Cloudflare validates Web Analytics against the registered hostname. This
+  // branch runs on a pages.dev alias, not the registered production hostname.
+  const previewAnalyticsCors = text.includes("Access to XMLHttpRequest at 'https://cloudflareinsights.com/cdn-cgi/rum'")
+    && text.includes("from origin '" + previewOrigin + "'")
+    && text.includes('blocked by CORS policy');
+  if (previewAnalyticsCors) {
+    previewBeaconCorsErrors.push(text);
+    return;
+  }
+  if (text === 'Failed to load resource: net::ERR_FAILED' && previewBeaconCorsErrors.length > 0) return;
+  browserErrors.push(text);
+});
+page.on('response', response => {
+  if (response.url().startsWith('https://static.cloudflareinsights.com/beacon.min.js')) {
+    beaconScriptResponses.push({ url: response.url(), status: response.status() });
+  }
 });
 page.on('requestfailed', request => {
   const url = request.url();
@@ -355,8 +375,10 @@ try {
   results.push('standalone solar savings calculator: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-results.png'), fullPage: true });
 
-  assert.equal(browserErrors.length, 0, 'Browser console/page errors: ' + JSON.stringify(browserErrors));
+  assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load successfully; observed: ' + JSON.stringify(beaconScriptResponses));
+  assert.equal(browserErrors.length, 0, 'Unexpected browser console/page errors: ' + JSON.stringify(browserErrors));
   assert.equal(requestFailures.length, 0, 'Failed site/API requests: ' + JSON.stringify(requestFailures));
+  console.log('Cloudflare Web Analytics beacon loaded. Preview pages.dev hostname CORS responses observed: ' + previewBeaconCorsErrors.length);
   console.log('BROWSER PREVIEW QA COMPLETED.');
   console.log(results.join('\n'));
 } finally {
