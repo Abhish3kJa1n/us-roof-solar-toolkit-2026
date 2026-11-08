@@ -108,7 +108,7 @@ privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
     "no adsense ad-serving script or display ads are active",
     "web analytics configuration values set",
-    "whether the beacon is executing on the pages currently being served",
+    "we have not confirmed that the beacon is executing on the pages currently being served",
     "performance api",
     "does not track individual end users across customers' internet properties",
     "page being viewed",
