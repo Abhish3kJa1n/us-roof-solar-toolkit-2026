@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from html.parser import HTMLParser
+import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -44,9 +46,47 @@ def parse_page(path: Path) -> PublicPageParser:
 
 
 def main() -> int:
-    result = subprocess.run(["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT)
+    env = os.environ.copy()
+    env["CF_PAGES_BRANCH"] = "preview"
+    result = subprocess.run(
+        ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
+    )
     if result.returncode:
-        fail("prepare_deploy.sh failed")
+        fail("prepare_deploy.sh failed for Preview")
+
+    preview_routes = json.loads((DIST / "_routes.json").read_text(encoding="utf-8"))
+    expected_preview_routes = {"/api/*", "/"}
+    expected_preview_routes.update(
+        "/" + page.relative_to(DIST).as_posix() for page in DIST.rglob("*.html")
+    )
+    if set(preview_routes.get("include", [])) != expected_preview_routes:
+        fail("Preview must route every HTML document through the nonce CSP middleware and retain /api/*")
+    if len(preview_routes.get("include", [])) > 100:
+        fail("Preview route list exceeds Cloudflare Pages' 100-rule limit")
+
+    # Production must retain the original static HTML path: only /api/* invokes Functions.
+    env["CF_PAGES_BRANCH"] = "main"
+    result = subprocess.run(
+        ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
+    )
+    if result.returncode:
+        fail("prepare_deploy.sh failed for Production")
+    production_routes = json.loads((DIST / "_routes.json").read_text(encoding="utf-8"))
+    if production_routes.get("include") != ["/api/*"]:
+        fail("Production must continue routing only /api/* through Pages Functions")
+    production_home = (DIST / "index.html").read_text(encoding="utf-8")
+    if '<meta name="robots" content="index,follow" />' not in production_home:
+        fail("Production homepage must retain the main-branch indexing transformation")
+    if "X-Robots-Tag:" in (DIST / "_headers").read_text(encoding="utf-8"):
+        fail("Production must not retain the Preview X-Robots-Tag")
+
+    # Restore the Preview fixture for the existing noindex and clean-public-root checks.
+    env["CF_PAGES_BRANCH"] = "preview"
+    result = subprocess.run(
+        ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
+    )
+    if result.returncode:
+        fail("prepare_deploy.sh failed while restoring Preview test fixture")
 
     html_pages = sorted(DIST.rglob("*.html"))
     if len(html_pages) != 25:
