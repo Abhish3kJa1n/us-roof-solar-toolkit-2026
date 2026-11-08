@@ -18,6 +18,8 @@ fs.mkdirSync(screenshotDir, { recursive: true });
 const browserErrors = [];
 const requestFailures = [];
 const previewBeaconCorsErrors = [];
+const previewBeaconRequestFailures = [];
+let previewBeaconGenericFailures = 0;
 const beaconScriptResponses = [];
 const previewOrigin = new URL(base).origin;
 const results = [];
@@ -65,7 +67,10 @@ page.on('console', message => {
     previewBeaconCorsErrors.push(text);
     return;
   }
-  if (text === 'Failed to load resource: net::ERR_FAILED' && previewBeaconCorsErrors.length > 0) return;
+  if (text === 'Failed to load resource: net::ERR_FAILED' && previewBeaconGenericFailures < previewBeaconRequestFailures.length) {
+    previewBeaconGenericFailures += 1;
+    return;
+  }
   browserErrors.push(text);
 });
 page.on('response', response => {
@@ -75,6 +80,10 @@ page.on('response', response => {
 });
 page.on('requestfailed', request => {
   const url = request.url();
+  if (url.startsWith('https://cloudflareinsights.com/cdn-cgi/rum')) {
+    previewBeaconRequestFailures.push(request.failure()?.errorText || 'telemetry request failed');
+    return;
+  }
   if (url.startsWith(base) || url.includes('developer.nlr.gov') || url.includes('api.openei.org') || url.includes('tigerweb.geo.census.gov')) {
     requestFailures.push(request.method() + ' ' + url + ': ' + (request.failure()?.errorText || 'request failed'));
   }
@@ -376,6 +385,8 @@ try {
   await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-results.png'), fullPage: true });
 
   assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load successfully; observed: ' + JSON.stringify(beaconScriptResponses));
+  assert.equal(previewBeaconCorsErrors.length, previewBeaconRequestFailures.length, 'Only the known Preview hostname/CORS telemetry failures may be treated as expected; console=' + previewBeaconCorsErrors.length + ', requests=' + previewBeaconRequestFailures.length);
+  assert.ok(previewBeaconGenericFailures <= previewBeaconRequestFailures.length, 'Unmatched net::ERR_FAILED console errors must not be suppressed');
   assert.equal(browserErrors.length, 0, 'Unexpected browser console/page errors: ' + JSON.stringify(browserErrors));
   assert.equal(requestFailures.length, 0, 'Failed site/API requests: ' + JSON.stringify(requestFailures));
   console.log('Cloudflare Web Analytics beacon loaded. Preview pages.dev hostname CORS responses observed: ' + previewBeaconCorsErrors.length);
