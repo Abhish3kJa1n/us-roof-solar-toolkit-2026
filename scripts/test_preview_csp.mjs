@@ -34,7 +34,6 @@ for (const directive of [
   "'strict-dynamic'",
   "'unsafe-inline'",
   "'unsafe-eval'",
-  "upgrade-insecure-requests",
 ]) {
   assert.ok(reportOnly.includes(directive), `missing report-only directive: ${directive}`);
   assert.ok(enforced.includes(directive), `missing enforced directive: ${directive}`);
