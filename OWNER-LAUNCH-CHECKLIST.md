@@ -46,6 +46,7 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 ## E. Privacy, advertising and consumer law
 
 - [ ] Select the real host, ad network, analytics provider, consent-management platform and any embedded third parties before finalizing the Privacy Notice.
+- [ ] Verify Cloudflare Web Analytics before the next Production release. On November 8, 2026, the Pages project-level `web_analytics_tag` and `web_analytics_token` were populated, while the latest Production and Preview deployment snapshots showed neither. Cloudflare documents that Pages can inject the beacon on a subsequent deployment after Web Analytics is enabled. Check the actual HTML/network requests, confirm the beacon is compatible with the enforced CSP, and ensure the Privacy Notice accurately describes the deployed state.
 - [ ] Obtain qualified legal review of privacy, terms, advertising disclosures, IP/copyright, accessibility and applicable federal/state law.
 - [ ] Assess privacy-law applicability by thresholds, processing activities, consumer location and business role. State privacy laws differ; do not assume that a small traffic volume automatically exempts every ad-tech activity.
 - [ ] Determine whether targeted advertising, cookies, identifiers, IP handling, Global Privacy Control or other opt-out signals require controls for the audience served.
