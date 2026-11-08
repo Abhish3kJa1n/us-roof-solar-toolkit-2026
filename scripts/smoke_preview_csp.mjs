@@ -67,11 +67,15 @@ for (const path of [
   "/about.html",
   "/calculators/roof-area.html",
   "/guides/solar-installation-cost.html",
-  "/404.html",
 ]) {
   const response = await get(path);
   const html = await response.text();
   readNonce(response, html, path);
+  assert.equal(
+    new URL(response.url).pathname,
+    path.replace(/\.html$/, ""),
+    `${path}: Pages should redirect .html to its extensionless canonical path`,
+  );
 }
 
 const secondHome = await get("/");
