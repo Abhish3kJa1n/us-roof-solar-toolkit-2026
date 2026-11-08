@@ -21,8 +21,11 @@ else
   # delivery for HTML and invokes Pages Functions only for the existing /api/* routes.
   {
     printf '{\n  "version": 1,\n  "include": ["/api/*", "/"'
-    find "$OUT" -type f -name '*.html' -print | LC_ALL=C sort | while IFS= read -r page; do
+    find "$OUT" -type f -name '*.html' ! -name '404.html' -print | LC_ALL=C sort | while IFS= read -r page; do
       route="/${page#"$OUT"/}"
+      route="${route%.html}"
+      [ "$route" = "/index" ] && route="/"
+      [ "$route" = "/" ] && continue
       printf ',\n    "%s"' "$route"
     done
     printf '\n  ],\n  "exclude": []\n}\n'
