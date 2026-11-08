@@ -41,12 +41,19 @@ for (const directive of [
 }
 assert.throws(() => buildStrictCspReportOnly("not-a-nonce"), TypeError);
 assert.throws(() => buildStrictCsp("not-a-nonce"), TypeError);
+assert.ok(enforced.includes("upgrade-insecure-requests"), "enforced policy must upgrade insecure requests");
+assert.ok(!reportOnly.includes("upgrade-insecure-requests"), "report-only policy must not emit an ignored upgrade-insecure-requests warning");
+const staticHeaders = readFileSync(join(root, "_headers"), "utf8");
+assert.ok(staticHeaders.includes("https://static.cloudflareinsights.com/beacon.min.js"), "static CSP must allow only the documented Cloudflare beacon script URL");
+assert.ok(staticHeaders.includes("connect-src 'self' https://cloudflareinsights.com"), "static CSP must allow same-origin and Cloudflare telemetry destinations");
 
 const middleware = readFileSync(join(root, "functions/_middleware.js"), "utf8");
 assert.ok(middleware.includes('url.pathname.startsWith("/api/")'), "API routes must bypass HTML rewriting");
 assert.ok(middleware.includes('new HTMLRewriter()'), "Preview HTML must be rewritten by HTMLRewriter");
 assert.ok(middleware.includes('element.setAttribute("nonce", nonce)'), "every script tag must receive the generated nonce");
 assert.ok(middleware.includes('eligible ? buildStrictCsp(nonce) : CURRENT_ENFORCED_CSP'), "existing enforced CSP must remain in place");
+assert.ok(middleware.includes("https://static.cloudflareinsights.com/beacon.min.js"), "middleware CSP must allow the exact Cloudflare beacon script URL");
+assert.ok(middleware.includes("connect-src 'self' https://cloudflareinsights.com"), "middleware CSP must allow Cloudflare telemetry destinations");
 assert.ok(middleware.includes('headers.set("Content-Security-Policy-Report-Only"'), "candidate policy must be report-only");
 assert.ok(middleware.includes('headers.set("Cache-Control", "private, no-store, max-age=0")'), "nonce-bearing Preview HTML must not be cached");
 assert.ok(middleware.includes("adsbygoogle.js?client="), "guarded AdSense loader must exist");
