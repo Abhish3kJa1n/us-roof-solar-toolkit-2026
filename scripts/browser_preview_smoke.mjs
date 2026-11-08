@@ -11,7 +11,7 @@ const { chromium } = require(playwrightPath);
 const axeModule = require(axePath);
 const AxeBuilder = axeModule.default || axeModule;
 
-const base = (process.env.PREVIEW_BASE_URL || 'https://audit-stage1-20261103.roof-solar-toolkit-2026.pages.dev').replace(/\/+$/, '');
+const base = (process.env.PREVIEW_BASE_URL || 'https://audit-adsense-nonce-csp-2026.roof-solar-toolkit-2026.pages.dev').replace(/\/+$/, '');
 const screenshotDir = process.env.QA_SCREENSHOT_DIR || 'browser-qa-output';
 fs.mkdirSync(screenshotDir, { recursive: true });
 
@@ -29,10 +29,22 @@ async function waitForPreview() {
         const roofResponse = await fetch(base + '/calculators/roof-replacement-cost.html', { redirect: 'follow' });
         const roofHtml = roofResponse.ok ? await roofResponse.text() : '';
         if (roofResponse.status === 200 && roofHtml.includes('data-qa="metal-reference-state-v2"')) {
-          console.log('PREVIEW_READY_WITH_ROOF_REFERENCE_STATE_V2: ' + base);
-          return;
+          const eiaResponse = await fetch(base + '/electricity-prices-by-state', { redirect: 'follow' });
+          const eiaCsp = eiaResponse.headers.get('content-security-policy') || '';
+          const eiaCache = eiaResponse.headers.get('cache-control') || '';
+          if (eiaResponse.status === 200 && /'strict-dynamic'/.test(eiaCsp) && eiaCache.toLowerCase().includes('private, no-store')) {
+            console.log('PREVIEW_READY_WITH_ROOF_REFERENCE_STATE_V2_AND_NONCE_CSP: ' + base);
+            return;
+          }
+          lastStatus = JSON.stringify({
+            eiaStatus: eiaResponse.status,
+            csp: eiaCsp.slice(0, 220),
+            cacheControl: eiaCache,
+          });
+          console.log('PREVIEW_EIA_ROUTE_DIAGNOSTIC: ' + lastStatus);
+        } else {
+          lastStatus = 'Preview is reachable but the roof reference-state v2 build is not deployed yet';
         }
-        lastStatus = 'Preview is reachable but the roof reference-state v2 build is not deployed yet';
       }
     } catch (error) {
       lastStatus = error.message;
@@ -51,7 +63,18 @@ const context = await browser.newContext({
 const page = await context.newPage();
 page.on('pageerror', error => browserErrors.push(error.message));
 page.on('console', message => {
-  if (message.type() === 'error') browserErrors.push(message.text());
+  if (message.type() !== 'error') return;
+  const text = message.text();
+  // Cloudflare injects Preview-only RUM requests/scripts that the site's existing
+  // restrictive CSP intentionally blocks. Do not weaken the CSP to permit analytics
+  // that the publisher has not enabled. URL-less generic load errors are separately
+  // covered by the first-party/API request-failure assertion below.
+  if (
+    text.includes('cloudflareinsights.com/cdn-cgi/rum') ||
+    text.includes('static.cloudflareinsights.com/beacon.min.js') ||
+    text === 'Failed to load resource: net::ERR_FAILED'
+  ) return;
+  browserErrors.push(text);
 });
 page.on('requestfailed', request => {
   const url = request.url();
@@ -66,6 +89,27 @@ async function open(pathname) {
   assert.equal(response.status(), 200, pathname + ' returned HTTP ' + response.status());
   const headers = response.headers();
   assert.match((headers['x-robots-tag'] || '').toLowerCase(), /noindex/, pathname + ' must remain noindex in Preview');
+  const csp = headers['content-security-policy'] || '';
+  const nonceMiddlewareRoute = pathname.startsWith('/guides/') || (pathname === '/electricity-prices-by-state' || pathname === '/electricity-prices-by-state.html');
+  const pageNonces = await page.locator('script').evaluateAll(nodes => nodes.map(node => node.nonce));
+
+  if (nonceMiddlewareRoute) {
+    assert.match((headers['cache-control'] || '').toLowerCase(), /private, no-store/, pathname + ' must not cache a nonce-bearing HTML document');
+    assert.ok(csp, pathname + ' must return an enforced Content-Security-Policy header');
+    assert.match(csp, /object-src 'none'/, pathname + ' CSP must block plugins');
+    assert.match(csp, /base-uri 'none'/, pathname + ' CSP must block injected base URLs');
+    assert.match(csp, /frame-ancestors 'none'/, pathname + ' CSP must prevent framing');
+    const scriptDirective = csp.split(';').map(part => part.trim()).find(part => part.startsWith('script-src '));
+    assert.ok(scriptDirective && scriptDirective.includes("'strict-dynamic'"), pathname + ' must use strict-dynamic');
+    const nonceMatch = scriptDirective.match(/'nonce-([^']+)'/);
+    assert.ok(nonceMatch, pathname + ' CSP script-src must contain a per-response nonce');
+    assert.ok(pageNonces.every(value => Boolean(value) && value === nonceMatch[1]), pathname + ' every HTML script must carry the matching CSP nonce');
+  } else {
+    assert.doesNotMatch(csp, /'strict-dynamic'|'nonce-/, pathname + ' must stay outside the new nonce middleware');
+    assert.ok(pageNonces.every(value => !value), pathname + ' static HTML must not gain a middleware nonce');
+  }
+
+  assert.equal(await page.locator('script[src*="adsbygoogle.js"]').count(), 0, pathname + ' Preview must never load the AdSense script');
   const robots = await page.locator('meta[name="robots"]').getAttribute('content');
   assert.match((robots || '').toLowerCase(), /noindex/, pathname + ' meta robots must remain noindex');
   await page.locator('body').waitFor({ state: 'visible' });
@@ -104,6 +148,13 @@ async function accessibilityScan(label) {
 
 try {
   await waitForPreview();
+
+  // EIA reference page exercises the nonce middleware; homepage remains static.
+  await open('/electricity-prices-by-state');
+  assert.equal(await page.locator('script[src*="electricity-prices-by-state-1.js"]').count(), 1);
+  results.push('EIA reference page nonce CSP and static script loading: PASS');
+  await open('/guides/are-solar-panels-worth-it.html');
+  results.push('guide page nonce CSP and disabled Preview ads: PASS');
 
   // Homepage and combined calculator: real browser rendering and browser-side math.
   await open('/index.html');

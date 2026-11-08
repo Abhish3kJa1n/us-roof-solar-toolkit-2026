@@ -7,7 +7,15 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 cp "$ROOT"/*.html "$OUT/"
 cp -R "$ROOT/assets" "$ROOT/calculators" "$ROOT/guides" "$ROOT/data" "$OUT/"
-cp "$ROOT/robots.txt" "$ROOT/_headers" "$ROOT/_routes.json" "$OUT/"
+cp "$ROOT/robots.txt" "$ROOT/_headers" "$OUT/"
+# Preview builds exercise the nonce CSP middleware. Production stays on the
+# existing API-only route set unless the owner deliberately enables the
+# build-time ADSENSE_MIDDLEWARE_ENABLED switch after approval and legal review.
+if [ "${CF_PAGES_BRANCH:-}" = "main" ] && [ "${ADSENSE_MIDDLEWARE_ENABLED:-false}" != "true" ]; then
+  printf '{\n  "version": 1,\n  "include": ["/api/*"],\n  "exclude": []\n}\n' > "$OUT/_routes.json"
+else
+  cp "$ROOT/_routes.json" "$OUT/"
+fi
 if [ -f "$ROOT/ads.txt" ]; then cp "$ROOT/ads.txt" "$OUT/"; fi
 # Keep every Preview noindex. The public sitemap and indexing are enabled only
 # for the main-branch Production build after the owner requested launch indexing.

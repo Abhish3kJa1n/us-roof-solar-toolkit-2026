@@ -13,7 +13,7 @@ This checklist deliberately separates what can be built in code from facts that 
 
 ## B. Brand and domain clearance — cannot be certified by a quick web search
 
-- [x] Working domain selected and registered: `getroofsolarcalculator.online` through Hostinger. Cloudflare currently reports both the apex and `www` custom domains as active on the Git-connected `roof-solar-toolkit-2026` Pages project (checked November 6, 2026). This confirms Pages project attachment/status, not end-to-end DNS, redirect or visitor HTTP behavior. Final brand/legal clearance remains open.
+- [x] Working domain selected and registered: `getroofsolarcalculator.online` through Hostinger. Cloudflare currently reports both the apex and `www` custom domains as active on the Git-connected `roof-solar-toolkit-2026` Pages project (checked November 8, 2026). This confirms Pages project attachment/status, not end-to-end DNS, redirect or visitor HTTP behavior. Final brand/legal clearance remains open.
 - [ ] Search the USPTO Trademark Search system for exact, phonetic and confusingly similar marks in relevant classes; inspect live applications and registrations in TSDR.
 - [ ] Search common-law use, corporate names, state business registries, search engines, social accounts and relevant industry directories.
 - [x] Domain purchased through Hostinger.
@@ -53,17 +53,20 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 - [ ] Review native-advertising formats against the FTC requirement that commercial content not mislead readers about its nature; keep disclosures clear, prominent and close to the ad content. Official starting point: https://www.ftc.gov/business-guidance/resources/native-advertising-guide-businesses .
 - [ ] Set a children/audience policy. Do not knowingly collect children's personal information without the required assessment and controls.
 - [ ] Make the Privacy Notice accurately describe hosting logs, ad tags, cookies, identifiers, recipients, retention and rights after each technology change.
+- [ ] Before activating AdSense, review Google's publisher privacy-disclosure requirements and applicable U.S. state privacy opt-out/GPC obligations for the actual audience and business. The current code path defaults off; do not enable it merely because site review has been submitted.
+- [ ] If serving personalized ads to visitors in the EEA, UK or Switzerland, implement Google's current certified CMP/IAB TCF requirements first. Recheck Google's current requirements at activation.
 - [ ] Test all privacy links, opt-outs and consent choices from a visitor's browser.
 
 ## F. Production engineering and accessibility
 
-- [x] Deploy an isolated Preview and a `main` Production deployment through the Git-connected Cloudflare Pages project. Cloudflare reports the November 6, 2026 Production deployment from commit `65bc5ab70adfcaa81c949b484df60462ae824933` as successful, with both custom domains active on this project. Live HTTP, redirects, headers and crawler access remain unverified.
+- [x] Deploy an isolated Preview and a `main` Production deployment through the Git-connected Cloudflare Pages project. Cloudflare reports the November 8, 2026 Production deployment from commit `893108cb04e4a4fdb913f6cca4532618e8fcd320` as successful, with both custom domains active on this project. Live HTTP, redirects, headers and crawler access remain unverified.
 - [ ] Confirm HTTPS, HTTP-to-HTTPS redirect, canonical host and security headers.
 - [ ] Test desktop, tablet and mobile browsers with real rendering. Check no horizontal overflow or clipped calculator results.
 - [ ] Test keyboard-only operation, focus visibility, zoom at 200%/400%, screen reader form labels, result announcements and table navigation.
 - [ ] Check WCAG 2.2 AA criteria with automated and manual testing; a passing automated scan alone is not conformance.
 - [ ] Measure Core Web Vitals with field data after traffic exists; lab Lighthouse runs are useful but are not CrUX field data.
 - [ ] Scan production network requests, cookies, storage, scripts and security headers after ad/analytics/CMP changes.
+- [ ] In Preview, only `/guides/*` and the EIA reference route (extensionless canonical path plus `.html` request) invoke the added Pages Function for nonce CSP; homepage, calculator pages, `/assets/*` and `/data/*` stay outside that route. `main` Production stays on the existing API-only route set unless the owner deliberately enables the build-time `ADSENSE_MIDDLEWARE_ENABLED=true` after Google approval and privacy/consent/legal review. When enabled, eligible HTML responses are `private, no-store`; monitor those added invocations, CPU and latency against Cloudflare's current plan.
 - [ ] Add error monitoring only after it is selected and disclosed in the Privacy Notice.
 
 ## G. Search and advertising launch
@@ -73,19 +76,23 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 - [ ] Use `scripts/configure_site.py --domain https://YOUR-DOMAIN` while retaining noindex.
 - [ ] Ensure every indexed page provides original, useful, complete content—not just an ad slot or a template.
 - [ ] Publish completed About, Contact, Editorial Policy, Privacy and Terms pages.
-- [ ] Only then remove noindex with `--enable-indexing`, submit the generated sitemap in Search Console and monitor coverage/manual actions.
-- [ ] Add ad code only when the ad network approves the domain and the site meets its current policies.
+- [x] The `main` build is already configured to publish `index,follow` for public HTML pages except `404.html`, remove the global `X-Robots-Tag: noindex` header and copy the sitemap into the Production document root; Preview remains noindex. This is a build configuration check, not proof of live crawler access.
+- [ ] Verify the live canonical host, redirects, robots.txt, sitemap and crawler-facing headers, then submit the verified sitemap in Search Console and monitor coverage/manual actions. Do not rerun indexing setup or change Production noindex state blindly.
+- [x] AdSense publisher verification meta tag and root `ads.txt` are configured in source with the owner-confirmed publisher ID `ca-pub-6193507831935325` / `pub-6193507831935325`. Live HTTP accessibility and Google's review status are separate checks.
+- [x] A nonce-based AdSense loader is implemented behind the runtime Pages variable `ADSENSE_ENABLED`; absent/false means no ad loader runs. Preview builds exercise the nonce middleware, but the `main` build remains API-only unless the separate build-time variable `ADSENSE_MIDDLEWARE_ENABLED=true` is explicitly set. When enabled, the loader is restricted to guide pages and the electricity-prices-by-state page. Homepage and calculator pages remain excluded to protect calculator UX.
+- [ ] Keep `ADSENSE_ENABLED` absent/false until Google approves the site and the publisher has completed the privacy/consent/legal gates above. After approval, activate only in Production, then verify network requests, actual ad formats, layout shifts and policy compliance. Do not turn on Auto ads without separately reviewing their placement impact.
+- [ ] Choose and configure actual ad placements only after approval: create manual AdSense ad units and use their real IDs in reviewed markup, or deliberately enable Auto ads in the AdSense dashboard. Neither manual slots nor dashboard ad settings are configured by this branch; the loader alone is not an ad-placement implementation.
 - [ ] Never buy traffic, incentivize clicks or place ads where they can be mistaken for calculator buttons or navigation.
 
 ## Release decision
 
-**Current state: Production deployment exists and the `main` build is configured to be indexable, but live crawler-facing behavior is not yet verified. The site is NOT READY for AdSense application/approval or monetized launch.** Owner identity/contact, genuine authorship and qualified review, independent calculator validation, privacy/consent/legal review, and browser/accessibility checks remain unresolved. Do not interpret a successful deployment or indexable build as AdSense readiness.
+**Current state: The owner has submitted the AdSense site for review, but approval is not established. Production deployment exists and the `main` build is configured to be indexable, but live crawler-facing behavior is not yet verified. The site is NOT READY for monetized launch.** Owner identity/contact, genuine authorship and qualified review, independent calculator validation, privacy/consent/legal review, and browser/accessibility checks remain unresolved. Do not interpret a successful deployment or indexable build as AdSense readiness.
 
 
 ## Location API release gate
 
 - [x] Free NLR PVWatts and OpenEI API keys are configured as server-side **Preview-only** Cloudflare secrets. Live smoke checks passed on November 4, 2026. No API keys are configured in Production; do not put keys in Git or client code.
-- [x] The live D1 database `roof-solar-api-quota` exists; migrations `0001_create_api_quota.sql` and `0002_add_census_suggest_quota.sql` have been applied; `API_QUOTA_DB` is bound in both Preview and Production. The November 6 Cloudflare project read confirms a successful Production deployment and the same D1 database ID is bound in Preview and Production. Secret values are not exposed by the project configuration response, so current Production provider-secret presence must be checked in the dashboard/runtime rather than inferred from masked API output. All three API endpoints require the shared quota guard; PVWatts and OpenEI additionally require their respective provider keys.
+- [x] The live D1 database `roof-solar-api-quota` exists; migrations `0001_create_api_quota.sql` and `0002_add_census_suggest_quota.sql` have been applied; `API_QUOTA_DB` is bound in both Preview and Production. The November 8 Cloudflare project read confirms a successful Production deployment and the same D1 database ID is bound in Preview and Production. Secret values are not exposed by the project configuration response, so current Production provider-secret presence must be checked in the dashboard/runtime rather than inferred from masked API output. All three API endpoints require the shared quota guard; PVWatts and OpenEI additionally require their respective provider keys.
 - [ ] Optionally add tested per-IP WAF rate limiting for `/api/*` as a secondary defense only; Free-plan counters are not global and do not replace D1.
 - [x] Pages Runtime **Fail open / closed** is set to Fail open in the current `roof-solar-toolkit-2026` Preview and Production project configurations. Recheck after any project replacement or environment change.
 - [ ] Monitor actual Pages Functions and D1 usage and recheck Cloudflare's current account-level Free allowances before launch. The application's D1 guards currently cap exact Census lookups at 10,000/day, Census autocomplete at 20,000/day, PVWatts at 15,000/day and OpenEI at 5,000/day; the 15-minute bucket guards also constrain burst rates. Account usage has not yet been audited over a representative traffic period.
@@ -103,5 +110,5 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 - [x] Cloudflare Pages Git integration is configured: root directory `/`, build command `sh scripts/prepare_deploy.sh`, build output `dist`, framework preset None; `/functions` remains at repository root. Preview deployment from the audit branch completed successfully. This project does not require `package.json` or `package-lock.json`.
 - [x] Direct Upload was not selected; the project uses Git integration. Do not create a second Direct Upload project or use dashboard drag-and-drop for this Functions-enabled build.
 - [x] Cloudflare account, Git-connected Pages project and D1 binding are configured. As checked November 6, 2026, Cloudflare reports the apex and `www` custom domains active on `roof-solar-toolkit-2026`; the latest Production deployment is successful. Do not repeat the old `roofcalc` routing claim. This control-plane check does not prove end-to-end HTTP routing.
-- [x] Preview build and Pages Functions compilation completed; live Census, PVWatts and OpenEI endpoint smoke tests passed on November 4, 2026. The November 6 `main` Production build/deploy also completed successfully. The earlier smoke tests do not prove current Production API configuration or current live public-page responses.
+- [x] Preview build and Pages Functions compilation completed; live Census, PVWatts and OpenEI endpoint smoke tests passed on November 4, 2026. The November 8 `main` Production build/deploy completed successfully. The earlier smoke tests do not prove current Production API configuration or current live public-page responses.
 - [ ] Verify real-browser static URLs on both custom domains, actual response headers, 404 behavior, HTTPS and canonical-host redirects. Confirm production `robots.txt`, `sitemap.xml` and `ads.txt` return expected content/status, and confirm no `scripts/`, internal Markdown, migrations or owner records are publicly exposed.

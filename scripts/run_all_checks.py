@@ -16,6 +16,7 @@ CHECKS = [
     "test_solar_calculator.py",
     "test_combined_calculator.py",
     "test_privacy_guardrails.py",
+    "test_csp_adsense.py",
     "test_location_api.py",
     "test_api_quota_sql.py",
     "test_location_solar_ui.py",
