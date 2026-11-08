@@ -56,14 +56,38 @@ async function queryLayer(layerId, city, stateFips) {
     returnGeometry: 'false',
     f: 'json',
   });
-  const response = await fetch(LAYER_URL + '/' + layerId + '/query?' + params.toString(), {
-    headers: { Accept: 'application/json' },
-    cf: { cacheTtl: 604800, cacheEverything: true },
-  });
-  if (!response.ok) throw new Error('Census TIGERweb layer ' + layerId + ' returned HTTP ' + response.status);
-  const data = await response.json();
-  if (data.error) throw new Error('Census TIGERweb layer ' + layerId + ' returned an error');
-  return (Array.isArray(data.features) ? data.features : []).map((feature) => feature.attributes || {});
+  let lastError;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(LAYER_URL + '/' + layerId + '/query?' + params.toString(), {
+        headers: { Accept: 'application/json' },
+        cf: { cacheTtl: 604800, cacheEverything: true },
+      });
+      if (!response.ok) {
+        const error = new Error('Census TIGERweb layer ' + layerId + ' returned HTTP ' + response.status);
+        error.retryable = response.status === 429 || response.status >= 500;
+        throw error;
+      }
+      const data = await response.json();
+      if (data.error) {
+        const error = new Error('Census TIGERweb layer ' + layerId + ' returned an error');
+        error.retryable = true;
+        throw error;
+      }
+      return (Array.isArray(data.features) ? data.features : []).map((feature) => feature.attributes || {});
+    } catch (error) {
+      lastError = error;
+      const retryable = error?.retryable !== false;
+      if (attempt === 0 && retryable) {
+        // TIGERweb occasionally has a transient layer-level error. Retry only
+        // that layer once; do not repeat successful queries or client errors.
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        continue;
+      }
+      break;
+    }
+  }
+  throw lastError || new Error('Census TIGERweb layer ' + layerId + ' failed.');
 }
 
 async function querySuggestionLayer(layerId, search) {
@@ -120,13 +144,26 @@ async function getSuggestions(search, env) {
     return json({ error: 'City suggestions have reached the shared request limit. Please try again later.' }, 429);
   }
 
-  const results = await Promise.allSettled([
-    querySuggestionLayer(28, search), // incorporated places
-    querySuggestionLayer(30, search), // census-designated places
-  ]);
+  const queryTargets = [
+    { layerId: 28, search, geographyType: 'Incorporated place' },
+    { layerId: 30, search, geographyType: 'Census-designated place' },
+  ];
+  // Hawaii has no incorporated places. Its official Census geography for
+  // Honolulu is "Urban Honolulu CDP"; support the common "Honolulu" query
+  // while returning the official Census place name and representative point.
+  if (search.toLocaleLowerCase('en-US') === 'honolulu') {
+    queryTargets.push({
+      layerId: 30,
+      search: 'Urban Honolulu',
+      geographyType: 'Census-designated place',
+    });
+  }
+  const results = await Promise.allSettled(queryTargets.map(({ layerId, search: searchTerm }) =>
+    querySuggestionLayer(layerId, searchTerm)
+  ));
   const successful = results.map((item, index) => ({
     item,
-    geographyType: index === 0 ? 'Incorporated place' : 'Census-designated place',
+    geographyType: queryTargets[index].geographyType,
   })).filter(({ item }) => item.status === 'fulfilled');
   if (!successful.length) {
     return json({ error: 'The US Census city-suggestion service is temporarily unavailable. Please try again.' }, 502);
@@ -160,11 +197,15 @@ async function getSuggestions(search, env) {
   }
 
   const needle = search.toLocaleLowerCase('en-US');
+  const aliasNeedle = needle === 'honolulu' ? 'urban honolulu' : null;
   const suggestions = Array.from(byPlaceAndState.values())
     .sort((a, b) => {
       const exactA = a.placeName.toLocaleLowerCase('en-US') === needle ? 0 : 1;
       const exactB = b.placeName.toLocaleLowerCase('en-US') === needle ? 0 : 1;
+      const aliasA = aliasNeedle && a.placeName.toLocaleLowerCase('en-US') === aliasNeedle ? 0 : 1;
+      const aliasB = aliasNeedle && b.placeName.toLocaleLowerCase('en-US') === aliasNeedle ? 0 : 1;
       return exactA - exactB
+        || aliasA - aliasB
         || a.placeName.localeCompare(b.placeName, 'en-US')
         || a.stateName.localeCompare(b.stateName, 'en-US');
     })
@@ -172,9 +213,9 @@ async function getSuggestions(search, env) {
 
   const warnings = [];
   const truncated = successful.some(({ item }) => item.value.truncated);
-  if (successful.length < 2) warnings.push('One Census place layer was unavailable; suggestions may be incomplete.');
+  if (successful.length < queryTargets.length) warnings.push('One Census place layer or place-name alias query was unavailable; suggestions may be incomplete.');
   if (truncated) warnings.push('This city prefix matches more than 5,000 records in at least one Census layer. Results are incomplete; type more letters to narrow the search.');
-  const hasCompleteCount = successful.length === 2 && !truncated;
+  const hasCompleteCount = successful.length === queryTargets.length && !truncated;
 
   return json({
     search,
@@ -250,6 +291,13 @@ export async function onRequestGet({ request, env }) {
   }
 
   if (!places.length) {
+    // A genuine not-found result is only reliable when both Census geography
+    // layers responded. If one layer failed and the other returned no rows,
+    // the missing layer may contain the requested place (e.g. an incorporated
+    // city); report an incomplete upstream lookup instead of a false 404.
+    if (successful.length < 2) {
+      return json({ error: 'The Census location lookup was incomplete because one place layer was unavailable. Please try again later.' }, 502);
+    }
     return json({ error: 'No exact Census place named “' + city + '” was found in ' + state + '. Check the city spelling and selected state.' }, 404);
   }
 
