@@ -61,10 +61,11 @@ if (pv.response.status === 503 && /PVWatts API key|PVWATTS_API_KEY|not configure
   const monthly = pv.body.outputs?.monthlyAcKwh;
   assert.ok(Number.isFinite(annual) && annual > 0, "PVWatts must return positive annual AC production");
   assert.ok(Array.isArray(monthly) && monthly.length === 12 && monthly.every((n) => Number.isFinite(Number(n)) && Number(n) >= 0), "PVWatts must return 12 non-negative monthly values");
-  const distance = Number(pv.body.stationInfo?.distance);
-  if (Number.isFinite(distance)) {
-    assert.ok(distance >= 0 && distance <= 100, "PVWatts weather station must be within the configured 100-mile radius");
-    console.log("PASS: Production PVWatts V8 returns " + Math.round(annual).toLocaleString("en-US") + " kWh/year for 1 kW DC; station distance " + distance + " miles.");
+  const distanceMeters = Number(pv.body.stationInfo?.distance);
+  if (Number.isFinite(distanceMeters)) {
+    const distanceMiles = distanceMeters / 1609.344;
+    assert.ok(distanceMeters >= 0 && distanceMiles <= 100, "PVWatts weather station must be within the configured 100-mile radius; returned " + distanceMeters + " meters (" + distanceMiles.toFixed(2) + " miles)");
+    console.log("PASS: Production PVWatts V8 returns " + Math.round(annual).toLocaleString("en-US") + " kWh/year for 1 kW DC; station distance " + distanceMeters + " meters (" + distanceMiles.toFixed(2) + " miles).");
   } else {
     console.log("PARTIAL: Production PVWatts returns " + Math.round(annual).toLocaleString("en-US") + " kWh/year, but station distance is not present in the upstream response.");
   }
