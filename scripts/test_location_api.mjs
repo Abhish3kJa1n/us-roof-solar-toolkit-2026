@@ -97,6 +97,52 @@ assert.ok(suggestionResult.body.suggestions.some((item) => item.placeName === 'A
 assert.ok(suggestionResult.body.suggestions.some((item) => item.placeName === 'Austell' && item.stateAbbreviation === 'GA' && item.stateName === 'Georgia'));
 assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) LIKE UPPER\('aust%'/i);
 assert.match(calls[0].url, /tigerWMS_ACS2026/);
+
+// Distinguish a genuine place miss from a partial Census-source failure.
+// If the incorporated-place layer fails while the CDP layer returns no rows,
+// do not mislabel the result as a definitive 404.
+calls = [];
+globalThis.fetch = async (url) => {
+  calls.push({ url: String(url) });
+  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
+  if (layer === '28') throw new Error('simulated incorporated-place layer outage');
+  if (layer === '30') return jsonResponse({ features: [] });
+  throw new Error('Unexpected Census layer URL: ' + url);
+};
+result = await read(await locationGet({ request: request('/api/location?city=Miami&state=FL'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(result.status, 502, 'a partial Census outage with no returned rows must not be reported as a definitive place-not-found response');
+assert.match(result.body.error, /incomplete|unavailable/i);
+assert.equal(calls.length, 2);
+
+// A genuine not-found response is valid only when both Census layers return successfully.
+calls = [];
+globalThis.fetch = async (url) => {
+  calls.push({ url: String(url) });
+  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
+  if (layer === '28' || layer === '30') return jsonResponse({ features: [] });
+  throw new Error('Unexpected Census layer URL: ' + url);
+};
+result = await read(await locationGet({ request: request('/api/location?city=No%20Such%20Place&state=FL'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(result.status, 404, 'a true no-match result remains 404 when both Census layers responded');
+assert.equal(calls.length, 2);
+
+// A match from the surviving layer remains usable, but is explicitly marked partial.
+calls = [];
+globalThis.fetch = async (url) => {
+  calls.push({ url: String(url) });
+  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
+  if (layer === '28') throw new Error('simulated incorporated-place layer outage');
+  if (layer === '30') return jsonResponse({ features: [{ attributes: {
+    BASENAME: 'Austin', STATE: '48', INTPTLAT: '30.2672', INTPTLON: '-97.7431', GEOID: '4805000', LSADC: '57',
+  } }] });
+  throw new Error('Unexpected Census layer URL: ' + url);
+};
+result = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(result.status, 200, 'an exact match from the surviving Census layer can still be returned');
+assert.equal(result.body.places.length, 1);
+assert.match(result.body.partialSourceWarning, /One Census place layer was unavailable/i);
+assert.equal(calls.length, 2);
+
 assert.ok(calls.some((call) => new URL(call.url).searchParams.get('resultOffset') === '1'), 'Census suggestions must continue after an exceeded-transfer-limit page');
 assert.equal(calls.length, 3, 'one broad prefix should page the first layer and query the second layer once');
 
@@ -200,51 +246,6 @@ assert.match(result.body.geographyType, /not a citywide solar average/i);
 assert.equal(calls.length, 2, 'both incorporated and Census-designated places must be searched');
 assert.ok(calls.every((call) => /tigerweb\.geo\.census\.gov/.test(call.url)));
 assert.ok(calls.every((call) => /BASENAME/.test(decodeURIComponent(call.url))));
-
-// Distinguish a genuine place miss from a partial Census-source failure.
-// If the incorporated-place layer fails while the CDP layer returns no rows,
-// do not mislabel the result as a definitive 404.
-calls = [];
-globalThis.fetch = async (url) => {
-  calls.push({ url: String(url) });
-  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
-  if (layer === '28') throw new Error('simulated incorporated-place layer outage');
-  if (layer === '30') return jsonResponse({ features: [] });
-  throw new Error('Unexpected Census layer URL: ' + url);
-};
-result = await read(await locationGet({ request: request('/api/location?city=Miami&state=FL'), env: { API_QUOTA_DB: quotaDb() } }));
-assert.equal(result.status, 502, 'a partial Census outage with no returned rows must not be reported as a definitive place-not-found response');
-assert.match(result.body.error, /incomplete|unavailable/i);
-assert.equal(calls.length, 2);
-
-// A genuine not-found response is valid only when both Census layers return successfully.
-calls = [];
-globalThis.fetch = async (url) => {
-  calls.push({ url: String(url) });
-  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
-  if (layer === '28' || layer === '30') return jsonResponse({ features: [] });
-  throw new Error('Unexpected Census layer URL: ' + url);
-};
-result = await read(await locationGet({ request: request('/api/location?city=No%20Such%20Place&state=FL'), env: { API_QUOTA_DB: quotaDb() } }));
-assert.equal(result.status, 404, 'a true no-match result remains 404 when both Census layers responded');
-assert.equal(calls.length, 2);
-
-// A match from the surviving layer remains usable, but is explicitly marked partial.
-calls = [];
-globalThis.fetch = async (url) => {
-  calls.push({ url: String(url) });
-  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
-  if (layer === '28') throw new Error('simulated incorporated-place layer outage');
-  if (layer === '30') return jsonResponse({ features: [{ attributes: {
-    BASENAME: 'Austin', STATE: '48', INTPTLAT: '30.2672', INTPTLON: '-97.7431', GEOID: '4805000', LSADC: '57',
-  } }] });
-  throw new Error('Unexpected Census layer URL: ' + url);
-};
-result = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: quotaDb() } }));
-assert.equal(result.status, 200, 'an exact match from the surviving Census layer can still be returned');
-assert.equal(result.body.places.length, 1);
-assert.match(result.body.partialSourceWarning, /One Census place layer was unavailable/i);
-assert.equal(calls.length, 2);
 
 // 2026 Census place lookup and coordinates must support Pacific island areas.
 calls = [];
