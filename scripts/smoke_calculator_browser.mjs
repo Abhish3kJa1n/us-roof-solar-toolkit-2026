@@ -163,6 +163,74 @@ try {
   assert.match(solarText, /\$1,500/);
   assert.match(solarText, /14\.0 years/);
 
+  // Main combined homepage calculator: home-area conversion, roof condition,
+  // annual-energy value, payback and financing toggle.
+  await navigate("/");
+  await page.locator("#roofType").selectOption("asphalt");
+  await page.locator("#roofAge").fill("12");
+  await page.locator("#condition").selectOption("poor");
+  await page.locator("#areaHome").check();
+  await page.locator("#homeArea").fill("3200");
+  await page.locator("#stories").selectOption("2");
+
+  // Home-area mode must require a pitch before continuing.
+  await page.locator('[data-next="2"]').click();
+  assert.match(await page.locator("#error1").innerText(), /select the closest roof pitch/i);
+  assert.equal(await page.locator('[data-panel="1"]').isVisible(), true);
+
+  await page.locator("#pitch").selectOption("moderate");
+  await page.locator("#loadNationalRoofReference").click();
+  await page.locator('[data-next="2"]').click();
+  assert.equal(await page.locator('[data-panel="2"]').isVisible(), true);
+
+  await page.locator("#annualKwh").fill("12000");
+  await page.locator("#rate").fill("0.20");
+  await page.locator("#selfUse").fill("50");
+  await page.locator("#exportRate").fill("0.05");
+  await page.locator("#productionPerKw").fill("1500");
+  await page.locator("#offset").fill("100");
+
+  // Switch to loan: APR and term fields must become visible and required.
+  await page.locator("#loan").check();
+  assert.equal(await page.locator("#aprField").isVisible(), true);
+  assert.equal(await page.locator("#termField").isVisible(), true);
+  await page.locator("#apr").fill("7");
+  await page.locator("#term").fill("20");
+  await page.locator("#calculateButton").click();
+
+  assert.equal(await page.locator("#results").isVisible(), true);
+  assert.match(await page.locator("#roofStatus").innerText(), /prompt inspection/i);
+  assert.match(await page.locator("#roofAreaResult").innerText(), /1,789 sq ft/);
+  assert.match(await page.locator("#roofCost").innerText(), /\$7,155.*\$19,677/);
+  assert.match(await page.locator("#systemSize").innerText(), /8\.0 kW/);
+  assert.match(await page.locator("#production").innerText(), /12,000 kWh \/ yr/);
+  assert.match(await page.locator("#annualSavings").innerText(), /\$1,500 \/ yr/);
+  assert.match(await page.locator("#monthlySavings").innerText(), /\$125/);
+  assert.match(await page.locator("#payback").innerText(), /14\.0 years/);
+  assert.match(await page.locator("#solarCost").innerText(), /\$20,960/);
+  assert.match(await page.locator("#loanTerms").innerText(), /7\.0% \/ 20 yrs/);
+  const expectedLoanPayment = (() => {
+    const principal = 20960;
+    const monthlyRate = 0.07 / 12;
+    const months = 20 * 12;
+    return principal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -months));
+  })();
+  const actualLoanPayment = Number((await page.locator("#loanPayment").innerText()).replace(/[^0-9.]/g, ""));
+  assert.ok(Math.abs(actualLoanPayment - expectedLoanPayment) < 0.51, "Combined calculator loan payment should match amortization formula");
+  const assumptions = await page.locator("#assumptionList").innerText();
+  assert.match(assumptions, /floor area ÷ 2 stories/);
+  assert.match(assumptions, /1\.118/);
+  assert.match(await page.locator("#roofStatusDesc").innerText(), /leaks or visible damage/i);
+
+  // Unknown export credit must withhold total value and payback, never silently assume $0.
+  await page.locator("#editInputs").click();
+  await page.locator('[data-next="2"]').click();
+  await page.locator("#exportRate").fill("");
+  await page.locator("#calculateButton").click();
+  assert.match(await page.locator("#annualSavings").innerText(), /Inputs needed/);
+  assert.match(await page.locator("#payback").innerText(), /Not modeled/);
+  assert.match(await page.locator("#resultWarning").innerText(), /No export credit was entered/i);
+
   // Check the key calculator screens at a narrow viewport for horizontal overflow.
   await page.setViewportSize({ width: 390, height: 844 });
   for (const path of [
