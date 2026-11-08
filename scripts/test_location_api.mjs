@@ -98,6 +98,7 @@ assert.ok(suggestionResult.body.suggestions.some((item) => item.placeName === 'A
 assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) LIKE UPPER\('aust%'/i);
 assert.match(calls[0].url, /tigerWMS_ACS2026/);
 
+let partialResult;
 // Distinguish a genuine place miss from a partial Census-source failure.
 // If the incorporated-place layer fails while the CDP layer returns no rows,
 // do not mislabel the result as a definitive 404.
@@ -109,9 +110,9 @@ globalThis.fetch = async (url) => {
   if (layer === '30') return jsonResponse({ features: [] });
   throw new Error('Unexpected Census layer URL: ' + url);
 };
-result = await read(await locationGet({ request: request('/api/location?city=Miami&state=FL'), env: { API_QUOTA_DB: quotaDb() } }));
-assert.equal(result.status, 502, 'a partial Census outage with no returned rows must not be reported as a definitive place-not-found response');
-assert.match(result.body.error, /incomplete|unavailable/i);
+partialResult = await read(await locationGet({ request: request('/api/location?city=Miami&state=FL'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(partialResult.status, 502, 'a partial Census outage with no returned rows must not be reported as a definitive place-not-found response');
+assert.match(partialResult.body.error, /incomplete|unavailable/i);
 assert.equal(calls.length, 2);
 
 // A genuine not-found response is valid only when both Census layers return successfully.
@@ -122,8 +123,8 @@ globalThis.fetch = async (url) => {
   if (layer === '28' || layer === '30') return jsonResponse({ features: [] });
   throw new Error('Unexpected Census layer URL: ' + url);
 };
-result = await read(await locationGet({ request: request('/api/location?city=No%20Such%20Place&state=FL'), env: { API_QUOTA_DB: quotaDb() } }));
-assert.equal(result.status, 404, 'a true no-match result remains 404 when both Census layers responded');
+partialResult = await read(await locationGet({ request: request('/api/location?city=No%20Such%20Place&state=FL'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(partialResult.status, 404, 'a true no-match result remains 404 when both Census layers responded');
 assert.equal(calls.length, 2);
 
 // A match from the surviving layer remains usable, but is explicitly marked partial.
@@ -137,10 +138,10 @@ globalThis.fetch = async (url) => {
   } }] });
   throw new Error('Unexpected Census layer URL: ' + url);
 };
-result = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: quotaDb() } }));
-assert.equal(result.status, 200, 'an exact match from the surviving Census layer can still be returned');
-assert.equal(result.body.places.length, 1);
-assert.match(result.body.partialSourceWarning, /One Census place layer was unavailable/i);
+partialResult = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(partialResult.status, 200, 'an exact match from the surviving Census layer can still be returned');
+assert.equal(partialResult.body.places.length, 1);
+assert.match(partialResult.body.partialSourceWarning, /One Census place layer was unavailable/i);
 assert.equal(calls.length, 2);
 
 assert.ok(calls.some((call) => new URL(call.url).searchParams.get('resultOffset') === '1'), 'Census suggestions must continue after an exceeded-transfer-limit page');
@@ -216,57 +217,57 @@ globalThis.fetch = async (url, options) => {
   } }] });
   throw new Error('Unexpected Census layer URL: ' + url);
 };
-let result = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: {} }));
-assert.equal(result.status, 503, 'Census lookup must fail closed without the shared quota binding');
+let partialResult = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: {} }));
+assert.equal(partialResult.status, 503, 'Census lookup must fail closed without the shared quota binding');
 assert.equal(calls.length, 0, 'missing Census quota guard must not call TIGERweb');
 const censusQuotaDb = quotaDb();
-result = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: censusQuotaDb, PVWATTS_API_KEY: 'test-secret-value-long-enough' } }));
-assert.equal(result.status, 200);
+partialResult = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: censusQuotaDb, PVWATTS_API_KEY: 'test-secret-value-long-enough' } }));
+assert.equal(partialResult.status, 200);
 assert.equal(censusQuotaDb.values[0], 'census');
 assert.equal(censusQuotaDb.values[4], 60);
 assert.equal(censusQuotaDb.values[5], 10000);
-assert.equal(result.body.places.length, 2);
-assert.equal(result.body.places[0].placeName, 'Austin');
-assert.equal(result.body.places[0].stateAbbreviation, 'TX');
+assert.equal(partialResult.body.places.length, 2);
+assert.equal(partialResult.body.places[0].placeName, 'Austin');
+assert.equal(partialResult.body.places[0].stateAbbreviation, 'TX');
 assert.equal(typeof result.body.places[0].locationToken, 'string', 'exact Census verification must return a signed location proof when a provider key is configured');
-assert.match(result.body.places[0].locationToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
-assert.match(result.headers.get('Cache-Control') || '', /private,\s*no-store/i, 'exact Census results carrying bearer proofs must not be cached');
-assert.equal(result.body.places[0].geographyType, 'Incorporated place');
-assert.equal(result.body.places[1].geographyType, 'Census-designated place');
+assert.match(partialResult.body.places[0].locationToken, /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+assert.match(partialResult.headers.get('Cache-Control') || '', /private,\s*no-store/i, 'exact Census results carrying bearer proofs must not be cached');
+assert.equal(partialResult.body.places[0].geographyType, 'Incorporated place');
+assert.equal(partialResult.body.places[1].geographyType, 'Census-designated place');
 assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) = UPPER\('Austin'\)/, 'Census city-name matching must be case-insensitive');
 
 calls = [];
-result = await read(await locationGet({ request: request('/api/location?city=austin&state=TX'), env: { API_QUOTA_DB: quotaDb() } }));
-assert.equal(result.status, 200, 'lowercase city input must resolve the same Census place');
-assert.equal(result.body.places[0].placeName, 'Austin');
+partialResult = await read(await locationGet({ request: request('/api/location?city=austin&state=TX'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(partialResult.status, 200, 'lowercase city input must resolve the same Census place');
+assert.equal(partialResult.body.places[0].placeName, 'Austin');
 assert.match(new URL(calls[0].url).searchParams.get('where'), /UPPER\(BASENAME\) = UPPER\('austin'\)/, 'the original user input should be safely compared case-insensitively');
 
-assert.match(result.body.source, /US Census Bureau TIGERweb ACS2026/);
-assert.match(result.body.geographyType, /not a citywide solar average/i);
+assert.match(partialResult.body.source, /US Census Bureau TIGERweb ACS2026/);
+assert.match(partialResult.body.geographyType, /not a citywide solar average/i);
 assert.equal(calls.length, 2, 'both incorporated and Census-designated places must be searched');
 assert.ok(calls.every((call) => /tigerweb\.geo\.census\.gov/.test(call.url)));
 assert.ok(calls.every((call) => /BASENAME/.test(decodeURIComponent(call.url))));
 
 // 2026 Census place lookup and coordinates must support Pacific island areas.
 calls = [];
-result = await read(await locationGet({ request: request('/api/location?city=Hag%C3%A5t%C3%B1a&state=GU'), env: { API_QUOTA_DB: quotaDb() } }));
-assert.equal(result.status, 200);
-assert.equal(result.body.places[0].stateAbbreviation, 'GU');
-assert.equal(result.body.places[0].latitude, 13.4745);
-assert.equal(result.body.places[0].longitude, 144.7504);
+partialResult = await read(await locationGet({ request: request('/api/location?city=Hag%C3%A5t%C3%B1a&state=GU'), env: { API_QUOTA_DB: quotaDb() } }));
+assert.equal(partialResult.status, 200);
+assert.equal(partialResult.body.places[0].stateAbbreviation, 'GU');
+assert.equal(partialResult.body.places[0].latitude, 13.4745);
+assert.equal(partialResult.body.places[0].longitude, 144.7504);
 assert.match(calls[0].url, /tigerWMS_ACS2026/);
 
 calls = [];
-result = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: blockedQuotaDb } }));
-assert.equal(result.status, 429, 'Census lookup must honour its independent site-side request cap');
+partialResult = await read(await locationGet({ request: request('/api/location?city=Austin&state=TX'), env: { API_QUOTA_DB: blockedQuotaDb } }));
+assert.equal(partialResult.status, 429, 'Census lookup must honour its independent site-side request cap');
 assert.equal(calls.length, 0, 'exhausted Census quota must not call TIGERweb');
 
 calls = [];
-result = await read(await locationGet({ request: request('/api/location?city=Austin%27%20OR%201%3D1&state=TX') }));
-assert.equal(result.status, 400, 'reject SQL-like punctuation before calling Census');
+partialResult = await read(await locationGet({ request: request('/api/location?city=Austin%27%20OR%201%3D1&state=TX') }));
+assert.equal(partialResult.status, 400, 'reject SQL-like punctuation before calling Census');
 assert.equal(calls.length, 0);
-result = await read(await locationGet({ request: request('/api/location?city=Austin&state=XX') }));
-assert.equal(result.status, 400);
+partialResult = await read(await locationGet({ request: request('/api/location?city=Austin&state=XX') }));
+assert.equal(partialResult.status, 400);
 assert.equal(calls.length, 0);
 
 // PVWatts missing-key and bounds errors should never call NLR.
