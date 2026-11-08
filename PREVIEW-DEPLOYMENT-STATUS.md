@@ -7,9 +7,9 @@ Last verified: November 8, 2026
 - Project: `roof-solar-toolkit-2026`
 - Repository: `Abhish3kJa1n/us-roof-solar-toolkit-2026`
 - Production branch: `main`
-- Latest Production merge commit: `907de6f37610136572bea80bac2626051b640941`
-- Latest Cloudflare Production deployment: `815de0b3-026b-4b79-a4ea-00df771f34f6` — active; deploy stage succeeded
-- Pages deployment URL: https://815de0b3.roof-solar-toolkit-2026.pages.dev
+- Runtime application changes include PR #20 merge commit: `907de6f37610136572bea80bac2626051b640941`.
+- Latest verified Cloudflare Production deployment at the time of the November 8 post-PR #20 smoke: `16308215-d353-496c-8bf2-7cad59e70944` from documentation-only commit `0664e60921254c87eeaf6341c1ca2e4789351d23` — active; deploy stage succeeded.
+- Pages deployment URL at that verification point: https://16308215.roof-solar-toolkit-2026.pages.dev
 - Custom-domain aliases reported by Cloudflare:
   - https://getroofsolarcalculator.online
   - https://www.getroofsolarcalculator.online
@@ -42,7 +42,7 @@ The live smoke test against the stable Pages project hostname passed:
 - Database ID: `2128d4c7-1031-4029-9629-d6e1abb602d1`
 - Migrations: `0001_create_api_quota.sql` and `0002_add_census_suggest_quota.sql`
 - Preview and Production share this database ID. Quota totals therefore aggregate both environments; D1 counters cannot be attributed to Preview vs. Production from current records alone.
-- Production smoke on November 8 verified exact Census place lookup, issuance/acceptance of the signed location proof, PVWatts V8 response and OpenEI candidate response. The Austin test scenario returned 1,483 kWh/year for 1 kW DC and 49 nearby rate candidates. PR #18 then passed a sequential four-region Production sample: Seattle, WA 1,088 kWh/year (station 0.84 mi; 50 candidates), Phoenix, AZ 1,755 kWh/year (0.58 mi; 50 candidates), Miami, FL 1,558 kWh/year (0.80 mi; 40 candidates), and Boston, MA 1,275 kWh/year (0.38 mi; 50 candidates), each for a 1 kW DC scenario. All four passed exact Census lookup, signed proof, positive annual/12-month output, the enforced 100-mile PVWatts station constraint and OpenEI response-shape checks. PR #20 later passed the same 18-request integration flow on Preview across six representative places: Seattle (1,088 kWh/year/kW DC; station 0.84 mi; 50 candidates), Phoenix (1,755; 0.58 mi; 50), Miami (1,558; 0.80 mi; 40), Boston (1,275; 0.38 mi; 50), Anchorage (951; 1.02 mi; 6) and Urban Honolulu (1,586; 0.90 mi; 50). These six-place results are Preview validation, not a six-place Production test. They remain a small representative sample, not nationwide coverage, property-level production, utility-territory matching or bill-savings validation. The PR #20 code is now deployed in Production, but a post-merge Production API smoke remains open.
+- Production smoke on November 8 verified exact Census place lookup, issuance/acceptance of the signed location proof, PVWatts V8 response and OpenEI candidate response. The Austin test scenario returned 1,483 kWh/year for 1 kW DC and 49 nearby rate candidates. PR #18 then passed a sequential four-region Production sample: Seattle, WA 1,088 kWh/year (station 0.84 mi; 50 candidates), Phoenix, AZ 1,755 kWh/year (0.58 mi; 50 candidates), Miami, FL 1,558 kWh/year (0.80 mi; 40 candidates), and Boston, MA 1,275 kWh/year (0.38 mi; 50 candidates), each for a 1 kW DC scenario. All four passed exact Census lookup, signed proof, positive annual/12-month output, the enforced 100-mile PVWatts station constraint and OpenEI response-shape checks. PR #20 later passed the same 18-request integration flow on Preview across six representative places: Seattle (1,088 kWh/year/kW DC; station 0.84 mi; 50 candidates), Phoenix (1,755; 0.58 mi; 50), Miami (1,558; 0.80 mi; 40), Boston (1,275; 0.38 mi; 50), Anchorage (951; 1.02 mi; 6) and Urban Honolulu (1,586; 0.90 mi; 50). These six-place results are Preview validation, not a six-place Production test. They remain a small representative sample, not nationwide coverage, property-level production, utility-territory matching or bill-savings validation. The PR #20 code is deployed in Production. Its updated Census -> signed proof -> PVWatts/OpenEI path passed the post-merge Production smoke in GitHub Actions run #647: Austin, TX exact Census lookup issued a signed proof; PVWatts V8 returned 1,483 kWh/year for 1 kW DC and 12 valid monthly values, with a station 1,661 metres (1.03 miles) away; OpenEI returned 49 nearby candidate records. Secrets and proof tokens were not logged. This is one representative city validation, not nationwide coverage or actual household-tariff verification.
 - Provider secret values were not read or printed. Keep `PVWATTS_API_KEY`, `OPENEI_API_KEY` and any signing secret in Cloudflare secret bindings only.
 
 ## CSP and AdSense state
@@ -80,3 +80,7 @@ See `OWNER-LAUNCH-CHECKLIST.md` for the full record. The main outstanding catego
 8. Representative Pages Functions/D1 usage monitoring. Preview and Production share a D1 quota database.
 
 This file is a state snapshot, not legal advice or a monetization approval. Recheck Cloudflare and Google state before future production changes.
+
+## Production API follow-up after PR #20
+
+The one-time CI smoke completed successfully in run #647 on November 8, 2026. It used one Austin, TX scenario and the existing Production D1 quota guard; it did not change secrets, D1 schema/binding, DNS, CSP, ad-serving switches or Production configuration. Results: Census proof issued; PVWatts 1,483 kWh/year for 1 kW DC, 12 valid monthly values, station 1.03 miles; OpenEI 49 candidates. This is not a nationwide or tariff-accuracy test.
