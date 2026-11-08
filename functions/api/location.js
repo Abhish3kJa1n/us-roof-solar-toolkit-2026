@@ -250,6 +250,13 @@ export async function onRequestGet({ request, env }) {
   }
 
   if (!places.length) {
+    // A genuine not-found result is only reliable when both Census geography
+    // layers responded. If one layer failed and the other returned no rows,
+    // the missing layer may contain the requested place (e.g. an incorporated
+    // city); report an incomplete upstream lookup instead of a false 404.
+    if (successful.length < 2) {
+      return json({ error: 'The Census location lookup was incomplete because one place layer was unavailable. Please try again later.' }, 502);
+    }
     return json({ error: 'No exact Census place named “' + city + '” was found in ' + state + '. Check the city spelling and selected state.' }, 404);
   }
 
