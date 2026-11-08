@@ -16,15 +16,21 @@ if [ "${CF_PAGES_BRANCH:-}" = "main" ]; then
   if [ "${ADSENSE_MIDDLEWARE_ENABLED:-false}" = "true" ]; then
     cp "$ROOT/_routes.json" "$OUT/_routes.json"
   else
-    printf '{\\n  "version": 1,\\n  "include": ["/api/*"],\\n  "exclude": []\\n}\\n' > "$OUT/_routes.json"
+    cat > "$OUT/_routes.json" <<'JSON'
+{
+  "version": 1,
+  "include": ["/api/*"],
+  "exclude": []
+}
+JSON
   fi
   find "$OUT" -type f -name '*.html' ! -name '404.html' -exec sed -i 's/<meta name="robots" content="noindex,follow"/<meta name="robots" content="index,follow"/g' {} \;
   sed -i '/X-Robots-Tag:/d' "$OUT/_headers"
   cp "$ROOT/sitemap.xml" "$OUT/"
   printf '\nSitemap: https://getroofsolarcalculator.online/sitemap.xml\n' >> "$OUT/robots.txt"
 else
-  # Exercise nonce-based CSP only on Preview HTML routes. Production keeps static
-  # delivery for HTML and invokes Pages Functions only for the existing /api/* routes.
+  # Preview routes public HTML through nonce middleware for browser QA.
+  # Production uses a separate build-time opt-in for selected editorial pages.
   {
     printf '{\n  "version": 1,\n  "include": ["/api/*", "/"'
     find "$OUT" -type f -name '*.html' ! -name '404.html' -print | LC_ALL=C sort | while IFS= read -r page; do
