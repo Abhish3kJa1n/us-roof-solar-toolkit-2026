@@ -1,0 +1,47 @@
+name: Real-browser Production QA
+
+on:
+  push:
+    branches:
+      - "qa/production-browser-1108"
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  production-browser:
+    if: (github.event_name == 'push' && contains(github.event.head_commit.message, '[production-browser-qa]')) || (github.event_name == 'pull_request' && github.head_ref == 'qa/production-browser-1108')
+    name: Playwright real-browser Production domain smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Install temporary browser QA packages
+        run: npm install --prefix /tmp/roofsolar-playwright --no-save playwright @axe-core/playwright
+      - name: Install Chromium
+        run: /tmp/roofsolar-playwright/node_modules/.bin/playwright install --with-deps chromium
+      - name: Run read-only Production custom-domain browser checks
+        run: node scripts/smoke_production_browser.mjs
+        env:
+          PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
+          AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
+          QA_SCREENSHOT_DIR: production-browser-output
+      - name: Retain Production screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: roof-solar-production-browser-screenshots
+          path: production-browser-output/*.png
+          if-no-files-found: warn
+          retention-days: 3
