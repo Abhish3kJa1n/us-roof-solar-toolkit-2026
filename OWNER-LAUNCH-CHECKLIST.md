@@ -67,6 +67,10 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 - [ ] Scan production network requests, cookies, storage, scripts and security headers after ad/analytics/CMP changes.
 - [ ] Add error monitoring only after it is selected and disclosed in the Privacy Notice.
 
+## Cloudflare Functions capacity constraint
+
+The guarded guide/EIA route invokes a Pages Function for each eligible HTML page request. On the Cloudflare Workers Free plan, Pages Functions requests count toward the shared 100,000 requests/day allowance alongside existing API Function traffic; static asset requests are free and unlimited. Confirm the account plan and monitor actual daily Function usage before enabling the build flag. If the allowance is approached, the Pages fail-open setting can bypass middleware (ads stop) while API behavior also needs checking. Keep the build-time switch off unless the additional ad-serving benefit justifies this capacity trade-off. Official limits: https://developers.cloudflare.com/pages/functions/pricing/ and https://developers.cloudflare.com/workers/platform/limits/.
+
 ## G. Search and advertising launch
 
 - [x] Run `scripts/audit_site.py` and the full repository QA suite through GitHub Actions. PR #16 completed all 22 project checks successfully on November 8, 2026; its run also passed the dedicated Chromium homepage-calculator regression and live Production public-page smoke.
