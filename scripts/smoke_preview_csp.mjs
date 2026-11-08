@@ -91,7 +91,7 @@ const adsTxt = (await adsTxtResponse.text()).trim();
 assert.equal(adsTxt, "google.com, pub-6193507831935325, DIRECT, f08c47fec0942fa0");
 assert.match(
   homeHtml,
-  /<meta\\s+name=["']google-adsense-account["']\\s+content=["']ca-pub-6193507831935325["']/i,
+  /<meta\s+name=["']google-adsense-account["']\s+content=["']ca-pub-6193507831935325["']/i,
   "homepage AdSense site-verification meta tag should match ads.txt publisher ID",
 );
 
