@@ -108,7 +108,8 @@ for (const url of urls) {
 
 const privacy = await getText(PAGES_ORIGIN + "/privacy.html", "text/html");
 assert.equal(privacy.response.status, 200);
-assert.match(privacy.body, /No AdSense ad-serving script, display ads or analytics script is active/i);
+assert.match(privacy.body, /no AdSense ad-serving script or display ads are active/i, "Privacy Notice must state that AdSense delivery is inactive");
+assert.match(privacy.body, /Cloudflare Web Analytics is configured in the Pages project/i, "Privacy Notice must disclose configured Cloudflare Web Analytics");
 
 const notFound = await get(PAGES_ORIGIN + "/__production-smoke-not-found-20261108", "text/html");
 assert.equal(notFound.status, 404, "Unknown paths must return a real HTTP 404");
@@ -141,6 +142,6 @@ assert.match(apiBody.error || "", /at least 3 letters/i);
 console.log("PASS: Production Pages build returns HTTP 200 and expected security/indexability headers.");
 console.log("PASS: publisher meta and root ads.txt match; robots.txt and sitemap.xml are present.");
 console.log("PASS: all " + urls.length + " sitemap pages return HTTP 200 and are indexable on the Production Pages build.");
-console.log("PASS: Privacy Notice matches the current no-ad-serving state; no AdSense loader is active.");
+console.log("PASS: Privacy Notice distinguishes inactive AdSense delivery from configured Cloudflare Web Analytics.");
 console.log("PASS: 404 and validation-only API behavior are correct.");
 console.log("NOTE: custom-domain HTTP verification is limited by the zone's Cloudflare Browser Integrity Check challenge; confirm apex and www in a real browser.");
