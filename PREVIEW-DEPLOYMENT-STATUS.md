@@ -1,62 +1,82 @@
-# Preview deployment infrastructure status
+# Cloudflare Pages deployment status
 
-Last updated: November 4, 2026
+Last verified: November 8, 2026
 
-## Git-connected Cloudflare Pages project
+## Current Git-connected Pages project
 
 - Project: `roof-solar-toolkit-2026`
-- Repository: `Abhish3kJa1n/us-roof-solar-toolkit-2026` (repository is currently public)
-- Preview branch: `audit/stage1-20261103`
+- Repository: `Abhish3kJa1n/us-roof-solar-toolkit-2026`
 - Production branch: `main`
+- Latest Production merge commit: `7b90b230ed0eb60011424b565eea5a0b43397551`
+- Latest Cloudflare Production deployment: `b0c8c0d3-dd1b-4ae8-ad4a-e0426b089166` — successful
+- Pages deployment URL: https://b0c8c0d3.roof-solar-toolkit-2026.pages.dev
+- Custom-domain aliases reported by Cloudflare:
+  - https://getroofsolarcalculator.online
+  - https://www.getroofsolarcalculator.online
 - Build command: `sh scripts/prepare_deploy.sh`
-- Build output: `dist`
-- Pages Functions: enabled; routes are limited to `/api/*`
-- Latest documented branch head at this audit: `e05283bf52440795b5a33b04d0730adc4a60a8d6`
-- Latest confirmed successful Preview deployment at 2026-11-04 17:18:41 UTC: https://3a3b5b84.roof-solar-toolkit-2026.pages.dev
-- Branch alias: https://audit-stage1-20261103.roof-solar-toolkit-2026.pages.dev
-- Deployment build and deploy stages: successful
-- Production deployment automation: disabled
-- Custom domains on this project: none
+- Build output directory: `dist`
+- Root directory: `/`
+- Pages Functions enabled.
 
-## D1 quota guard
+The current project is Git-connected and has both Production and Preview deployments. Old notes that say Production is disabled, domains belong to `roofcalc`, or provider secrets exist only in Preview are obsolete.
 
-- Database: `roof-solar-api-quota`
+## Production public smoke — verified November 8, 2026
+
+The live smoke test against the stable Pages project hostname passed:
+
+- Homepage returns HTTP 200 and has indexable metadata with the canonical apex URL.
+- All 24 sitemap URLs return HTTP 200 with indexable metadata.
+- `robots.txt`, `sitemap.xml` and root `ads.txt` return expected content.
+- Homepage AdSense meta tag and `ads.txt` publisher record match the owner-confirmed publisher ID `ca-pub-6193507831935325`.
+- Security headers and the enforced first-party CSP are present.
+- The custom 404 responds with HTTP 404.
+- Internal repository files (QA scripts, Markdown owner files, migrations, `_headers`, `_routes.json`, workflow files and source Functions) are not exposed from the public document root.
+- Invalid short city autocomplete input is rejected before quota reservation.
+
+**Custom-domain limitation:** automated non-browser requests to the apex and `www` hosts received a Cloudflare JavaScript challenge while Browser Integrity Check was active. That is not proof ordinary Chrome visitors are blocked, nor is it proof they are served correctly. Verify both hosts in a normal browser and confirm HTTPS, canonical redirects and actual visitor access. Do not disable Browser Integrity Check just to satisfy a non-browser runner.
+
+## API / D1 configuration
+
 - Binding: `API_QUOTA_DB`
+- Database: `roof-solar-api-quota`
 - Database ID: `2128d4c7-1031-4029-9629-d6e1abb602d1`
-- Migrations applied: `migrations/0001_create_api_quota.sql` and `migrations/0002_add_census_suggest_quota.sql`
-- The `api_quota` table was verified in the live database. It stores aggregate quota counters, not visitor identifiers, city names or coordinates.
-- `API_QUOTA_DB` is bound in both Preview and Production configurations. This does not mean Production is ready: provider secrets are absent there.
+- Migrations: `0001_create_api_quota.sql` and `0002_add_census_suggest_quota.sql`
+- Preview and Production share this database ID. Quota totals therefore aggregate both environments; D1 counters cannot be attributed to Preview vs. Production from current records alone.
+- Production smoke on November 8 verified exact Census place lookup, issuance/acceptance of the signed location proof, PVWatts V8 response and OpenEI candidate response. For the Austin test scenario PVWatts returned 1,483 kWh/year for 1 kW DC; OpenEI returned 49 nearby rate candidates. These are integration checks, not proof of nationwide coverage or of a visitor's actual utility tariff.
+- Provider secret values were not read or printed. Keep `PVWATTS_API_KEY`, `OPENEI_API_KEY` and any signing secret in Cloudflare secret bindings only.
 
-## Preview secrets and live verification
+## CSP and AdSense state
 
-The following server-side Cloudflare Preview secrets are configured:
+- Production static HTML keeps the existing enforced CSP; Production Pages Functions routing remains `/api/*` only.
+- Preview HTML uses the nonce middleware only on generated eligible HTML routes. It keeps the enforced CSP unchanged and adds a strict nonce-based CSP in report-only mode; nonce-bearing HTML is `private, no-store`; Preview stays noindex.
+- AdSense site-verification meta tag and root `ads.txt` record are present and match the confirmed publisher ID.
+- No AdSense ad-serving loader, manual ad units, Auto ads, analytics or consent-management script is active. AdSense approval is not verified; the owner reports that review was submitted.
+- Do not enable ad serving or change Production routing/CSP until Google approval and owner-side privacy, consent/opt-out and legal checks are complete. Manual slots require actual ad-unit IDs; Auto ads require a deliberate dashboard decision.
 
-- `PVWATTS_API_KEY`
-- `OPENEI_API_KEY`
+## Browser and calculator QA
 
-The exact Census city/state route signs its representative point with a 24-hour HMAC token. The token is bound to the returned latitude, longitude and state. PVWatts and OpenEI require it; a caller cannot send arbitrary or altered coordinates directly to either provider proxy. The signing key is derived from an existing server-side secret; no additional API key is required.
+PR #16 (merged November 8, 2026) passed:
+- Full 22-check project QA suite.
+- Real Chromium regression for all 24 public pages and the combined homepage calculator.
+- Metal material -> secondary selector behavior, metal reference switching, mixed/custom rate preservation and recalculation.
+- Roof-area, panel-count, solar savings/payback, homepage roof/solar estimate and loan payment scenarios.
+- Missing export credit correctly withholds total savings/payback.
+- Four standalone calculator screens checked for horizontal overflow at 390px.
+- Live Production public-page smoke.
 
-Cloudflare masks secret values in its configuration response. Their presence in the configuration is not, by itself, proof that they work. The November 4, 2026 live Preview smoke test supplied that proof:
+This does not certify real iOS/Android devices, keyboard-only navigation, screen readers, WCAG 2.2 AA, 200%/400% zoom, Lighthouse lab scores, real-user Core Web Vitals or the custom-domain normal-browser path.
 
-- Census ACS2026 autocomplete: PASS; returned Austin, TX.
-- Exact Census place lookup: PASS; returned representative coordinates 30.2986219, -97.7541339.
-- NLR PVWatts V8: PASS; returned 1,483 kWh/year for the 1 kW DC Austin smoke-test scenario.
-- OpenEI URDB: PASS; returned 49 nearby residential tariff candidate records for the Austin test location.
-- The OpenEI records are candidates for manual verification, not proof of the homeowner's utility, service territory, active tariff or applicable rate. No candidate is applied automatically to savings.
+## Owner-side launch gates still open
 
-GitHub Actions run #180 (commit `cd983680b571954199a0f217e640a0fd0f042f06`) completed successfully with all 20 local checks and a live Census/PVWatts/OpenEI smoke. Runs #167–#169 covered the incomplete Census suggestion-count regression. The signed-location-proof hardening was added afterward: exact Census city/state verification issues a 24-hour HMAC token, and PVWatts/OpenEI reject missing, altered or mismatched coordinate proofs before D1 quota reservation and upstream calls. The full 20-check QA passed on commit `e05283bf52440795b5a33b04d0730adc4a60a8d6` (GitHub Actions run #264, success); the new live proof flow is now being retested separately. The baseline Austin results above do not certify multi-region accuracy, actual tariffs, browser/accessibility behavior or Production.
+See `OWNER-LAUNCH-CHECKLIST.md` for the full record. The main outstanding categories are:
 
-## Existing custom-domain project — separate from the Git-connected Preview
+1. Real publisher identity, jurisdiction and monitored privacy/editorial contact method.
+2. Trademark/common-law clearance and qualified legal review.
+3. Genuine author bylines and qualified roofing/PV technical review.
+4. Independent model validation against representative tariffs, bills and measured roof/proposal examples.
+5. Applicable privacy/consent/opt-out/GPC review before any ad activation.
+6. Normal-browser testing of apex and `www`, plus keyboard, screen-reader and manual accessibility checks.
+7. Search Console sitemap submission and index coverage monitoring.
+8. Representative Pages Functions/D1 usage monitoring. Preview and Production share a D1 quota database.
 
-The Cloudflare zone for `getroofsolarcalculator.online` is active and uses Cloudflare nameservers. However, both `getroofsolarcalculator.online` and `www.getroofsolarcalculator.online` are currently attached to a different Pages project:
-
-- Legacy project: `roofcalc`
-- Deployment style: ad-hoc/static upload, not connected to the current GitHub repository
-- Pages Functions: not enabled
-- Latest production deployment recorded: October 31, 2026
-
-The new `roof-solar-toolkit-2026` project has no custom domain attached. The public domain therefore does not currently serve this new Git-connected Preview project. Do not remove the old project's domain, change DNS, attach the domain to the new project or enable Production as part of ordinary Preview QA. A deliberate cutover and rollback plan is required.
-
-## Release status
-
-This is a live, isolated Preview with working Census, PVWatts and OpenEI integrations. It is not a production launch. Keep the current noindex controls, draft PR and disabled Production deployments until price-data, browser/accessibility, editorial/legal, analytics/ad-network and domain-cutover gates are addressed.
+This file is a state snapshot, not legal advice or a monetization approval. Recheck Cloudflare and Google state before future production changes.
