@@ -56,8 +56,8 @@ jobs:
           PREVIEW_BASE_URL: https://feat-preview-csp-nonce-valid.roof-solar-toolkit-2026.pages.dev
 
   production-public-smoke:
-    name: Live Production public endpoints and crawler smoke test
-    if: github.event_name == 'pull_request' && github.head_ref == 'test/production-public-smoke-20261108'
+    name: Live Production Pages and custom-domain edge smoke test
+    if: github.event_name == 'pull_request'
     needs: qa
     runs-on: ubuntu-latest
     steps:
