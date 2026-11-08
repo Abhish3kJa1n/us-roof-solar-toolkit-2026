@@ -7,8 +7,8 @@ const PRODUCTION_HOSTS = new Set([
 ]);
 const CURRENT_ENFORCED_CSP = [
   "default-src 'self'", "base-uri 'self'", "object-src 'none'", "frame-ancestors 'none'",
-  "form-action 'self'", "script-src 'self'", "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:", "font-src 'self' data:", "connect-src 'self'", "upgrade-insecure-requests",
+  "form-action 'self'", "script-src 'self' https://static.cloudflareinsights.com/beacon.min.js", "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:", "font-src 'self' data:", "connect-src 'self' https://cloudflareinsights.com", "upgrade-insecure-requests",
 ].join("; ");
 const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
