@@ -107,8 +107,11 @@ if not story_options or story_options[0].get("value") != "" or "selected" not in
 privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
     "no adsense ad-serving script or display ads are active",
-    "web analytics configuration values set",
-    "we have not confirmed that the beacon is executing on the pages currently being served",
+    "cloudflare web analytics is configured in the cloudflare pages project",
+    "real chromium test of the deployed preview",
+    "successfully loaded its beacon script",
+    "was rejected by cloudflare's hostname/cors validation",
+    "production custom domains still require a separate real-browser check",
     "performance api",
     "does not track individual end users across customers' internet properties",
     "page being viewed",
