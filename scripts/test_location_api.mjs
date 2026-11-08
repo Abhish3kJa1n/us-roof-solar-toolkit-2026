@@ -183,7 +183,7 @@ assert.ok(calls.every((call) => /BASENAME/.test(decodeURIComponent(call.url))));
 calls = [];
 globalThis.fetch = async (url) => {
   calls.push({ url: String(url) });
-  const layer = String(url).match(/MapServer\\/(28|30)\\/query/)?.[1];
+  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
   if (layer === '28') throw new Error('simulated incorporated-place layer outage');
   if (layer === '30') return jsonResponse({ features: [] });
   throw new Error('Unexpected Census layer URL: ' + url);
@@ -197,7 +197,7 @@ assert.equal(calls.length, 2);
 calls = [];
 globalThis.fetch = async (url) => {
   calls.push({ url: String(url) });
-  const layer = String(url).match(/MapServer\\/(28|30)\\/query/)?.[1];
+  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
   if (layer === '28' || layer === '30') return jsonResponse({ features: [] });
   throw new Error('Unexpected Census layer URL: ' + url);
 };
@@ -209,7 +209,7 @@ assert.equal(calls.length, 2);
 calls = [];
 globalThis.fetch = async (url) => {
   calls.push({ url: String(url) });
-  const layer = String(url).match(/MapServer\\/(28|30)\\/query/)?.[1];
+  const layer = String(url).match(/MapServer\/(28|30)\/query/)?.[1];
   if (layer === '28') throw new Error('simulated incorporated-place layer outage');
   if (layer === '30') return jsonResponse({ features: [{ attributes: {
     BASENAME: 'Austin', STATE: '48', INTPTLAT: '30.2672', INTPTLON: '-97.7431', GEOID: '4805000', LSADC: '57',
