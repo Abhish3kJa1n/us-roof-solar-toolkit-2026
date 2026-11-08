@@ -56,9 +56,14 @@ def main() -> int:
 
     preview_routes = json.loads((DIST / "_routes.json").read_text(encoding="utf-8"))
     expected_preview_routes = {"/api/*", "/"}
-    expected_preview_routes.update(
-        "/" + page.relative_to(DIST).as_posix() for page in DIST.rglob("*.html")
-    )
+    for page in DIST.rglob("*.html"):
+        relative_page = page.relative_to(DIST).as_posix()
+        if relative_page == "404.html":
+            continue
+        if relative_page == "index.html":
+            expected_preview_routes.add("/")
+        else:
+            expected_preview_routes.add("/" + relative_page.removesuffix(".html"))
     if set(preview_routes.get("include", [])) != expected_preview_routes:
         fail("Preview must route every HTML document through the nonce CSP middleware and retain /api/*")
     if len(preview_routes.get("include", [])) > 100:
