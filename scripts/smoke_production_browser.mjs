@@ -37,16 +37,27 @@ function challengeDescription(title, body, status) {
 }
 
 async function openPage(page, origin, pathname, label) {
-  const response = await page.goto(origin + pathname, { waitUntil: "domcontentloaded", timeout: 60000 });
-  assert.ok(response, label + ": navigation returned no HTTP response");
-  await page.waitForTimeout(2500);
-  const title = await page.title();
-  const body = (await page.locator("body").innerText().catch(() => "")).slice(0, 8000);
-  const challenge = challengeDescription(title, body, response.status());
-  if (challenge) {
-    throw new Error(label + ": " + challenge + "; title=" + title + "; finalURL=" + page.url());
+  const startIndex = documentResponses.length;
+  const initialResponse = await page.goto(origin + pathname, { waitUntil: "domcontentloaded", timeout: 60000 });
+  assert.ok(initialResponse, label + ": navigation returned no HTTP response");
+  let response = initialResponse;
+  let title = "";
+  let body = "";
+  let challenge = null;
+  // Allow up to 30 seconds for a Cloudflare Managed Challenge to execute and
+  // reload in Chromium. Do not treat an unresolved challenge as a page success.
+  for (let attempt = 0; attempt < 15; attempt += 1) {
+    await page.waitForTimeout(2000);
+    title = await page.title();
+    body = (await page.locator("body").innerText().catch(() => "")).slice(0, 8000);
+    response = documentResponses.slice(startIndex).at(-1) || initialResponse;
+    challenge = challengeDescription(title, body, response.status());
+    if (!challenge && response.status() === 200) break;
   }
-  assert.equal(response.status(), 200, label + ": expected HTTP 200, got " + response.status() + "; title=" + title);
+  if (challenge) {
+    throw new Error(label + ": " + challenge + " after 30 seconds; title=" + title + "; finalURL=" + page.url());
+  }
+  assert.equal(response.status(), 200, label + ": expected HTTP 200 after challenge handling, got " + response.status() + "; title=" + title);
   assert.match(title, /Roof|Solar/i, label + ": unexpected document title " + title);
   await page.locator("body").waitFor({ state: "visible" });
   return response;
@@ -94,6 +105,10 @@ async function scanAccessibility(page, label) {
 
 pageResults.push("Read-only Production browser QA started; no API endpoints are called.");
 const page = await context.newPage();
+const documentResponses = [];
+page.on("response", response => {
+  if (response.request().resourceType() === "document") documentResponses.push(response);
+});
 page.on("pageerror", error => browserErrors.push(error.message));
 page.on("console", message => {
   if (message.type() !== "error") return;
