@@ -52,6 +52,7 @@ assert.ok(middleware.includes('headers.set("Cache-Control", "private, no-store, 
 assert.ok(middleware.includes("adsbygoogle.js?client="), "guarded AdSense loader must exist");
 assert.ok(middleware.includes('String(context.env?.ADSENSE_ENABLED || "").toLowerCase() !== "true"'), "runtime ad switch must default off");
 assert.ok(middleware.includes("PRODUCTION_HOSTS.has(url.hostname)"), "loader must require exact custom domain");
+assert.ok(middleware.includes('url.protocol !== "https:"'), "loader must require HTTPS even on an allowlisted host");
 
 const htmlFiles = walk(root);
 assert.equal(htmlFiles.length, 25, "expected all 25 public HTML documents");

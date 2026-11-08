@@ -30,7 +30,7 @@ function isAdEligiblePath(pathname) {
   return isGuideDocumentPath(pathname) || isEiaReferencePath(pathname);
 }
 function canLoadAdSense(context, url, response) {
-  if (!response.ok || !PRODUCTION_HOSTS.has(url.hostname)) return false;
+  if (url.protocol !== "https:" || !response.ok || !PRODUCTION_HOSTS.has(url.hostname)) return false;
   if (String(context.env?.ADSENSE_ENABLED || "").toLowerCase() !== "true") return false;
   return isAdEligiblePath(url.pathname);
 }

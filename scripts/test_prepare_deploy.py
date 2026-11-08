@@ -48,7 +48,7 @@ def parse_page(path: Path) -> PublicPageParser:
 def main() -> int:
     env = os.environ.copy()
     env["CF_PAGES_BRANCH"] = "preview"
-env.pop("ADSENSE_MIDDLEWARE_ENABLED", None)
+    env.pop("ADSENSE_MIDDLEWARE_ENABLED", None)
     result = subprocess.run(
         ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
     )
@@ -81,7 +81,7 @@ env.pop("ADSENSE_MIDDLEWARE_ENABLED", None)
     if production_routes.get("include") != ["/api/*"]:
         fail("Production must continue routing only /api/* through Pages Functions")
 
-    # A second, explicit build-time opt-in routes only selected editorial pages.
+    # A separate build-time opt-in may route only the approved editorial documents.
     env["ADSENSE_MIDDLEWARE_ENABLED"] = "true"
     result = subprocess.run(
         ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
@@ -95,15 +95,15 @@ env.pop("ADSENSE_MIDDLEWARE_ENABLED", None)
         "/electricity-prices-by-state.html",
     }
     if set(enabled_routes.get("include", [])) != expected_enabled:
-        fail("explicit Production opt-in must route only API and selected editorial pages")
+        fail("explicit opt-in must route only API and selected editorial pages")
     if set(enabled_routes.get("exclude", [])) != {"/assets/*", "/data/*"}:
-        fail("explicit Production opt-in must leave assets and data static")
+        fail("explicit opt-in must leave assets and public data static")
     env.pop("ADSENSE_MIDDLEWARE_ENABLED", None)
     result = subprocess.run(
         ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
     )
     if result.returncode:
-        fail("prepare_deploy.sh failed while restoring API-only Production routes")
+        fail("prepare_deploy.sh failed while restoring API-only Production routing")
     production_home = (DIST / "index.html").read_text(encoding="utf-8")
     if '<meta name="robots" content="index,follow" />' not in production_home:
         fail("Production homepage must retain the main-branch indexing transformation")
