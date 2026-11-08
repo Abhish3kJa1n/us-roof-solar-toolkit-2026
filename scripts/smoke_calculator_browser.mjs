@@ -175,8 +175,13 @@ try {
 
   // Home-area mode must require a pitch before continuing.
   await page.locator('[data-next="2"]').click();
-  assert.match(await page.locator("#error1").innerText(), /select the closest roof pitch/i);
+  assert.equal(
+    await page.locator("#pitch").evaluate((element) => element.checkValidity()),
+    false,
+    "Pitch must be browser-required in home-area mode",
+  );
   assert.equal(await page.locator('[data-panel="1"]').isVisible(), true);
+  assert.equal(await page.locator('[data-panel="2"]').isVisible(), false);
 
   await page.locator("#pitch").selectOption("moderate");
   await page.locator("#loadNationalRoofReference").click();
