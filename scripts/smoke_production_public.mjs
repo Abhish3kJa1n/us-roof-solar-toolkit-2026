@@ -77,9 +77,13 @@ assert.ok(!urls.some((url) => /404\.html?$/i.test(url)));
 
 for (const url of urls) {
   const response = await get(url, "text/html");
-  assert.equal(response.status, 200, `Sitemap URL must resolve: ${url}`);
-  assert.match(response.headers.get("content-type") || "", /^text\/html\b/i, `${url}: expected HTML response`);
-  assert.doesNotMatch(response.headers.get("x-robots-tag") || "", /noindex/i, `${url}: unexpected crawler block`);
+  assert.equal(response.status, 200, \`Sitemap URL must resolve: \${url}\`);
+  assert.match(response.headers.get("content-type") || "", /^text\/html\b/i, \`\${url}: expected HTML response\`);
+  assertSecurityHeaders(response, url);
+  assert.doesNotMatch(response.headers.get("x-robots-tag") || "", /noindex/i, \`\${url}: unexpected crawler block\`);
+  const html = await response.text();
+  assert.match(html, /<meta\s+name=["']robots["']\s+content=["']index,follow["']/i, \`\${url}: page must be indexable\`);
+  assert.doesNotMatch(html, /<meta\s+name=["']robots["'][^>]*noindex/i, \`\${url}: page has noindex meta\`);
 }
 
 const privacy = await getText(`${ORIGIN}/privacy.html`, "text/html");
