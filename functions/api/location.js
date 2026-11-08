@@ -120,13 +120,26 @@ async function getSuggestions(search, env) {
     return json({ error: 'City suggestions have reached the shared request limit. Please try again later.' }, 429);
   }
 
-  const results = await Promise.allSettled([
-    querySuggestionLayer(28, search), // incorporated places
-    querySuggestionLayer(30, search), // census-designated places
-  ]);
+  const queryTargets = [
+    { layerId: 28, search, geographyType: 'Incorporated place' },
+    { layerId: 30, search, geographyType: 'Census-designated place' },
+  ];
+  // Hawaii has no incorporated places. Its official Census geography for
+  // Honolulu is "Urban Honolulu CDP"; support the common "Honolulu" query
+  // while returning the official Census place name and representative point.
+  if (search.toLocaleLowerCase('en-US') === 'honolulu') {
+    queryTargets.push({
+      layerId: 30,
+      search: 'Urban Honolulu',
+      geographyType: 'Census-designated place',
+    });
+  }
+  const results = await Promise.allSettled(queryTargets.map(({ layerId, search: searchTerm }) =>
+    querySuggestionLayer(layerId, searchTerm)
+  ));
   const successful = results.map((item, index) => ({
     item,
-    geographyType: index === 0 ? 'Incorporated place' : 'Census-designated place',
+    geographyType: queryTargets[index].geographyType,
   })).filter(({ item }) => item.status === 'fulfilled');
   if (!successful.length) {
     return json({ error: 'The US Census city-suggestion service is temporarily unavailable. Please try again.' }, 502);
@@ -160,11 +173,15 @@ async function getSuggestions(search, env) {
   }
 
   const needle = search.toLocaleLowerCase('en-US');
+  const aliasNeedle = needle === 'honolulu' ? 'urban honolulu' : null;
   const suggestions = Array.from(byPlaceAndState.values())
     .sort((a, b) => {
       const exactA = a.placeName.toLocaleLowerCase('en-US') === needle ? 0 : 1;
       const exactB = b.placeName.toLocaleLowerCase('en-US') === needle ? 0 : 1;
+      const aliasA = aliasNeedle && a.placeName.toLocaleLowerCase('en-US') === aliasNeedle ? 0 : 1;
+      const aliasB = aliasNeedle && b.placeName.toLocaleLowerCase('en-US') === aliasNeedle ? 0 : 1;
       return exactA - exactB
+        || aliasA - aliasB
         || a.placeName.localeCompare(b.placeName, 'en-US')
         || a.stateName.localeCompare(b.stateName, 'en-US');
     })
@@ -172,9 +189,9 @@ async function getSuggestions(search, env) {
 
   const warnings = [];
   const truncated = successful.some(({ item }) => item.value.truncated);
-  if (successful.length < 2) warnings.push('One Census place layer was unavailable; suggestions may be incomplete.');
+  if (successful.length < queryTargets.length) warnings.push('One Census place layer or place-name alias query was unavailable; suggestions may be incomplete.');
   if (truncated) warnings.push('This city prefix matches more than 5,000 records in at least one Census layer. Results are incomplete; type more letters to narrow the search.');
-  const hasCompleteCount = successful.length === 2 && !truncated;
+  const hasCompleteCount = successful.length === queryTargets.length && !truncated;
 
   return json({
     search,
