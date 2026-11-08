@@ -53,6 +53,8 @@ assert.ok(middleware.includes("adsbygoogle.js?client="), "guarded AdSense loader
 assert.ok(middleware.includes('String(context.env?.ADSENSE_ENABLED || "").toLowerCase() !== "true"'), "runtime ad switch must default off");
 assert.ok(middleware.includes("PRODUCTION_HOSTS.has(url.hostname)"), "loader must require exact custom domain");
 assert.ok(middleware.includes('url.protocol !== "https:"'), "loader must require HTTPS even on an allowlisted host");
+assert.ok(middleware.includes('!slug.includes("/")'), "guide eligibility must not spill into unexpected nested routes");
+assert.ok(middleware.includes("return isGuideDocumentPath(pathname) || isEiaReferencePath(pathname);"), "only guide and EIA reference pages may be ad eligible");
 
 const htmlFiles = walk(root);
 assert.equal(htmlFiles.length, 25, "expected all 25 public HTML documents");
