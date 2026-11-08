@@ -144,6 +144,27 @@ jobs:
       - name: Check Production provider configuration and live model responses
         run: node scripts/smoke_production_providers.mjs
 
+
+  production-multiregion-smoke:
+    name: Live Production solar and tariff API smoke across four US regions
+    if: github.event_name == 'pull_request' && github.head_ref == 'test/production-multiregion-smoke-20261108'
+    needs: qa
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Check four regional Census, PVWatts and OpenEI Production paths
+        run: node scripts/smoke_production_multiregion.mjs
+        env:
+          PRODUCTION_BASE_URL: https://roof-solar-toolkit-2026.pages.dev
+
   live-preview-smoke:
     name: Live Census, PVWatts and OpenEI preview smoke test
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[live-smoke]')
