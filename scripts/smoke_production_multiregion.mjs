@@ -7,6 +7,8 @@ const PLACES = [
   { city: "Phoenix", state: "AZ", region: "Southwest" },
   { city: "Miami", state: "FL", region: "Southeast" },
   { city: "Boston", state: "MA", region: "Northeast" },
+  { city: "Anchorage", state: "AK", region: "Alaska" },
+  { city: "Honolulu", state: "HI", region: "Hawaii" },
 ];
 
 async function getJson(path, headers = {}) {
@@ -115,4 +117,4 @@ for (const target of PLACES) {
 }
 
 console.log("PASS: " + results.length + " Census -> signed proof -> PVWatts/OpenEI regional checks completed.");
-console.log("LIMITATION: four city representative points do not establish nationwide PVWatts coverage, actual rooftop production, utility service territories or applicable household tariffs.");
+console.log("LIMITATION: six city representative points, including Alaska and Hawaii, do not establish nationwide PVWatts coverage, actual rooftop production, utility service territories or applicable household tariffs.");
