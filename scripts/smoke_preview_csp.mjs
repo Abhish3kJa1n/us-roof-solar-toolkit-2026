@@ -67,6 +67,7 @@ for (const path of [
   "/about.html",
   "/calculators/roof-area.html",
   "/guides/solar-installation-cost.html",
+  "/privacy.html",
 ]) {
   const response = await get(path);
   const html = await response.text();
@@ -81,6 +82,18 @@ for (const path of [
 const secondHome = await get("/");
 const secondNonce = readNonce(secondHome, await secondHome.text(), "/ (second request)");
 assert.notEqual(firstNonce, secondNonce, "a fresh HTML response must receive a fresh nonce");
+
+const adsTxtResponse = await fetch(new URL("/ads.txt", base), {
+  headers: { Accept: "text/plain" },
+});
+assert.equal(adsTxtResponse.status, 200, "Preview should publish the ads.txt file at the web root");
+const adsTxt = (await adsTxtResponse.text()).trim();
+assert.equal(adsTxt, "google.com, pub-6193507831935325, DIRECT, f08c47fec0942fa0");
+assert.match(
+  homeHtml,
+  /<meta\\s+name=["']google-adsense-account["']\\s+content=["']ca-pub-6193507831935325["']/i,
+  "homepage AdSense site-verification meta tag should match ads.txt publisher ID",
+);
 
 const apiResponse = await fetch(new URL("/api/location?search=xy", base), {
   headers: { Accept: "application/json" },
