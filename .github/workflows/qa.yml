@@ -146,8 +146,8 @@ jobs:
 
 
   production-multiregion-smoke:
-    name: Live Production solar and tariff API smoke across four US regions
-    if: github.event_name == 'pull_request' && github.head_ref == 'test/production-multiregion-smoke-20261108'
+    name: Live Production solar and tariff API smoke across six US regions
+    if: github.event_name == 'pull_request' && github.head_ref == 'test/production-six-region-smoke-20261108'
     needs: qa
     runs-on: ubuntu-latest
     steps:
@@ -160,7 +160,7 @@ jobs:
         with:
           node-version: "22"
           package-manager-cache: false
-      - name: Check four regional Census, PVWatts and OpenEI Production paths
+      - name: Check six regional Census, PVWatts and OpenEI Production paths, including Alaska and Hawaii
         run: node scripts/smoke_production_multiregion.mjs
         env:
           PRODUCTION_BASE_URL: https://roof-solar-toolkit-2026.pages.dev
