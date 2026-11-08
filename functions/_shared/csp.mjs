@@ -15,7 +15,7 @@ export function buildStrictCspReportOnly(nonce) {
   return [
     "default-src 'self'", "base-uri 'self'", "object-src 'none'", "frame-ancestors 'none'", "form-action 'self'",
     `script-src 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval' 'strict-dynamic' https: http:`,
-    "style-src 'self' 'unsafe-inline'", "img-src 'self' data:", "font-src 'self' data:", "connect-src 'self'", "upgrade-insecure-requests",
+    "style-src 'self' 'unsafe-inline'", "img-src 'self' data:", "font-src 'self' data:", "connect-src 'self' https://cloudflareinsights.com",
   ].join("; ");
 }
 export function buildStrictCsp(nonce) {
