@@ -77,6 +77,9 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 - [x] The owner reports submitting the AdSense site review request. This records submission only; Google approval has not been verified.
 - [ ] Wait for AdSense approval and resolve any policy/review issues. Do not activate ads before approval and completion of the privacy, consent/opt-out and legal checks.
 - [ ] After approval, choose manual ad units with real IDs or deliberately configure Auto ads in the AdSense dashboard. Neither ad units nor Auto ads are currently configured. Keep ads outside the calculator input/result workflow and validate layout/performance before activation.
+- [ ] The guarded AdSense bootstrap is staged in code but remains off by default. Production routing remains API-only unless the build-time Pages variable `ADSENSE_MIDDLEWARE_ENABLED=true` is deliberately configured; even then, the loader requires the separate runtime Pages variable `ADSENSE_ENABLED=true` and an exact apex/`www` custom-domain match. Do not set either variable until Google approval and the publisher-side privacy, consent/opt-out and legal gates are complete.
+- [ ] The loader is limited to guide pages and the electricity-prices-by-state reference page. It excludes the homepage and calculators. No manual ad-unit slot IDs or Auto ads settings are supplied by this code; create and review placements separately after approval.
+
 - [ ] Never buy traffic, incentivize clicks or place ads where they can be mistaken for calculator buttons or navigation.
 
 ## Release decision

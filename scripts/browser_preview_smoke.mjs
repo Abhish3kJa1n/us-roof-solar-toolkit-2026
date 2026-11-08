@@ -66,6 +66,20 @@ async function open(pathname) {
   assert.equal(response.status(), 200, pathname + ' returned HTTP ' + response.status());
   const headers = response.headers();
   assert.match((headers['x-robots-tag'] || '').toLowerCase(), /noindex/, pathname + ' must remain noindex in Preview');
+  const csp = headers['content-security-policy'] || '';
+  const eligibleCspRoute = pathname.startsWith('/guides/') || pathname === '/electricity-prices-by-state' || pathname === '/electricity-prices-by-state.html';
+  const nonceValues = await page.locator('script').evaluateAll(nodes => nodes.map(node => node.nonce));
+  if (eligibleCspRoute) {
+    assert.match(csp, /'strict-dynamic'/, pathname + ' must enforce strict nonce CSP');
+    assert.match(csp, /base-uri 'none'/, pathname + ' must block base URL injection');
+    assert.match((headers['cache-control'] || '').toLowerCase(), /private.*no-store/, pathname + ' nonce HTML must not be cached');
+    const scriptDirective = csp.split(';').map(value => value.trim()).find(value => value.startsWith('script-src '));
+    const nonceMatch = scriptDirective && scriptDirective.match(/'nonce-([^']+)'/);
+    assert.ok(nonceMatch && nonceValues.length > 0 && nonceValues.every(value => value === nonceMatch[1]), pathname + ' all scripts must carry the matching nonce');
+  } else {
+    assert.match(csp, /script-src 'self'/, pathname + ' must retain current enforced CSP');
+  }
+  assert.equal(await page.locator('script[src*="adsbygoogle.js"]').count(), 0, pathname + ' Preview must never load AdSense');
   const robots = await page.locator('meta[name="robots"]').getAttribute('content');
   assert.match((robots || '').toLowerCase(), /noindex/, pathname + ' meta robots must remain noindex');
   await page.locator('body').waitFor({ state: 'visible' });
@@ -104,6 +118,12 @@ async function accessibilityScan(label) {
 
 try {
   await waitForPreview();
+
+  // Editorial/reference pages exercise strict nonce CSP; Preview ads remain disabled.
+  await open('/electricity-prices-by-state');
+  results.push('EIA reference strict CSP and Preview ad gate: PASS');
+  await open('/guides/are-solar-panels-worth-it.html');
+  results.push('guide strict CSP and Preview ad gate: PASS');
 
   // Homepage and combined calculator: real browser rendering and browser-side math.
   await open('/index.html');

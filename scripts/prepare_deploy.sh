@@ -7,11 +7,17 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 cp "$ROOT"/*.html "$OUT/"
 cp -R "$ROOT/assets" "$ROOT/calculators" "$ROOT/guides" "$ROOT/data" "$OUT/"
-cp "$ROOT/robots.txt" "$ROOT/_headers" "$ROOT/_routes.json" "$OUT/"
+cp "$ROOT/robots.txt" "$ROOT/_headers" "$OUT/"
 if [ -f "$ROOT/ads.txt" ]; then cp "$ROOT/ads.txt" "$OUT/"; fi
 # Keep every Preview noindex. The public sitemap and indexing are enabled only
 # for the main-branch Production build after the owner requested launch indexing.
 if [ "${CF_PAGES_BRANCH:-}" = "main" ]; then
+  # Production stays API-only unless this explicit build-time gate is enabled.
+  if [ "${ADSENSE_MIDDLEWARE_ENABLED:-false}" = "true" ]; then
+    cp "$ROOT/_routes.json" "$OUT/_routes.json"
+  else
+    printf '{\\n  "version": 1,\\n  "include": ["/api/*"],\\n  "exclude": []\\n}\\n' > "$OUT/_routes.json"
+  fi
   find "$OUT" -type f -name '*.html' ! -name '404.html' -exec sed -i 's/<meta name="robots" content="noindex,follow"/<meta name="robots" content="index,follow"/g' {} \;
   sed -i '/X-Robots-Tag:/d' "$OUT/_headers"
   cp "$ROOT/sitemap.xml" "$OUT/"
