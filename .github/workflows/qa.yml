@@ -55,6 +55,24 @@ jobs:
         env:
           PREVIEW_BASE_URL: https://feat-preview-csp-nonce-valid.roof-solar-toolkit-2026.pages.dev
 
+  production-public-smoke:
+    name: Live Production Pages and custom-domain edge smoke test
+    if: github.event_name == 'pull_request'
+    needs: qa
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - name: Verify the public Production domains and URLs
+        run: node scripts/smoke_production_public.mjs
+
   live-preview-smoke:
     name: Live Census, PVWatts and OpenEI preview smoke test
     if: github.event_name == 'push' && contains(github.event.head_commit.message, '[live-smoke]')
