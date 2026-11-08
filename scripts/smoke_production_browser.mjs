@@ -156,7 +156,6 @@ try {
   }
 
   await openPage(page, HOSTS[0].origin, "/guides/are-solar-panels-worth-it.html", "Production guide");
-  const guideResponse = pageResults.length >= 2 ? null : null;
   await assertNoAds(page, "Production guide");
   await assertNoHorizontalOverflow(page, "Production guide");
   await page.screenshot({ path: screenshotDir + "/production-guide.png", fullPage: true });
