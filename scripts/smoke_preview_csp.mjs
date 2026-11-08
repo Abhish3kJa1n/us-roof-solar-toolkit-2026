@@ -32,28 +32,31 @@ async function getReady() {
 function readNonce(response, html, path) {
   assert.equal(response.status, 200, `${path}: expected HTTP 200`);
   assert.match(response.headers.get("content-type") || "", /^text\/html\b/i, `${path}: expected HTML`);
-
   const enforced = response.headers.get("content-security-policy") || "";
   const reportOnly = response.headers.get("content-security-policy-report-only") || "";
-  assert.ok(enforced.includes("script-src 'self'"), `${path}: existing enforced CSP was not preserved`);
-  assert.ok(reportOnly.includes("'strict-dynamic'"), `${path}: strict CSP report-only header missing`);
-
-  const nonceMatch = reportOnly.match(/'nonce-([A-Za-z0-9+/]{22}==)'/);
-  assert.ok(nonceMatch, `${path}: report-only CSP nonce missing`);
+  assert.ok(reportOnly.includes("'strict-dynamic'"), `${path}: report-only CSP header missing`);
+  const eligible = path.startsWith("/guides/") || path === "/electricity-prices-by-state" || path === "/electricity-prices-by-state.html";
+  const policy = eligible ? enforced : reportOnly;
+  if (eligible) {
+    assert.ok(enforced.includes("'strict-dynamic'"), `${path}: eligible pages must enforce strict nonce CSP`);
+    assert.ok(enforced.includes("base-uri 'none'"), `${path}: strict CSP base-uri restriction missing`);
+  } else {
+    assert.ok(enforced.includes("script-src 'self'"), `${path}: noneligible pages must retain existing CSP`);
+  }
+  const nonceMatch = policy.match(/'nonce-([A-Za-z0-9+/]{22}==)'/);
+  assert.ok(nonceMatch, `${path}: CSP nonce missing`);
   const nonce = nonceMatch[1];
-
   const scriptTags = [...html.matchAll(/<script\b([^>]*)>/gi)];
   for (const [, attributes] of scriptTags) {
     const tagNonce = attributes.match(/\bnonce=["']([^"']+)["']/i)?.[1];
-    assert.equal(tagNonce, nonce, `${path}: script tag nonce must match the response CSP nonce`);
+    assert.equal(tagNonce, nonce, `${path}: script nonce must match response CSP`);
   }
-
-  assert.match(response.headers.get("x-robots-tag") || "", /noindex/i, `${path}: Preview crawler block missing`);
-  assert.match(response.headers.get("cache-control") || "", /private.*no-store|no-store.*private/i, `${path}: nonce-bearing HTML must not be cached`);
+  assert.match(response.headers.get("x-robots-tag") || "", /noindex/i, `${path}: Preview must remain noindex`);
+  assert.match(response.headers.get("cache-control") || "", /private.*no-store|no-store.*private/i, `${path}: nonce HTML must not be cached`);
   assert.equal(response.headers.get("x-content-type-options"), "nosniff");
   assert.equal(response.headers.get("x-frame-options"), "DENY");
   assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
-  assert.ok(!/adsbygoogle\.js/i.test(html), `${path}: AdSense loader must remain disabled in this test stage`);
+  assert.ok(!/adsbygoogle\.js/i.test(html), `${path}: Preview must never load AdSense`);
   return nonce;
 }
 
@@ -67,6 +70,7 @@ for (const path of [
   "/about.html",
   "/calculators/roof-area.html",
   "/guides/solar-installation-cost.html",
+  "/electricity-prices-by-state",
   "/privacy.html",
 ]) {
   const response = await get(path);

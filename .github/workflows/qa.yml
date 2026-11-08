@@ -90,7 +90,7 @@ jobs:
 
   preview-csp-smoke:
     name: Live Preview CSP nonce and API routing smoke test
-    if: github.event_name == 'pull_request' && github.head_ref == 'feat/preview-csp-nonce-validation-20261108'
+    if: github.event_name == 'pull_request' && (github.head_ref == 'feat/preview-csp-nonce-validation-20261108' || github.head_ref == 'audit/guarded-adsense-bootstrap-20261108')
     needs: qa
     runs-on: ubuntu-latest
     steps:
@@ -106,7 +106,7 @@ jobs:
       - name: Test deployed Cloudflare Pages Preview responses
         run: node scripts/smoke_preview_csp.mjs
         env:
-          PREVIEW_BASE_URL: https://feat-preview-csp-nonce-valid.roof-solar-toolkit-2026.pages.dev
+          PREVIEW_BASE_URL: https://audit-guarded-adsense-bootst.roof-solar-toolkit-2026.pages.dev
 
   production-public-smoke:
     name: Live Production Pages and custom-domain edge smoke test

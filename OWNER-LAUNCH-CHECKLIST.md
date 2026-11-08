@@ -46,6 +46,8 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 ## E. Privacy, advertising and consumer law
 
 - [ ] Select the real host, ad network, analytics provider, consent-management platform and any embedded third parties before finalizing the Privacy Notice.
+- [x] Identify Cloudflare Web Analytics as enabled at Pages project level and document the observed Preview behavior in `privacy.html`. Chromium confirmed the platform injects and loads `https://static.cloudflareinsights.com/beacon.min.js` on the Preview. The `pages.dev` telemetry POST is rejected by Cloudflare's hostname/CORS validation because that Preview hostname does not match the registered custom domain; this is not evidence that the Production custom-domain endpoint is broken.
+- [ ] Run real Chromium desktop and mobile checks on both Production custom domains after the Cloudflare beacon CSP change is released. Confirm `https://static.cloudflareinsights.com/beacon.min.js` loads, the custom-domain telemetry request reaches the expected same-origin `/cdn-cgi/rum` endpoint without CORS/CSP errors, and no calculator/API regressions occur. Preview testing on `pages.dev` observed the script loading but the telemetry request was rejected because that hostname did not match the configured analytics site; do not treat the Preview CORS failure as proof that Production is broken or working.
 - [ ] Obtain qualified legal review of privacy, terms, advertising disclosures, IP/copyright, accessibility and applicable federal/state law.
 - [ ] Assess privacy-law applicability by thresholds, processing activities, consumer location and business role. State privacy laws differ; do not assume that a small traffic volume automatically exempts every ad-tech activity.
 - [ ] Determine whether targeted advertising, cookies, identifiers, IP handling, Global Privacy Control or other opt-out signals require controls for the audience served.
@@ -67,6 +69,10 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 - [ ] Scan production network requests, cookies, storage, scripts and security headers after ad/analytics/CMP changes.
 - [ ] Add error monitoring only after it is selected and disclosed in the Privacy Notice.
 
+## Cloudflare Functions capacity constraint
+
+The guarded guide/EIA route invokes a Pages Function for each eligible HTML page request. On the Cloudflare Workers Free plan, Pages Functions requests count toward the shared 100,000 requests/day allowance alongside existing API Function traffic; static asset requests are free and unlimited. Confirm the account plan and monitor actual daily Function usage before enabling the build flag. If the allowance is approached, the Pages fail-open setting can bypass middleware (ads stop) while API behavior also needs checking. Keep the build-time switch off unless the additional ad-serving benefit justifies this capacity trade-off. Official limits: https://developers.cloudflare.com/pages/functions/pricing/ and https://developers.cloudflare.com/workers/platform/limits/.
+
 ## G. Search and advertising launch
 
 - [x] Run `scripts/audit_site.py` and the full repository QA suite through GitHub Actions. PR #16 completed all 22 project checks successfully on November 8, 2026; its run also passed the dedicated Chromium homepage-calculator regression and live Production public-page smoke.
@@ -77,6 +83,9 @@ Official starting points: https://tmsearch.uspto.gov/ and https://tsdr.uspto.gov
 - [x] The owner reports submitting the AdSense site review request. This records submission only; Google approval has not been verified.
 - [ ] Wait for AdSense approval and resolve any policy/review issues. Do not activate ads before approval and completion of the privacy, consent/opt-out and legal checks.
 - [ ] After approval, choose manual ad units with real IDs or deliberately configure Auto ads in the AdSense dashboard. Neither ad units nor Auto ads are currently configured. Keep ads outside the calculator input/result workflow and validate layout/performance before activation.
+- [ ] The guarded AdSense bootstrap is staged in code but remains off by default. Production routing remains API-only unless the build-time Pages variable `ADSENSE_MIDDLEWARE_ENABLED=true` is deliberately configured; even then, the loader requires the separate runtime Pages variable `ADSENSE_ENABLED=true` and an exact apex/`www` custom-domain match. Do not set either variable until Google approval and the publisher-side privacy, consent/opt-out and legal gates are complete.
+- [ ] The loader is limited to guide pages and the electricity-prices-by-state reference page. It excludes the homepage and calculators. No manual ad-unit slot IDs or Auto ads settings are supplied by this code; create and review placements separately after approval.
+
 - [ ] Never buy traffic, incentivize clicks or place ads where they can be mistaken for calculator buttons or navigation.
 
 ## Release decision

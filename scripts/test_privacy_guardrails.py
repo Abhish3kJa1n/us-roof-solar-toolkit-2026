@@ -106,7 +106,14 @@ if not story_options or story_options[0].get("value") != "" or "selected" not in
 
 privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
-    "no adsense ad-serving script, display ads or analytics script is active",
+    "no adsense ad-serving script or display ads are active",
+    "cloudflare web analytics is configured in the cloudflare pages project",
+    "real chromium test of the deployed preview",
+    "successfully loaded its beacon script",
+    "was rejected by cloudflare's hostname/cors validation",
+    "production custom domains still require a separate real-browser check",
+    "performance api",
+    "does not track individual end users across customers' internet properties",
     "page being viewed",
     "visitor's ip address",
     "cookies or other identifiers",
@@ -143,5 +150,5 @@ print(f"PASS {len(pages)} HTML pages have no form submission endpoint, no inline
 print(f"PASS JS assets contain no browser storage/cookie APIs; the city estimator and standalone solar savings use documented same-origin API/static-registry reads; these requests do not send household calculator inputs.")
 print("PASS literal defaults are limited to the four editable PVWatts reference-model assumptions and the source-labelled $2.62/W national solar price reference. The combined calculator may load disclosed, editable national roof/solar references at runtime; household consumption, actual bill usage, self-consumption and export credit remain visitor-specific and unprefilled.")
 print("PASS README and methodology contain no obsolete 50% self-use or blank-export-as-zero claim.")
-print("PASS no ad-network, analytics or known third-party tracking snippets detected.")
+print("PASS no ad-serving or analytics script is embedded in repository HTML source; Cloudflare project-level Web Analytics configuration is disclosed separately and live beacon execution remains unverified.")
 print("LIMIT: static source inspection does not detect host-level logs, server/CDN processing, browser extensions or third-party scripts added after deployment.")

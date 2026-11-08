@@ -17,6 +17,11 @@ fs.mkdirSync(screenshotDir, { recursive: true });
 
 const browserErrors = [];
 const requestFailures = [];
+const previewBeaconCorsErrors = [];
+const previewBeaconRequestFailures = [];
+let previewBeaconGenericFailures = 0;
+const beaconScriptResponses = [];
+const previewOrigin = new URL(base).origin;
 const results = [];
 
 async function waitForPreview() {
@@ -51,10 +56,34 @@ const context = await browser.newContext({
 const page = await context.newPage();
 page.on('pageerror', error => browserErrors.push(error.message));
 page.on('console', message => {
-  if (message.type() === 'error') browserErrors.push(message.text());
+  if (message.type() !== 'error') return;
+  const text = message.text();
+  // Cloudflare validates Web Analytics against the registered hostname. This
+  // branch runs on a pages.dev alias, not the registered production hostname.
+  const previewAnalyticsCors = text.includes("Access to XMLHttpRequest at 'https://cloudflareinsights.com/cdn-cgi/rum'")
+    && text.includes("from origin '" + previewOrigin + "'")
+    && text.includes('blocked by CORS policy');
+  if (previewAnalyticsCors) {
+    previewBeaconCorsErrors.push(text);
+    return;
+  }
+  if (text === 'Failed to load resource: net::ERR_FAILED' && previewBeaconGenericFailures < previewBeaconRequestFailures.length) {
+    previewBeaconGenericFailures += 1;
+    return;
+  }
+  browserErrors.push(text);
+});
+page.on('response', response => {
+  if (response.url().startsWith('https://static.cloudflareinsights.com/beacon.min.js')) {
+    beaconScriptResponses.push({ url: response.url(), status: response.status() });
+  }
 });
 page.on('requestfailed', request => {
   const url = request.url();
+  if (url.startsWith('https://cloudflareinsights.com/cdn-cgi/rum')) {
+    previewBeaconRequestFailures.push(request.failure()?.errorText || 'telemetry request failed');
+    return;
+  }
   if (url.startsWith(base) || url.includes('developer.nlr.gov') || url.includes('api.openei.org') || url.includes('tigerweb.geo.census.gov')) {
     requestFailures.push(request.method() + ' ' + url + ': ' + (request.failure()?.errorText || 'request failed'));
   }
@@ -66,6 +95,20 @@ async function open(pathname) {
   assert.equal(response.status(), 200, pathname + ' returned HTTP ' + response.status());
   const headers = response.headers();
   assert.match((headers['x-robots-tag'] || '').toLowerCase(), /noindex/, pathname + ' must remain noindex in Preview');
+  const csp = headers['content-security-policy'] || '';
+  const eligibleCspRoute = pathname.startsWith('/guides/') || pathname === '/electricity-prices-by-state' || pathname === '/electricity-prices-by-state.html';
+  const nonceValues = await page.locator('script').evaluateAll(nodes => nodes.map(node => node.nonce));
+  if (eligibleCspRoute) {
+    assert.match(csp, /'strict-dynamic'/, pathname + ' must enforce strict nonce CSP');
+    assert.match(csp, /base-uri 'none'/, pathname + ' must block base URL injection');
+    assert.match((headers['cache-control'] || '').toLowerCase(), /private.*no-store/, pathname + ' nonce HTML must not be cached');
+    const scriptDirective = csp.split(';').map(value => value.trim()).find(value => value.startsWith('script-src '));
+    const nonceMatch = scriptDirective && scriptDirective.match(/'nonce-([^']+)'/);
+    assert.ok(nonceMatch && nonceValues.length > 0 && nonceValues.every(value => value === nonceMatch[1]), pathname + ' all scripts must carry the matching nonce');
+  } else {
+    assert.match(csp, /script-src 'self'/, pathname + ' must retain current enforced CSP');
+  }
+  assert.equal(await page.locator('script[src*="adsbygoogle.js"]').count(), 0, pathname + ' Preview must never load AdSense');
   const robots = await page.locator('meta[name="robots"]').getAttribute('content');
   assert.match((robots || '').toLowerCase(), /noindex/, pathname + ' meta robots must remain noindex');
   await page.locator('body').waitFor({ state: 'visible' });
@@ -104,6 +147,12 @@ async function accessibilityScan(label) {
 
 try {
   await waitForPreview();
+
+  // Editorial/reference pages exercise strict nonce CSP; Preview ads remain disabled.
+  await open('/electricity-prices-by-state');
+  results.push('EIA reference strict CSP and Preview ad gate: PASS');
+  await open('/guides/are-solar-panels-worth-it.html');
+  results.push('guide strict CSP and Preview ad gate: PASS');
 
   // Homepage and combined calculator: real browser rendering and browser-side math.
   await open('/index.html');
@@ -335,8 +384,12 @@ try {
   results.push('standalone solar savings calculator: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-results.png'), fullPage: true });
 
-  assert.equal(browserErrors.length, 0, 'Browser console/page errors: ' + JSON.stringify(browserErrors));
+  assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load successfully; observed: ' + JSON.stringify(beaconScriptResponses));
+  assert.equal(previewBeaconCorsErrors.length, previewBeaconRequestFailures.length, 'Only the known Preview hostname/CORS telemetry failures may be treated as expected; console=' + previewBeaconCorsErrors.length + ', requests=' + previewBeaconRequestFailures.length);
+  assert.ok(previewBeaconGenericFailures <= previewBeaconRequestFailures.length, 'Unmatched net::ERR_FAILED console errors must not be suppressed');
+  assert.equal(browserErrors.length, 0, 'Unexpected browser console/page errors: ' + JSON.stringify(browserErrors));
   assert.equal(requestFailures.length, 0, 'Failed site/API requests: ' + JSON.stringify(requestFailures));
+  console.log('Cloudflare Web Analytics beacon loaded. Preview pages.dev hostname CORS responses observed: ' + previewBeaconCorsErrors.length);
   console.log('BROWSER PREVIEW QA COMPLETED.');
   console.log(results.join('\n'));
 } finally {
