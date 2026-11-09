@@ -15,7 +15,7 @@ const json = (body, status = 200) => new Response(JSON.stringify(body), {
 export async function onRequestGet({ request, env }) {
   const apiKey = env?.OPENEI_API_KEY;
   if (!apiKey) {
-    return json({ error: 'Utility-rate discovery is not configured. The site owner must add an OpenEI API key as a server-side Pages secret.' }, 503);
+    return json({ error: 'Nearby utility-rate records are temporarily unavailable. Please try again later.' }, 503);
   }
   const params = new URL(request.url).searchParams;
   const lat = Number(params.get('lat'));
@@ -39,10 +39,10 @@ export async function onRequestGet({ request, env }) {
   try {
     quota = await reserveApiQuota(env?.API_QUOTA_DB, 'openei', 60, 5000);
   } catch {
-    return json({ error: 'Utility-rate discovery is temporarily paused because its shared request-quota guard is unavailable.' }, 503);
+    return json({ error: 'Nearby utility-rate records are temporarily unavailable. Please try again later.' }, 503);
   }
   if (!quota) {
-    return json({ error: 'Utility-rate discovery has reached its shared request limit. Please retry later.' }, 429);
+    return json({ error: 'Nearby utility-rate records are temporarily unavailable. Please try again later.' }, 429);
   }
 
   const upstreamUrl = new URL('https://api.openei.org/utility_rates');

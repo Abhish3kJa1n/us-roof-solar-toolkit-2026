@@ -39,7 +39,7 @@ const DAILY_LIMIT = 15000;
 export async function onRequestGet({ request, env }) {
   const apiKey = env?.PVWATTS_API_KEY;
   if (!apiKey) {
-    return json({ error: 'Solar modeling is not configured yet. The site owner must add a free NLR PVWatts API key as a server-side Pages secret.' }, 503);
+    return json({ error: 'Solar production modeling is temporarily unavailable. Please try again later.' }, 503);
   }
 
   const params = new URL(request.url).searchParams;
@@ -74,10 +74,10 @@ export async function onRequestGet({ request, env }) {
   try {
     quota = await reserveApiQuota(env?.API_QUOTA_DB, 'pvwatts', WINDOW_LIMIT, DAILY_LIMIT);
   } catch {
-    return json({ error: 'Solar modeling is temporarily paused because its global request-quota guard is unavailable. Please try again later.' }, 503);
+    return json({ error: 'Solar production modeling is temporarily unavailable. Please try again later.' }, 503);
   }
   if (!quota) {
-    return json({ error: 'The solar model has reached its shared request limit. Please retry later.' }, 429);
+    return json({ error: 'The solar production service is temporarily busy. Please try again later.' }, 429);
   }
 
   const upstreamUrl = new URL('https://developer.nlr.gov/api/pvwatts/v8.json');
@@ -114,10 +114,10 @@ export async function onRequestGet({ request, env }) {
   try { data = await upstream.json(); }
   catch { return json({ error: 'NLR PVWatts returned an unreadable response.' }, 502); }
   if (upstream.status === 429) {
-    return json({ error: 'The solar model has reached its upstream request limit. Please retry later.' }, 429);
+    return json({ error: 'The solar production service is temporarily busy. Please try again later.' }, 429);
   }
   if (upstream.status === 401 || upstream.status === 403) {
-    return json({ error: 'The server-side PVWatts key was rejected. The site owner must check its NLR API key configuration.' }, 503);
+    return json({ error: 'The solar production service could not complete this request. Please try again later.' }, 503);
   }
   if (!upstream.ok || (Array.isArray(data.errors) && data.errors.length)) {
     const explanation = Array.isArray(data.errors) && data.errors.length

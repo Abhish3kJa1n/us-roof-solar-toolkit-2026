@@ -138,10 +138,10 @@ async function getSuggestions(search, env) {
   try {
     quota = await reserveApiQuota(env?.API_QUOTA_DB, 'census_suggest', 120, 20000);
   } catch {
-    return json({ error: 'City suggestions are temporarily paused because the shared request-quota guard is unavailable. Please try again later.' }, 503);
+    return json({ error: 'City suggestions are temporarily unavailable. Please try again later.' }, 503);
   }
   if (!quota) {
-    return json({ error: 'City suggestions have reached the shared request limit. Please try again later.' }, 429);
+    return json({ error: 'City suggestions are temporarily busy. Please try again later.' }, 429);
   }
 
   const queryTargets = [
@@ -251,10 +251,10 @@ export async function onRequestGet({ request, env }) {
   try {
     quota = await reserveApiQuota(env?.API_QUOTA_DB, 'census', 60, 10000);
   } catch {
-    return json({ error: 'Location lookup is temporarily paused because its shared request-quota guard is unavailable. Please try again later.' }, 503);
+    return json({ error: 'The selected location could not be verified right now. Please try again later.' }, 503);
   }
   if (!quota) {
-    return json({ error: 'Location lookup has reached its shared request limit. Please retry later.' }, 429);
+    return json({ error: 'Location verification is temporarily busy. Please try again later.' }, 429);
   }
 
   const results = await Promise.allSettled([
@@ -308,7 +308,7 @@ export async function onRequestGet({ request, env }) {
     const tokens = await Promise.all(places.map((place) => createLocationToken(place, env)));
     places.forEach((place, index) => { place.locationToken = tokens[index]; });
     if (tokens.some((token) => !token)) {
-      return json({ error: 'The location verification token could not be created. Please retry later.' }, 503);
+      return json({ error: 'Location verification could not be completed. Please try again later.' }, 503);
     }
   }
 

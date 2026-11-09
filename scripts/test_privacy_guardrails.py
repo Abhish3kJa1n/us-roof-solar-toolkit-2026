@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static privacy guardrails for this non-lead-generation, no-backend prototype."""
+"""Static privacy guardrails for this non-lead-generation site and its serverless APIs."""
 from __future__ import annotations
 from html.parser import HTMLParser
 from pathlib import Path
@@ -106,27 +106,32 @@ if not story_options or story_options[0].get("value") != "" or "selected" not in
 
 privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
-    "no adsense ad-serving script or display ads are active",
-    "cloudflare web analytics is configured in the cloudflare pages project",
-    "real chromium test of the deployed preview",
-    "successfully loaded its beacon script",
-    "was rejected by cloudflare's hostname/cors validation",
-    "production custom domains still require a separate real-browser check",
-    "performance api",
-    "does not track individual end users across customers' internet properties",
-    "page being viewed",
-    "visitor's ip address",
-    "cookies or other identifiers",
-    "third-party advertising vendors may place and read cookies",
-    "web beacons",
-    "policies.google.com/technologies/partner-sites",
-    "adssettings.google.com",
-    "www.aboutads.info/choices",
+    "not currently displaying advertising or loading an adsense ad-serving script",
+    "cloudflare web analytics",
+    "browser performance timing metrics",
+    "does not collect or use visitors' personal data",
+    "or track individual end users across customers' internet properties",
+    "calculator inputs are not sent to the site's calculation apis",
+    "does not ask for your street address",
+    "openei utility rate database",
+    "if advertising is introduced, this notice will be updated to describe the relevant advertising technologies",
 ):
     if required_disclosure not in privacy_notice:
-        fail(f"Privacy Notice is missing required future AdSense disclosure: {required_disclosure}")
+        fail(f"Privacy Notice is missing current visitor-facing disclosure: {required_disclosure}")
 
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
+for stale_public_phrase in (
+    "static demo",
+    "location-aware solar model · preview",
+    "site owner may not yet have configured",
+    "site owner must add",
+    "not yet independently reviewed and remains noindex before site launch",
+    "independent technical validation: pending",
+    "real chromium test of the deployed preview",
+    "this code change",
+):
+    if stale_public_phrase in source_all.lower():
+        fail(f"unfinished or internal operational wording remains in public HTML: {stale_public_phrase}")
 if "Replace the bracketed items" in source_all:
     fail("privacy notice still contains an obsolete bracketed-placeholder instruction")
 if re.search(r"\[(?:AUTHOR|REVIEWER|DATE|EMAIL|DOMAIN|PUBLISHER)[A-Z_ ]*\]", source_all, re.I):

@@ -26,13 +26,24 @@ async function getText(url, accept) {
 
 function assertSecurityHeaders(response, path) {
   assert.equal(response.headers.get("x-content-type-options"), "nosniff", path + ": missing nosniff header");
-  assert.equal(response.headers.get("x-frame-options"), "DENY", path + ": missing frame protection");
-  assert.equal(
-    response.headers.get("referrer-policy"),
-    "strict-origin-when-cross-origin",
-    path + ": unexpected Referrer-Policy",
-  );
+  const xfo = (response.headers.get("x-frame-options") || "").toUpperCase();
   const csp = response.headers.get("content-security-policy") || "";
+  // The Pages hostname returns DENY while the proxied custom domain currently
+  // returns SAMEORIGIN. Both block cross-origin framing; CSP frame-ancestors
+  // none is the authoritative modern-browser control and also blocks same-origin
+  // framing. Keep the edge discrepancy visible as a warning rather than masking
+  // it or failing before the rest of the production checks can run.
+  assert.ok(xfo === "DENY" || xfo === "SAMEORIGIN", path + ": missing or permissive X-Frame-Options");
+  assert.match(csp, /(?:^|;)\s*frame-ancestors\s+'none'(?:;|$)/i, path + ": CSP must block all framing");
+  if (xfo !== "DENY") console.warn("WARN: " + path + " returns X-Frame-Options " + xfo + "; CSP frame-ancestors 'none' still blocks framing in CSP-capable browsers.");
+  const referrerPolicy = (response.headers.get("referrer-policy") || "").toLowerCase();
+  assert.ok(
+    referrerPolicy === "strict-origin-when-cross-origin" || referrerPolicy === "same-origin",
+    path + ": missing or unexpectedly permissive Referrer-Policy",
+  );
+  if (referrerPolicy !== "strict-origin-when-cross-origin") {
+    console.warn("WARN: " + path + " returns Referrer-Policy " + referrerPolicy + "; this is more restrictive cross-origin than strict-origin-when-cross-origin.");
+  }
   assert.ok(csp.includes("script-src 'self'"), path + ": Production CSP missing or unexpectedly changed");
 }
 
@@ -90,7 +101,7 @@ const sitemap = await getText(PAGES_ORIGIN + "/sitemap.xml", "application/xml,te
 assert.equal(sitemap.response.status, 200, "Production /sitemap.xml must be published");
 assert.match(sitemap.body, /<urlset\b/i);
 const urls = [...sitemap.body.matchAll(/<loc>(https:\/\/[^<]+)<\/loc>/gi)].map((match) => match[1].trim());
-assert.equal(urls.length, 24, "Sitemap must contain the 24 intended content URLs");
+assert.equal(urls.length, 25, "Sitemap must contain the 25 intended content URLs");
 assert.ok(urls.every((url) => url.startsWith(APEX + "/")), "Sitemap URLs must use the canonical apex domain");
 assert.ok(!urls.some((url) => /404\.html?$/i.test(url)));
 

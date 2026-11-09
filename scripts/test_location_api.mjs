@@ -387,7 +387,7 @@ calls = [];
 globalThis.fetch = async () => jsonResponse({ errors: ['Rate limit exceeded'] }, 429);
 result = await read(await pvGet({ request: validPath, env: { PVWATTS_API_KEY: 'test-secret-value-long-enough', API_QUOTA_DB: quotaDb() } }));
 assert.equal(result.status, 429);
-assert.match(result.body.error, /request limit/i);
+assert.match(result.body.error, /temporarily busy|try again later/i);
 
 // OpenEI candidates are labelled as candidates; API key is not returned.
 calls = [];
