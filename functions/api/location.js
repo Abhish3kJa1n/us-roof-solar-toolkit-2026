@@ -141,7 +141,7 @@ async function getSuggestions(search, env) {
     return json({ error: 'City suggestions are temporarily unavailable. Please try again later.' }, 503);
   }
   if (!quota) {
-    return json({ error: 'City suggestions have reached the shared request limit. Please try again later.' }, 429);
+    return json({ error: 'City suggestions are temporarily busy. Please try again later.' }, 429);
   }
 
   const queryTargets = [
