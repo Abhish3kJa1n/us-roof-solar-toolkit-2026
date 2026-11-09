@@ -36,11 +36,14 @@ function assertSecurityHeaders(response, path) {
   assert.ok(xfo === "DENY" || xfo === "SAMEORIGIN", path + ": missing or permissive X-Frame-Options");
   assert.match(csp, /(?:^|;)\s*frame-ancestors\s+'none'(?:;|$)/i, path + ": CSP must block all framing");
   if (xfo !== "DENY") console.warn("WARN: " + path + " returns X-Frame-Options " + xfo + "; CSP frame-ancestors 'none' still blocks framing in CSP-capable browsers.");
-  assert.equal(
-    response.headers.get("referrer-policy"),
-    "strict-origin-when-cross-origin",
-    path + ": unexpected Referrer-Policy",
+  const referrerPolicy = (response.headers.get("referrer-policy") || "").toLowerCase();
+  assert.ok(
+    referrerPolicy === "strict-origin-when-cross-origin" || referrerPolicy === "same-origin",
+    path + ": missing or unexpectedly permissive Referrer-Policy",
   );
+  if (referrerPolicy !== "strict-origin-when-cross-origin") {
+    console.warn("WARN: " + path + " returns Referrer-Policy " + referrerPolicy + "; this is more restrictive cross-origin than strict-origin-when-cross-origin.");
+  }
   assert.ok(csp.includes("script-src 'self'"), path + ": Production CSP missing or unexpectedly changed");
 }
 
