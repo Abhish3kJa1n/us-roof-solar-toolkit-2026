@@ -22,6 +22,7 @@ class PublicPageParser(HTMLParser):
         self.refs: list[str] = []
         self.robots: list[str] = []
         self.canonicals: list[str] = []
+        self.og_urls: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
@@ -29,6 +30,8 @@ class PublicPageParser(HTMLParser):
             self.ids.add(str(values["id"]))
         if tag == "meta" and (values.get("name") or "").lower() == "robots":
             self.robots.append(values.get("content") or "")
+        if tag == "meta" and (values.get("property") or "").lower() == "og:url":
+            self.og_urls.append(values.get("content") or "")
         if tag == "link" and "canonical" in (values.get("rel") or "").lower().split():
             self.canonicals.append(values.get("href") or "")
         for key in ("href", "src"):
@@ -134,7 +137,9 @@ def main() -> int:
         parsed = urlsplit(url)
         if parsed.scheme != "https" or parsed.netloc != "getroofsolarcalculator.online" or parsed.query or parsed.fragment:
             fail(f"Sitemap URL is not a clean canonical apex HTTPS URL: {url}")
-        relative = parsed.path.lstrip("/") or "index.html"
+        if parsed.path != "/" and (parsed.path.endswith("/") or parsed.path.lower().endswith(".html")):
+            fail(f"Sitemap URL must use Cloudflare Pages' extensionless canonical path: {url}")
+        relative = "index.html" if parsed.path == "/" else parsed.path.lstrip("/") + ".html"
         page_path = DIST / relative
         if not page_path.is_file():
             fail(f"Sitemap URL has no corresponding deployed HTML file: {url}")
@@ -143,6 +148,8 @@ def main() -> int:
             fail(f"Sitemap page must have exactly one index,follow robots meta: {url}")
         if page_parser.canonicals != [url]:
             fail(f"Sitemap URL must match exactly one page canonical: {url}")
+        if page_parser.og_urls and page_parser.og_urls != [url]:
+            fail(f"Sitemap URL must match the page's Open Graph URL when present: {url}")
     worker_source = (ROOT / "workers" / "seo-sitemap" / "worker.js").read_text(encoding="utf-8")
     if "const PAGES" in worker_source or 'ORIGIN + "/sitemap.xml"' not in worker_source:
         fail("SEO Worker must consume the repository-built sitemap instead of maintaining a duplicate URL inventory")
@@ -196,7 +203,15 @@ def main() -> int:
             if parts.scheme or parts.netloc:
                 continue
             path_part = unquote(parts.path)
+            if path_part.lower().endswith(".html"):
+                fail(f"internal HTML link must use the extensionless canonical URL: {rel_page} -> {value}")
             target_path = (page.parent / path_part).resolve() if path_part and not path_part.startswith("/") else (DIST / path_part.lstrip("/")).resolve() if path_part else page.resolve()
+            if target_path.is_dir():
+                target_path = target_path / "index.html"
+            if not target_path.is_file() and not target_path.suffix:
+                extensionless_target = target_path.with_suffix(".html")
+                if extensionless_target.is_file():
+                    target_path = extensionless_target
             try:
                 target_rel = target_path.relative_to(DIST.resolve()).as_posix()
             except ValueError:
