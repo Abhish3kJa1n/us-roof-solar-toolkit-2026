@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static privacy guardrails for this non-lead-generation, no-backend prototype."""
+"""Static privacy guardrails for this non-lead-generation site and its serverless APIs."""
 from __future__ import annotations
 from html.parser import HTMLParser
 from pathlib import Path
@@ -106,19 +106,15 @@ if not story_options or story_options[0].get("value") != "" or "selected" not in
 
 privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
+    "google adsense has not approved this site",
     "no adsense ad-serving script or display ads are active",
-    "cloudflare web analytics is configured in the cloudflare pages project",
-    "real chromium test of the deployed preview",
-    "successfully loaded its beacon script",
-    "was rejected by cloudflare's hostname/cors validation",
-    "production custom domains still require a separate real-browser check",
-    "performance api",
+    "cloudflare web analytics is configured for this site",
+    "browser performance timing metrics",
     "does not track individual end users across customers' internet properties",
-    "page being viewed",
-    "visitor's ip address",
-    "cookies or other identifiers",
-    "third-party advertising vendors may place and read cookies",
-    "web beacons",
+    "page url",
+    "ip address",
+    "cookies or similar identifiers",
+    "personalized advertising",
     "policies.google.com/technologies/partner-sites",
     "adssettings.google.com",
     "www.aboutads.info/choices",
@@ -127,6 +123,18 @@ for required_disclosure in (
         fail(f"Privacy Notice is missing required future AdSense disclosure: {required_disclosure}")
 
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
+for stale_public_phrase in (
+    "static demo",
+    "location-aware solar model · preview",
+    "site owner may not yet have configured",
+    "site owner must add",
+    "not yet independently reviewed and remains noindex before site launch",
+    "independent technical validation: pending",
+    "real chromium test of the deployed preview",
+    "this code change",
+):
+    if stale_public_phrase in source_all.lower():
+        fail(f"unfinished or internal operational wording remains in public HTML: {stale_public_phrase}")
 if "Replace the bracketed items" in source_all:
     fail("privacy notice still contains an obsolete bracketed-placeholder instruction")
 if re.search(r"\[(?:AUTHOR|REVIEWER|DATE|EMAIL|DOMAIN|PUBLISHER)[A-Z_ ]*\]", source_all, re.I):
