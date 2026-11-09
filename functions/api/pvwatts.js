@@ -39,7 +39,7 @@ const DAILY_LIMIT = 15000;
 export async function onRequestGet({ request, env }) {
   const apiKey = env?.PVWATTS_API_KEY;
   if (!apiKey) {
-    return json({ error: 'Solar modeling is not configured yet. The site owner must add a free NLR PVWatts API key as a server-side Pages secret.' }, 503);
+    return json({ error: 'Solar production modeling is temporarily unavailable. Please try again later.' }, 503);
   }
 
   const params = new URL(request.url).searchParams;
