@@ -308,7 +308,7 @@ export async function onRequestGet({ request, env }) {
     const tokens = await Promise.all(places.map((place) => createLocationToken(place, env)));
     places.forEach((place, index) => { place.locationToken = tokens[index]; });
     if (tokens.some((token) => !token)) {
-      return json({ error: 'The location verification token could not be created. Please retry later.' }, 503);
+      return json({ error: 'Location verification could not be completed. Please try again later.' }, 503);
     }
   }
 
