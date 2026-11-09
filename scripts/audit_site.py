@@ -182,7 +182,18 @@ def main() -> int:
             parsed_ref = urlsplit(ref)
             path_part = parsed_ref.path
             frag = parsed_ref.fragment
-            target = (page.parent / path_part).resolve() if path_part else page.resolve()
+            if not path_part:
+                target = page.resolve()
+            elif path_part.startswith("/"):
+                target = (ROOT / path_part.lstrip("/")).resolve()
+            else:
+                target = (page.parent / path_part).resolve()
+            if target.is_dir():
+                target = target / "index.html"
+            if not target.exists() and not target.suffix:
+                extensionless_target = target.with_suffix(".html")
+                if extensionless_target.exists():
+                    target = extensionless_target
             try: target.relative_to(ROOT.resolve())
             except ValueError:
                 issues.append(f"{rel}: reference escapes project: {ref}")
