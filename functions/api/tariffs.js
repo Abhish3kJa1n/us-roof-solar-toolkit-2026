@@ -39,7 +39,7 @@ export async function onRequestGet({ request, env }) {
   try {
     quota = await reserveApiQuota(env?.API_QUOTA_DB, 'openei', 60, 5000);
   } catch {
-    return json({ error: 'Utility-rate discovery is temporarily paused because its shared request-quota guard is unavailable.' }, 503);
+    return json({ error: 'Nearby utility-rate records are temporarily unavailable. Please try again later.' }, 503);
   }
   if (!quota) {
     return json({ error: 'Utility-rate discovery has reached its shared request limit. Please retry later.' }, 429);
