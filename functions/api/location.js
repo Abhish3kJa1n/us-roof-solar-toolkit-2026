@@ -138,7 +138,7 @@ async function getSuggestions(search, env) {
   try {
     quota = await reserveApiQuota(env?.API_QUOTA_DB, 'census_suggest', 120, 20000);
   } catch {
-    return json({ error: 'City suggestions are temporarily paused because the shared request-quota guard is unavailable. Please try again later.' }, 503);
+    return json({ error: 'City suggestions are temporarily unavailable. Please try again later.' }, 503);
   }
   if (!quota) {
     return json({ error: 'City suggestions have reached the shared request limit. Please try again later.' }, 429);
