@@ -119,8 +119,10 @@ def main() -> int:
         fail("prepare_deploy.sh failed while restoring Preview test fixture")
 
     html_pages = sorted(DIST.rglob("*.html"))
-    if len(html_pages) != 25:
-        fail(f"expected 25 public HTML pages, found {len(html_pages)}")
+    if len(html_pages) != 26:
+        fail(f"expected 26 public HTML pages, found {len(html_pages)}")
+    if not (DIST / "contact.html").is_file():
+        fail("public Contact page is missing from the deployment output")
 
     allowed_root_files = {"_headers", "_routes.json", "robots.txt", "ads.txt"}
     root_files = {p.name for p in DIST.iterdir() if p.is_file()}
