@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 JS_FILE = ROOT / "assets" / "js" / "solar-savings-1.js"
 
 HARNESS = r"""
-const ids=['annualUse','importRate','offset','production','selfUse','exportRate','price','run','result'];
+const ids=['annualUse','importRate','offset','production','selfUse','selfUseLow','selfUseHigh','exportRate','price','run','result'];
 const elements={};
 for (const id of ids) elements[id]={id,value:'',innerHTML:'',handlers:{},addEventListener(type,fn){this.handlers[type]=fn;}};
 global.document={getElementById(id){return elements[id] || (elements[id]={id,value:'',innerHTML:'',handlers:{},addEventListener(type,fn){this.handlers[type]=fn;}})}};
@@ -32,6 +32,9 @@ CASES = [
     ("zero_import_rate_explicit", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "importRate": "0", "exportRate": "0.06", "price": "3"}, ["$0.000/kWh", "259", "83.3 years"]),
     ("missing_import_rate", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "exportRate": "0.04", "price": "3"}, ["Not calculated — missing marginal import rate"]),
     ("import_rate_missing_but_export_not_needed", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "100", "price": "3"}, ["Not calculated — missing marginal import rate", "0 kWh" ]),
+    ("user_selected_self_use_sensitivity", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "selfUseLow": "30", "selfUseHigh": "70", "importRate": "0.20", "exportRate": "0.04", "price": "3"}, ["30% low case: $760 annual energy value", "70% high case: $1,313 annual energy value", "not statistical bounds"]),
+    ("incomplete_self_use_sensitivity_rejected", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "selfUseLow": "30", "importRate": "0.20", "exportRate": "0.04", "price": "3"}, ["enter both low and high scenario shares"]),
+    ("reversed_self_use_sensitivity_rejected", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "selfUseLow": "70", "selfUseHigh": "30", "importRate": "0.20", "exportRate": "0.04", "price": "3"}, ["low value no greater than high value"]),
 ]
 
 
