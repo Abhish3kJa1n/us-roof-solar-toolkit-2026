@@ -77,7 +77,7 @@ export async function onRequestGet({ request, env }) {
     return json({ error: 'Solar production modeling is temporarily unavailable. Please try again later.' }, 503);
   }
   if (!quota) {
-    return json({ error: 'The solar model has reached its shared request limit. Please retry later.' }, 429);
+    return json({ error: 'The solar production service is temporarily busy. Please try again later.' }, 429);
   }
 
   const upstreamUrl = new URL('https://developer.nlr.gov/api/pvwatts/v8.json');
