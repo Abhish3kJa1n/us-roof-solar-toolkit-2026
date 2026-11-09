@@ -47,7 +47,7 @@
         // HTML pattern semantics require a full-value match, not a substring match.
         if (!(new RegExp(`^(?:${spec.pattern})$`, 'u')).test(value)) return { valid: false, message: spec.patternMessage || 'Use the accepted format.', warning: '' };
       } catch (_) {
-        return { valid: false, message: 'This field has an invalid validation rule. Contact the site owner.', warning: '' };
+        return { valid: false, message: 'This field could not be validated. Reload the page and try again.', warning: '' };
       }
     }
     return { valid: true, message: '', warning: '' };
