@@ -110,7 +110,7 @@ for required_disclosure in (
     "cloudflare web analytics",
     "browser performance timing metrics",
     "does not collect or use visitors' personal data",
-    "does not track individual end users across customers' internet properties",
+    "or track individual end users across customers' internet properties",
     "calculator inputs are not sent to the site's calculation apis",
     "does not ask for your street address",
     "openei utility rate database",
