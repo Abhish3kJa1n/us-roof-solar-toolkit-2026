@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from urllib.parse import unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -20,6 +21,7 @@ class PublicPageParser(HTMLParser):
         self.ids: set[str] = set()
         self.refs: list[str] = []
         self.robots: list[str] = []
+        self.canonicals: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
@@ -27,6 +29,8 @@ class PublicPageParser(HTMLParser):
             self.ids.add(str(values["id"]))
         if tag == "meta" and (values.get("name") or "").lower() == "robots":
             self.robots.append(values.get("content") or "")
+        if tag == "link" and "canonical" in (values.get("rel") or "").lower().split():
+            self.canonicals.append(values.get("href") or "")
         for key in ("href", "src"):
             value = values.get(key)
             if value:
@@ -109,6 +113,39 @@ def main() -> int:
         fail("Production homepage must retain the main-branch indexing transformation")
     if "X-Robots-Tag:" in (DIST / "_headers").read_text(encoding="utf-8"):
         fail("Production must not retain the Preview X-Robots-Tag")
+
+    # The repository sitemap is the sole URL inventory consumed by the Worker.
+    sitemap_path = DIST / "sitemap.xml"
+    if not sitemap_path.is_file():
+        fail("Production sitemap.xml is missing from the Pages build")
+    try:
+        sitemap_root = ET.parse(sitemap_path).getroot()
+    except ET.ParseError as exc:
+        fail(f"Production sitemap.xml is invalid XML: {exc}")
+    namespace = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    sitemap_urls = [
+        node.text.strip()
+        for node in sitemap_root.findall("sm:url/sm:loc", namespace)
+        if node.text and node.text.strip()
+    ]
+    if len(sitemap_urls) != 25 or len(set(sitemap_urls)) != 25:
+        fail(f"Production sitemap must contain 25 unique URLs; found {len(sitemap_urls)}")
+    for url in sitemap_urls:
+        parsed = urlsplit(url)
+        if parsed.scheme != "https" or parsed.netloc != "getroofsolarcalculator.online" or parsed.query or parsed.fragment:
+            fail(f"Sitemap URL is not a clean canonical apex HTTPS URL: {url}")
+        relative = parsed.path.lstrip("/") or "index.html"
+        page_path = DIST / relative
+        if not page_path.is_file():
+            fail(f"Sitemap URL has no corresponding deployed HTML file: {url}")
+        page_parser = parse_page(page_path)
+        if page_parser.robots != ["index,follow"]:
+            fail(f"Sitemap page must have exactly one index,follow robots meta: {url}")
+        if page_parser.canonicals != [url]:
+            fail(f"Sitemap URL must match exactly one page canonical: {url}")
+    worker_source = (ROOT / "workers" / "seo-sitemap" / "worker.js").read_text(encoding="utf-8")
+    if "const PAGES" in worker_source or 'ORIGIN + "/sitemap.xml"' not in worker_source:
+        fail("SEO Worker must consume the repository-built sitemap instead of maintaining a duplicate URL inventory")
 
     # Restore the Preview fixture for the existing noindex and clean-public-root checks.
     env["CF_PAGES_BRANCH"] = "preview"
