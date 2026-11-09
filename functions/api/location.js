@@ -251,7 +251,7 @@ export async function onRequestGet({ request, env }) {
   try {
     quota = await reserveApiQuota(env?.API_QUOTA_DB, 'census', 60, 10000);
   } catch {
-    return json({ error: 'Location lookup is temporarily paused because its shared request-quota guard is unavailable. Please try again later.' }, 503);
+    return json({ error: 'The selected location could not be verified right now. Please try again later.' }, 503);
   }
   if (!quota) {
     return json({ error: 'Location lookup has reached its shared request limit. Please retry later.' }, 429);
