@@ -74,7 +74,7 @@ export async function onRequestGet({ request, env }) {
   try {
     quota = await reserveApiQuota(env?.API_QUOTA_DB, 'pvwatts', WINDOW_LIMIT, DAILY_LIMIT);
   } catch {
-    return json({ error: 'Solar modeling is temporarily paused because its global request-quota guard is unavailable. Please try again later.' }, 503);
+    return json({ error: 'Solar production modeling is temporarily unavailable. Please try again later.' }, 503);
   }
   if (!quota) {
     return json({ error: 'The solar model has reached its shared request limit. Please retry later.' }, 429);
