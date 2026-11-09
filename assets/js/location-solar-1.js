@@ -527,7 +527,7 @@
     } catch (error) {
       if (seq === requestSequence) {
         resetResult('Model unavailable', error.message || 'PVWatts request failed.');
-        setStatus(modelStatus, 'Check the error. The site owner may not yet have configured the server-side NLR key.');
+        setStatus(modelStatus, 'The solar production service is temporarily unavailable. Please try again later.');
       }
     } finally {
       if (seq === requestSequence) {
