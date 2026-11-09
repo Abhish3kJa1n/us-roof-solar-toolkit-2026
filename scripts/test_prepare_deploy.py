@@ -99,7 +99,6 @@ def main() -> int:
     expected_enabled = {
         "/api/*", "/guides/*",
         "/electricity-prices-by-state",
-        "/electricity-prices-by-state.html",
     }
     if set(enabled_routes.get("include", [])) != expected_enabled:
         fail("explicit opt-in must route only API and selected editorial pages")
