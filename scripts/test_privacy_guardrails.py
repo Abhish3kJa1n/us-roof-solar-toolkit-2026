@@ -108,7 +108,7 @@ privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
     "google adsense has not approved this site",
     "no adsense ad-serving script or display ads are active",
-    "cloudflare web analytics is configured for this site",
+    "the domain and pages project are configured for cloudflare web analytics",
     "browser performance timing metrics",
     "does not track individual end users across customers' internet properties",
     "page url",
