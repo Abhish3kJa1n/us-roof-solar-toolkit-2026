@@ -34,7 +34,7 @@ function assertSecurityHeaders(response, path) {
   // framing. Keep the edge discrepancy visible as a warning rather than masking
   // it or failing before the rest of the production checks can run.
   assert.ok(xfo === "DENY" || xfo === "SAMEORIGIN", path + ": missing or permissive X-Frame-Options");
-  assert.match(csp, /(?:^|;)\\s*frame-ancestors\\s+'none'(?:;|$)/i, path + ": CSP must block all framing");
+  assert.match(csp, /(?:^|;)\s*frame-ancestors\s+'none'(?:;|$)/i, path + ": CSP must block all framing");
   if (xfo !== "DENY") console.warn("WARN: " + path + " returns X-Frame-Options " + xfo + "; CSP frame-ancestors 'none' still blocks framing in CSP-capable browsers.");
   assert.equal(
     response.headers.get("referrer-policy"),
