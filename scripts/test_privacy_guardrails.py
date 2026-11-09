@@ -114,7 +114,7 @@ for required_disclosure in (
     "calculator inputs are not sent to the site's calculation apis",
     "does not ask for your street address",
     "openei utility rate database",
-    "if advertising is introduced, this notice will be updated",
+    "if advertising is introduced, this notice will be updated to describe the relevant advertising technologies",
 ):
     if required_disclosure not in privacy_notice:
         fail(f"Privacy Notice is missing current visitor-facing disclosure: {required_disclosure}")
