@@ -106,21 +106,18 @@ if not story_options or story_options[0].get("value") != "" or "selected" not in
 
 privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
-    "google adsense has not approved this site",
-    "no adsense ad-serving script or display ads are active",
-    "the domain and pages project are configured for cloudflare web analytics",
+    "not currently displaying advertising or loading an adsense ad-serving script",
+    "cloudflare web analytics",
     "browser performance timing metrics",
+    "does not collect or use visitors' personal data",
     "does not track individual end users across customers' internet properties",
-    "page url",
-    "ip address",
-    "cookies or similar identifiers",
-    "personalized advertising",
-    "policies.google.com/technologies/partner-sites",
-    "adssettings.google.com",
-    "www.aboutads.info/choices",
+    "calculator inputs are not sent to the site's calculation apis",
+    "does not ask for your street address",
+    "openei utility rate database",
+    "if advertising is introduced, this notice will be updated",
 ):
     if required_disclosure not in privacy_notice:
-        fail(f"Privacy Notice is missing required future AdSense disclosure: {required_disclosure}")
+        fail(f"Privacy Notice is missing current visitor-facing disclosure: {required_disclosure}")
 
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
 for stale_public_phrase in (
