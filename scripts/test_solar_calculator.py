@@ -34,7 +34,8 @@ CASES = [
     ("import_rate_missing_but_export_not_needed", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "100", "price": "3"}, ["Not calculated — missing marginal import rate", "0 kWh" ]),
     ("user_selected_self_use_sensitivity", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "selfUseLow": "30", "selfUseHigh": "70", "importRate": "0.20", "exportRate": "0.04", "price": "3"}, ["30% low case: $760 annual energy value", "70% high case: $1,313 annual energy value", "not statistical bounds"]),
     ("incomplete_self_use_sensitivity_rejected", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "selfUseLow": "30", "importRate": "0.20", "exportRate": "0.04", "price": "3"}, ["enter both low and high scenario shares"]),
-    ("reversed_self_use_sensitivity_rejected", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "selfUseLow": "70", "selfUseHigh": "30", "importRate": "0.20", "exportRate": "0.04", "price": "3"}, ["low value no greater than high value"]),
+    ("reversed_self_use_sensitivity_rejected", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "selfUseLow": "70", "selfUseHigh": "30", "importRate": "0.20", "exportRate": "0.04", "price": "3"}, ["Enter valid low and high direct-use shares"]),
+    ("sensitivity_without_base_share", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUseLow": "30", "selfUseHigh": "70", "importRate": "0.20", "exportRate": "0.04", "price": "3"}, ["Not calculated — missing annual direct-use share", "30% low case: $760 annual energy value", "70% high case: $1,313 annual energy value"]),
 ]
 
 
