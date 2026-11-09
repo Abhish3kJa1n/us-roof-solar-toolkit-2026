@@ -42,7 +42,7 @@ export async function onRequestGet({ request, env }) {
     return json({ error: 'Nearby utility-rate records are temporarily unavailable. Please try again later.' }, 503);
   }
   if (!quota) {
-    return json({ error: 'Utility-rate discovery has reached its shared request limit. Please retry later.' }, 429);
+    return json({ error: 'Nearby utility-rate records are temporarily unavailable. Please try again later.' }, 429);
   }
 
   const upstreamUrl = new URL('https://api.openei.org/utility_rates');
