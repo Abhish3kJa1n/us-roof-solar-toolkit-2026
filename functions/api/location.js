@@ -254,7 +254,7 @@ export async function onRequestGet({ request, env }) {
     return json({ error: 'The selected location could not be verified right now. Please try again later.' }, 503);
   }
   if (!quota) {
-    return json({ error: 'Location lookup has reached its shared request limit. Please retry later.' }, 429);
+    return json({ error: 'Location verification is temporarily busy. Please try again later.' }, 429);
   }
 
   const results = await Promise.allSettled([
