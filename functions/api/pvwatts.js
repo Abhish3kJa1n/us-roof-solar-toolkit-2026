@@ -114,7 +114,7 @@ export async function onRequestGet({ request, env }) {
   try { data = await upstream.json(); }
   catch { return json({ error: 'NLR PVWatts returned an unreadable response.' }, 502); }
   if (upstream.status === 429) {
-    return json({ error: 'The solar model has reached its upstream request limit. Please retry later.' }, 429);
+    return json({ error: 'The solar production service is temporarily busy. Please try again later.' }, 429);
   }
   if (upstream.status === 401 || upstream.status === 403) {
     return json({ error: 'The solar production service could not complete this request. Please try again later.' }, 503);
