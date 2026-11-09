@@ -117,7 +117,7 @@ export async function onRequestGet({ request, env }) {
     return json({ error: 'The solar model has reached its upstream request limit. Please retry later.' }, 429);
   }
   if (upstream.status === 401 || upstream.status === 403) {
-    return json({ error: 'The server-side PVWatts key was rejected. The site owner must check its NLR API key configuration.' }, 503);
+    return json({ error: 'The solar production service could not complete this request. Please try again later.' }, 503);
   }
   if (!upstream.ok || (Array.isArray(data.errors) && data.errors.length)) {
     const explanation = Array.isArray(data.errors) && data.errors.length
