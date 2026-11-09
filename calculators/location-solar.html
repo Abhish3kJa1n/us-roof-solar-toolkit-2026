@@ -58,7 +58,7 @@
   <div class="note" id="solarInstalledBenchmark" aria-live="polite"><strong>Installed solar price reference</strong><p>Select a Census place to check whether a source-reviewed historical city or state price distribution exists. PVWatts estimates energy production; it does not estimate installation cost.</p></div>
 </div>
 <div class="btnrow"><button class="btn" id="lookup" data-field-validation-scope="#locationFields" type="button" disabled>Verify selected city</button><span id="locationStatus" class="byline" role="status" aria-live="polite"></span></div>
-<div class="note">Location source: US Census Bureau TIGERweb ACS2026 (January 1, 2026 vintage). The coordinate is an internal representative point for the Census place—not the geographic centre necessarily, a property coordinate, utility territory, weather station or permit jurisdiction.</div>
+<p class="note">The city point is a Census representative location, not a property address.</p>
 <hr style="border:0;border-top:1px solid #e3e9ee;margin:24px 0"/>
 <div class="kicker">Step 2 · PV system assumptions</div>
 <h2>Describe the solar array</h2>
@@ -71,14 +71,14 @@
 </div>
 <div class="btnrow"><button class="btn" id="estimate" data-field-validation-scope="#arrayFields" type="button" disabled>Model solar production</button><span id="modelStatus" class="byline" role="status" aria-live="polite"></span></div>
 <div class="output" id="result" aria-live="polite" aria-atomic="true"><div class="kicker">PV production estimate</div><div class="big">Waiting for location and inputs</div><p>Find a city, choose a returned Census place, and enter the array assumptions to request a typical-year model.</p></div>
-<div class="note">Model: National Laboratory of the Rockies (NLR) PVWatts V8. The model is driven by typical meteorological year weather data where available. It is not a production guarantee, bill forecast, engineering design, roof inspection or shade analysis. Production can differ materially due to micro-shading, obstructions, roof geometry, equipment, weather variability, downtime and actual system configuration.</div>
+<p class="note">PVWatts V8 models typical-year production from the selected city point and your system inputs. Roof-level shading, orientation, equipment and actual weather can change production.</p>
 </section>
 <section class="toolbox" style="margin-top:20px">
 <div class="kicker">Step 3 · Utility tariff (optional)</div><h2 style="color:#10243b;margin:6px 0 8px">Look for nearby residential tariff records</h2>
-<p>This optional lookup searches for residential utility-rate records near the selected Census place. Results are candidate matches only; proximity does not establish which utility serves your property or which rate plan is on your bill. Availability and coverage vary by location. A separate state-average residential electricity-price benchmark is shown after place selection; it is not your marginal rate or a substitute for your bill.</p>
+<p>Searches for nearby residential rate records. These are possible matches, not confirmation of your utility or current plan. Check the utility name and rate details against your bill before using a rate.</p>
 <div class="btnrow"><button class="btn" id="tariffs" type="button" disabled>Find nearby tariff records</button><span id="tariffStatus" class="byline" role="status" aria-live="polite"></span></div>
 <div id="tariffResults" aria-live="polite"></div>
-<p class="note">Do not use a candidate tariff in a savings calculation until the utility, customer class, effective dates, import charges, fixed charges, export compensation and rate-plan name match your current utility bill and official tariff document.</p>
+
 </section>
 <section class="toolbox" style="margin-top:20px">
 <div class="kicker">Continue your estimate</div><h2 style="color:#10243b;margin:6px 0 8px">Use modeled production in the savings calculator</h2>
@@ -86,15 +86,19 @@
 <div class="btnrow"><a class="btn" id="savingsLink" href="solar-savings" hidden>Use modeled production in savings calculator</a><a class="btn btn-outline" id="panelCountLink" href="solar-panel-count" hidden>Use modeled production in panel-count calculator</a><a class="btn btn-outline" id="combinedLink" href="/#calculator" hidden>Return to combined calculator with city data</a></div>
 </section>
 <article class="article">
-<h2>What this tool knows—and what it does not</h2>
-<p>The city lookup returns a Census representative point for an incorporated place or Census-designated place. PVWatts estimates output using those coordinates and the system assumptions you enter. It does not know the exact roof location, slope, azimuth, obstructions, tree shade, structural capacity, fire setbacks or equipment selected by an installer.</p>
-<h2>Why this is not a savings estimate</h2>
-<p>Energy produced is not the same as money saved. The dollar value depends on when the household uses electricity, its marginal retail rate, the applicable export credit, tariff design, fixed charges, minimum bills, demand charges, interconnection rules and other factors. This page models production only; the related savings calculator requires the owner to enter their tariff and annual energy-flow assumptions.</p>
-<h2>Data quality and freshness</h2>
-<p>City place records are supplied by the US Census Bureau TIGERweb ACS2026 (January 1, 2026 vintage) service. City and Census-designated-place boundaries are statistical/geographic definitions, not necessarily utility territories. Solar output is returned by the NLR PVWatts V8 API. The model's climate dataset is a typical-year dataset, not live weather. The result records the model response date and any warnings returned by PVWatts.</p>
+<h2>How to read the estimate</h2>
+<p>The city lookup supplies a representative Census place point. PVWatts models production from that point and the array assumptions you enter; it does not assess an individual roof, nearby shade or a home's electrical system.</p>
+<h2>Production is not bill savings</h2>
+<p>The value of solar electricity depends on when it is used, the utility's import rate, export compensation and other tariff rules. This tool estimates production only. Use your own bill and current utility tariff for a savings calculation.</p>
+<details class="source-details">
+<summary>Data sources and methodology</summary>
+<p><strong>Location:</strong> US Census Bureau TIGERweb place geography. The selected point represents a Census place, not a home or utility service boundary. <a href="https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_main.html" target="_blank" rel="noopener">Census TIGERweb</a>.</p>
+<p><strong>Solar production:</strong> National Laboratory of the Rockies (NLR) PVWatts V8 uses system inputs and typical meteorological-year solar resource data where available. It is a modeled estimate, not live weather or a roof inspection. <a href="https://developer.nlr.gov/docs/solar/pvwatts/v8/" target="_blank" rel="noopener">PVWatts V8 API documentation</a>.</p>
+<p><strong>Utility-rate lookup:</strong> Nearby records are drawn from the OpenEI Utility Rate Database. A nearby record may belong to a different utility or rate plan; confirm it against your bill and the utility's current tariff. <a href="https://apps.openei.org/services/doc/rest/util_rates/" target="_blank" rel="noopener">OpenEI rate-data documentation</a>.</p>
+</details>
 </article>
 </main>
-<aside class="sidecol"><div class="toolbox"><div class="kicker">Important limitations</div><p style="font-size:12px;color:#65778a;margin-bottom:0">A city is not an address lookup. It does not identify utility accounts, electricity rate plans, roof pitch, orientation, shading, permitting rules or local contractor prices.</p></div></aside>
+
 </div>
 <footer class="footer"><div class="wrap"><div><strong style="color:white;font-size:16px">Roof &amp; Solar Toolkit</strong><p>Homeowner planning tools and explainers.</p></div><div><a href="/#about">About</a><a href="../privacy">Privacy</a><a href="../terms">Terms</a><a href="../editorial-policy">Editorial policy</a></div></div><div class="wrap disclaimer">Disclaimer: this estimate is informational, not a quote, site inspection, engineering opinion, utility bill calculation, financial advice or production guarantee. Verify measurements, system design, utility tariff and proposal terms independently.</div></footer>
 <script src="../assets/js/field-validation-1.js"></script>
