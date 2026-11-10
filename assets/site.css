@@ -16,7 +16,8 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .field-import-note{display:block;margin-top:7px;color:#37624d;font-size:12px;line-height:1.5}
 
 /* Field-level validation: quiet guidance, inline feedback, no modal interruptions. */
-.field-checker-hint{display:block;margin-top:5px;color:#718091;font-size:11px;line-height:1.45}
+.field-checker-hint{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.field:focus-within .field-checker-hint{position:static!important;width:auto!important;height:auto!important;padding:0!important;margin:5px 0 0!important;overflow:visible!important;clip:auto!important;white-space:normal!important;border:0!important}
 .field-checker-message{display:block;margin-top:4px;color:#a33b2e;font-size:12px;font-weight:650;line-height:1.45}
 .field-checker-message[hidden]{display:none}
 .field-checker-message.is-warning{color:#8a5b12;font-weight:550}
