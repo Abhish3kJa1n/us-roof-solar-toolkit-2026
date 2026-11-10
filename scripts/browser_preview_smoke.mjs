@@ -71,8 +71,6 @@ const context = await browser.newContext({
   reducedMotion: 'reduce',
 });
 const page = await context.newPage();
-const browserPageErrors = [];
-page.on('pageerror', error => browserPageErrors.push(error.message));
 if (expectedPreviewSha) {
   const previewOrigin = new URL(base).origin;
   await page.route('**/assets/**', async (route) => {
@@ -91,7 +89,7 @@ page.on('console', message => {
   const text = message.text();
   // Cloudflare validates Web Analytics against the registered hostname. This
   // branch runs on a pages.dev alias, not the registered production hostname.
-  const previewAnalyticsCors = text.includes("Access to XMLHttpRequest at 'https://cloudflareinsights.com/cdn-cgi/rum'")
+  const previewAnalyticsCors = text.includes('https://cloudflareinsights.com/cdn-cgi/rum')
     && text.includes("from origin '" + previewOrigin + "'")
     && text.includes('blocked by CORS policy');
   if (previewAnalyticsCors) {
@@ -229,17 +227,6 @@ try {
   await page.locator('#productionPerKw').fill('1300');
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'solar price must remain blank until requested');
   await page.waitForFunction(() => typeof window.loadNationalSolarReference === 'function', undefined, { timeout: 10000 });
-  const solarRefBefore = await page.evaluate(() => ({
-    functionType: typeof window.loadNationalSolarReference,
-    inputCount: document.querySelectorAll('#solarPricePerWatt').length,
-    value: document.getElementById('solarPricePerWatt')?.value,
-    buttonExists: Boolean(document.getElementById('loadNationalSolarReference')),
-    buttonType: document.getElementById('loadNationalSolarReference')?.type,
-    disabled: document.getElementById('loadNationalSolarReference')?.disabled,
-    detailsOpen: document.getElementById('solarCostAssumptions')?.open,
-    url: location.href
-  }));
-  console.log('SOLAR_REFERENCE_BEFORE_CLICK ' + JSON.stringify(solarRefBefore));
   await page.locator('#loadNationalSolarReference').click();
   await page.waitForFunction(() => document.getElementById('solarPricePerWatt')?.value === '2.62', undefined, { timeout: 5000 });
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '2.62', 'real browser click must load the editable $2.62/W national solar reference');
@@ -361,15 +348,6 @@ try {
   assert.equal(await page.locator('#low').inputValue(), '5.5');
   assert.equal(await page.locator('#high').inputValue(), '8.5');
   assert.match(await page.locator('#referenceStatus').innerText(), /not a published reference for the new category/i);
-  const metalRefBefore = await page.locator('#loadReference').evaluate(button => ({
-    text: button.textContent,
-    disabled: button.disabled,
-    material: document.querySelector('#material')?.value,
-    system: document.querySelector('#metalSystem')?.value,
-    low: document.querySelector('#low')?.value,
-    high: document.querySelector('#high')?.value
-  }));
-  console.log('METAL_REFERENCE_BEFORE_CLICK ' + JSON.stringify(metalRefBefore));
   await page.locator('#loadReference').click();
   await page.waitForTimeout(100);
   const metalRefAfter = await page.locator('#loadReference').evaluate(button => ({
@@ -381,7 +359,6 @@ try {
     high: document.querySelector('#high')?.value,
     status: document.querySelector('#referenceStatus')?.textContent
   }));
-  console.log('METAL_REFERENCE_AFTER_CLICK ' + JSON.stringify(metalRefAfter));
   assert.equal(metalRefAfter.low, '6', 'metal shingles reference button did not load the published low rate');
   assert.equal(metalRefAfter.high, '14', 'metal shingles reference button did not load the published high rate');
 
