@@ -341,8 +341,9 @@
     .guide-list a{color:var(--navy);font-size:13px;font-weight:750;text-decoration:none}
     .guide-list a:hover{color:#744700;text-decoration:underline;text-underline-offset:3px}
     /* Keep technical range hints available to assistive technology; reveal visually on focus. */
-    .field-checker-hint{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
-    .field:focus-within .field-checker-hint{position:static!important;width:auto!important;height:auto!important;padding:0!important;margin:5px 0 0!important;overflow:visible!important;clip:auto!important;white-space:normal!important;border:0!important}
+    .field.has-field-checker-hint{position:relative}
+    .field-checker-hint{position:absolute!important;left:0!important;top:calc(100% + 4px)!important;z-index:20!important;width:min(100%,360px)!important;height:auto!important;padding:6px 8px!important;margin:0!important;overflow:visible!important;clip:auto!important;white-space:normal!important;border:1px solid #d5dfe7!important;border-radius:7px!important;background:#fff!important;color:#526577!important;box-shadow:0 2px 8px rgba(20,40,60,.08)!important;font-size:11px!important;line-height:1.35!important;opacity:0!important;pointer-events:none!important}
+    .field:focus-within .field-checker-hint{opacity:1!important}
     @media(max-width:850px){.resource-grid{grid-template-columns:1fr}.editorial-grid{grid-template-columns:1fr;gap:30px}}
 
 
