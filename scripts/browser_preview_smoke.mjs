@@ -71,6 +71,18 @@ const context = await browser.newContext({
   reducedMotion: 'reduce',
 });
 const page = await context.newPage();
+if (expectedPreviewSha) {
+  const previewOrigin = new URL(base).origin;
+  await page.route('**/assets/**', async (route) => {
+    const assetUrl = new URL(route.request().url());
+    if (assetUrl.origin !== previewOrigin) return route.continue();
+    assetUrl.searchParams.set('qa', expectedPreviewSha);
+    return route.continue({
+      url: assetUrl.toString(),
+      headers: { ...route.request().headers(), 'cache-control': 'no-cache' }
+    });
+  });
+}
 page.on('pageerror', error => browserErrors.push(error.message));
 page.on('console', message => {
   if (message.type() !== 'error') return;
