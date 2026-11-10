@@ -13,6 +13,7 @@ const AxeBuilder = axeModule.default || axeModule;
 
 const base = (process.env.PREVIEW_BASE_URL || 'https://audit-stage1-20261103.roof-solar-toolkit-2026.pages.dev').replace(/\/+$/, '');
 const screenshotDir = process.env.QA_SCREENSHOT_DIR || 'browser-qa-output';
+const expectedPreviewSha = process.env.EXPECTED_PREVIEW_SHA || '';
 fs.mkdirSync(screenshotDir, { recursive: true });
 
 const browserErrors = [];
@@ -26,25 +27,41 @@ const results = [];
 
 async function waitForPreview() {
   let lastStatus = 'no response';
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
-      const response = await fetch(base + '/index.html', { redirect: 'follow' });
+      const response = await fetch(base + '/index.html?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
       lastStatus = 'HTTP ' + response.status;
       if (response.status === 200 && /noindex/i.test(response.headers.get('x-robots-tag') || '')) {
-        const roofResponse = await fetch(base + '/calculators/roof-replacement-cost.html', { redirect: 'follow' });
+        const roofResponse = await fetch(base + '/calculators/roof-replacement-cost.html?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
         const roofHtml = roofResponse.ok ? await roofResponse.text() : '';
         if (roofResponse.status === 200 && roofHtml.includes('data-qa="metal-reference-state-v2"')) {
-          console.log('PREVIEW_READY_WITH_ROOF_REFERENCE_STATE_V2: ' + base);
-          return;
+          if (expectedPreviewSha) {
+            const identityResponse = await fetch(base + '/build-info.json?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
+            if (!identityResponse.ok) {
+              lastStatus = 'Preview content is ready but build identity is not available: HTTP ' + identityResponse.status;
+            } else {
+              const identity = await identityResponse.json();
+              if (identity.commit !== expectedPreviewSha) {
+                lastStatus = 'Preview alias is stale: expected commit ' + expectedPreviewSha + ', received ' + (identity.commit || 'missing');
+              } else {
+                console.log('PREVIEW_READY_FOR_EXACT_COMMIT ' + expectedPreviewSha + ': ' + base);
+                return;
+              }
+            }
+          } else {
+            console.log('PREVIEW_READY_WITH_ROOF_REFERENCE_STATE_V2: ' + base);
+            return;
+          }
+        } else {
+          lastStatus = 'Preview is reachable but the roof reference-state v2 build is not deployed yet';
         }
-        lastStatus = 'Preview is reachable but the roof reference-state v2 build is not deployed yet';
       }
     } catch (error) {
       lastStatus = error.message;
     }
     await new Promise(resolve => setTimeout(resolve, 5000));
   }
-  throw new Error('Preview did not become ready with noindex header: ' + lastStatus);
+  throw new Error('Preview did not serve the expected commit ' + (expectedPreviewSha || '(unspecified)') + ': ' + lastStatus);
 }
 
 const browser = await chromium.launch({ headless: true });
