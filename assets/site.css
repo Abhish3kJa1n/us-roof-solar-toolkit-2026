@@ -39,3 +39,6 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .manual-location-fallback summary{cursor:pointer;color:#30465b;font-weight:800}
 .manual-location-fallback p{margin:7px 0 10px;font-size:12px}
 .manual-location-fallback .field{max-width:420px;margin:8px 0}
+
+/* Pages without a sidebar should use the full reading column, not reserve an empty grid track. */
+.layout.layout-single{grid-template-columns:minmax(0,1fr);max-width:900px}
