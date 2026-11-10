@@ -310,9 +310,29 @@ try {
   assert.equal(await page.locator('#low').inputValue(), '5.5');
   assert.equal(await page.locator('#high').inputValue(), '8.5');
   assert.match(await page.locator('#referenceStatus').innerText(), /not a published reference for the new category/i);
+  const metalRefBefore = await page.locator('#loadReference').evaluate(button => ({
+    text: button.textContent,
+    disabled: button.disabled,
+    material: document.querySelector('#material')?.value,
+    system: document.querySelector('#metalSystem')?.value,
+    low: document.querySelector('#low')?.value,
+    high: document.querySelector('#high')?.value
+  }));
+  console.log('METAL_REFERENCE_BEFORE_CLICK ' + JSON.stringify(metalRefBefore));
   await page.locator('#loadReference').click();
-  assert.equal(await page.locator('#low').inputValue(), '6');
-  assert.equal(await page.locator('#high').inputValue(), '14');
+  await page.waitForTimeout(100);
+  const metalRefAfter = await page.locator('#loadReference').evaluate(button => ({
+    text: button.textContent,
+    disabled: button.disabled,
+    material: document.querySelector('#material')?.value,
+    system: document.querySelector('#metalSystem')?.value,
+    low: document.querySelector('#low')?.value,
+    high: document.querySelector('#high')?.value,
+    status: document.querySelector('#referenceStatus')?.textContent
+  }));
+  console.log('METAL_REFERENCE_AFTER_CLICK ' + JSON.stringify(metalRefAfter));
+  assert.equal(metalRefAfter.low, '6', 'metal shingles reference button did not load the published low rate');
+  assert.equal(metalRefAfter.high, '14', 'metal shingles reference button did not load the published high rate');
 
   // Switching away from Metal clears the selected metal reference; Reset clears everything.
   await page.locator('#material').selectOption('asphalt');
