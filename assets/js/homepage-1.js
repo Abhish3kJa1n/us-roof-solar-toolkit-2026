@@ -388,3 +388,83 @@
       calculate();
     });
         document.getElementById('editInputs').addEventListener('click', () => { document.getElementById('results').classList.remove('show'); setStep(1); });
+
+
+    // Preserve only calculator inputs in this tab while the visitor uses the city PV model.
+    // No address, name, contact detail or account data is stored.
+    const combinedFormStateKey = 'roof-solar-toolkit:combined-form:v1';
+    function saveCombinedFormState() {
+      const values = {};
+      document.querySelectorAll('#calculatorForm input, #calculatorForm select, #calculatorForm textarea').forEach((field) => {
+        if (field.type === 'radio') {
+          if (field.checked) values[`radio:${field.name}`] = field.value;
+        } else if (field.type === 'checkbox') {
+          values[`checkbox:${field.id}`] = field.checked;
+        } else if (field.id) {
+          values[field.id] = field.value;
+        }
+      });
+      const state = {
+        savedAt: Date.now(),
+        values,
+        meta: {
+          roofRateBasis, solarPriceBasis, importRateBasis, importedCityLabel,
+          roofReferenceStatus: roofReferenceStatus.textContent,
+          roofReferenceStatusHidden: roofReferenceStatus.hidden,
+          solarReferenceStatus: solarReferenceStatus.textContent,
+          solarReferenceStatusHidden: solarReferenceStatus.hidden
+        }
+      };
+      try { sessionStorage.setItem(combinedFormStateKey, JSON.stringify(state)); } catch (_) {}
+    }
+    function restoreCombinedFormState() {
+      let saved = null;
+      try { saved = JSON.parse(sessionStorage.getItem(combinedFormStateKey) || 'null'); } catch (_) {}
+      if (!saved || !saved.values || Date.now() - Number(saved.savedAt || 0) > 60 * 60 * 1000) {
+        try { sessionStorage.removeItem(combinedFormStateKey); } catch (_) {}
+        return false;
+      }
+      document.querySelectorAll('#calculatorForm input, #calculatorForm select, #calculatorForm textarea').forEach((field) => {
+        if (field.type === 'radio') {
+          const value = saved.values[`radio:${field.name}`];
+          if (value !== undefined) field.checked = field.value === value;
+        } else if (field.type === 'checkbox') {
+          const value = saved.values[`checkbox:${field.id}`];
+          if (value !== undefined) field.checked = Boolean(value);
+        } else if (field.id && Object.prototype.hasOwnProperty.call(saved.values, field.id)) {
+          field.value = saved.values[field.id];
+        }
+      });
+      syncAreaMode();
+      syncFinancingFields();
+      const meta = saved.meta || {};
+      if (typeof meta.roofRateBasis === 'string') roofRateBasis = meta.roofRateBasis;
+      if (typeof meta.solarPriceBasis === 'string') solarPriceBasis = meta.solarPriceBasis;
+      if (typeof meta.importRateBasis === 'string') importRateBasis = meta.importRateBasis;
+      if (typeof meta.importedCityLabel === 'string') importedCityLabel = meta.importedCityLabel;
+      if (typeof meta.roofReferenceStatus === 'string') {
+        roofReferenceStatus.textContent = meta.roofReferenceStatus;
+        roofReferenceStatus.hidden = Boolean(meta.roofReferenceStatusHidden);
+      }
+      if (typeof meta.solarReferenceStatus === 'string') {
+        solarReferenceStatus.textContent = meta.solarReferenceStatus;
+        solarReferenceStatus.hidden = Boolean(meta.solarReferenceStatusHidden);
+      }
+      try { sessionStorage.removeItem(combinedFormStateKey); } catch (_) {}
+      const restoredNote = document.getElementById('combinedRestoreStatus');
+      if (restoredNote) {
+        restoredNote.textContent = 'Your previous answers were restored. City-based solar production has been added.';
+        restoredNote.hidden = false;
+      }
+      setStep(2);
+      return true;
+    }
+    const cityLookupLink = document.querySelector('.city-data-bridge a[href*="return=combined"]');
+    if (cityLookupLink) cityLookupLink.addEventListener('click', saveCombinedFormState);
+    window.addEventListener('pageshow', (event) => {
+      if (event.persisted) {
+        try { sessionStorage.removeItem(combinedFormStateKey); } catch (_) {}
+      }
+    });
+    restoreCombinedFormState();
+
