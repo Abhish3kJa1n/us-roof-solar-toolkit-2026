@@ -64,3 +64,5 @@ jobs:
           path: browser-qa-output/*.png
           if-no-files-found: warn
           retention-days: 3
+
+# Isolated visual-regression run for the PR 37 single-column layout fix.
