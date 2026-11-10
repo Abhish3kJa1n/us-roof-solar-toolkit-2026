@@ -129,8 +129,8 @@
     const roofReferenceStatus = document.getElementById('roofReferenceStatus');
     const solarReferenceStatus = document.getElementById('solarReferenceStatus');
     let roofRateBasis = 'No roof-price reference loaded; roof cost is not estimated.';
-    let solarPriceBasis = 'User-entered quote.';
-    let importRateBasis = 'User-entered marginal tariff rate.';
+    let solarPriceBasis = 'No solar price entered; payback is not estimated.';
+    let importRateBasis = 'No marginal tariff entered; dollar value is not estimated.';
     let importedCityLabel = '';
 
     function addFieldNote(input, id, message, sourceUrl) {
@@ -210,7 +210,7 @@
       solarRateInput.value = '2.62';
       solarPriceBasis = 'EnergySage H1 2026 solar-only marketplace median; national marketplace reference, not city-specific or an installer quote.';
       solarReferenceStatus.hidden = false;
-      solarReferenceStatus.textContent = `${solarPriceBasis} It is prefilled only as a planning fallback. Replace with a comparable written cash quote; the value remains editable.`;
+      solarReferenceStatus.textContent = `${solarPriceBasis} Loaded because you requested it; this is a national marketplace reference, not a local quote. Replace it with a comparable written cash quote when available.`;
       refreshField(solarRateInput);
     }
     document.getElementById('loadNationalRoofReference').addEventListener('click', loadNationalRoofReference);
@@ -218,9 +218,7 @@
     // A national source is an explicit fallback where city-level installed-price records
     // have not passed publication gates. City-specific approved records can override it
     // through the location-data handoff; neither fallback is presented as a local quote.
-    // Do not silently anchor roof-cost estimates to a broad national range. Visitors
-    // must deliberately load it; otherwise the roof-cost component stays unestimated.
-    loadNationalSolarReference();
+    // The national solar-price reference is opt-in. It is never prefilled on page load.
 
     // An approved city/state historical LBNL distribution overrides the national
     // EnergySage fallback. The project registry remains empty until data licensing,
@@ -263,16 +261,26 @@
       }
     });
     solarRateInput.addEventListener('input', () => {
-      if (solarPriceBasis.startsWith('EnergySage') || solarPriceBasis.startsWith('Berkeley Lab')) {
+      if (solarRateInput.value.trim() === '') {
+        solarPriceBasis = 'No solar price entered; payback is not estimated.';
+        solarReferenceStatus.hidden = true;
+      } else if (solarPriceBasis.startsWith('EnergySage') || solarPriceBasis.startsWith('Berkeley Lab')) {
         solarPriceBasis = 'User-edited solar price after loading a published benchmark; no longer the unchanged source statistic.';
         solarReferenceStatus.textContent = solarPriceBasis;
+      } else if (!solarPriceBasis.startsWith('User-entered')) {
+        solarPriceBasis = 'User-entered cash-price quote supplied by visitor.';
       }
     });
     importRateInput.addEventListener('input', () => {
-      if (importRateBasis.startsWith('EIA')) {
+      const note = document.getElementById('importRatePrefillNote');
+      if (importRateInput.value.trim() === '') {
+        importRateBasis = 'No marginal tariff entered; dollar value is not estimated.';
+        if (note) { note.textContent = importRateBasis; note.hidden = true; }
+      } else if (importRateBasis.startsWith('EIA')) {
         importRateBasis = 'User-edited import rate after loading the EIA state-average scenario; verify against the actual tariff.';
-        const note = document.getElementById('importRatePrefillNote');
         if (note) note.textContent = importRateBasis;
+      } else if (!importRateBasis.startsWith('User-entered')) {
+        importRateBasis = 'User-entered marginal tariff rate supplied by visitor.';
       }
     });
 
@@ -408,6 +416,7 @@
       const state = {
         savedAt: Date.now(),
         values,
+        openDetails: Array.from(document.querySelectorAll('#calculatorForm details[open]')).map((detail) => detail.id),
         meta: {
           roofRateBasis, solarPriceBasis, importRateBasis, importedCityLabel,
           roofReferenceStatus: roofReferenceStatus.textContent,
@@ -438,6 +447,15 @@
       });
       syncAreaMode();
       syncFinancingFields();
+      const openDetails = Array.isArray(saved.openDetails) ? saved.openDetails : [];
+      document.querySelectorAll('#calculatorForm details').forEach((detail) => {
+        detail.open = openDetails.includes(detail.id);
+      });
+      const incomingSolarPrice = Number(new URLSearchParams(window.location.search).get('solarPricePerWatt'));
+      if (incomingSolarPrice > 0) {
+        const solarDetails = document.getElementById('solarCostAssumptions');
+        if (solarDetails) solarDetails.open = true;
+      }
       const meta = saved.meta || {};
       if (typeof meta.roofRateBasis === 'string') roofRateBasis = meta.roofRateBasis;
       if (typeof meta.solarPriceBasis === 'string') solarPriceBasis = meta.solarPriceBasis;
