@@ -242,7 +242,21 @@ try {
   console.log('SOLAR_REFERENCE_BEFORE_CLICK ' + JSON.stringify(solarRefBefore));
   await page.evaluate(() => {
     const button = document.getElementById('loadNationalSolarReference');
-    window.__solarReferenceClickProbe = { count: 0 };
+    window.__solarReferenceClickProbe = { count: 0, events: [] };
+    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+      window.addEventListener(type, (event) => {
+        if (event.target?.id === 'loadNationalSolarReference') {
+          const scoped = event.target.closest('[data-field-validation-scope]');
+          window.__solarReferenceClickProbe.events.push({
+            type,
+            phase: event.eventPhase,
+            defaultPrevented: event.defaultPrevented,
+            targetId: event.target.id,
+            closestScope: scoped?.id || scoped?.getAttribute('data-field-validation-scope') || null
+          });
+        }
+      }, true);
+    }
     button?.addEventListener('click', () => { window.__solarReferenceClickProbe.count += 1; }, true);
   });
   await page.locator('#loadNationalSolarReference').click();
@@ -257,7 +271,7 @@ try {
     detailsOpen: document.getElementById('solarCostAssumptions')?.open
   }));
   // Keep the real pointer-click result separate from the synthetic-click diagnostic below.
-  console.log('SOLAR_REFERENCE_AFTER_CLICK ' + JSON.stringify({ ...solarRefAfterClick, errors: browserPageErrors }));
+  console.log('SOLAR_REFERENCE_AFTER_CLICK ' + JSON.stringify({ ...solarRefAfterClick, eventTrace: await page.evaluate(() => window.__solarReferenceClickProbe?.events || []), errors: browserPageErrors }));
   if (solarRefAfterClick.value !== '2.62' && solarRefAfterClick.functionType === 'function') {
     const syntheticClickDiagnostic = await page.evaluate(() => {
       const button = document.getElementById('loadNationalSolarReference');
