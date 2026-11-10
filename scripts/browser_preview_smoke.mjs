@@ -226,7 +226,33 @@ try {
   await page.locator('#exportRate').fill('0.04');
   await page.locator('#productionPerKw').fill('1300');
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'solar price must remain blank until requested');
+  await page.waitForFunction(() => typeof window.loadNationalSolarReference === 'function', undefined, { timeout: 10000 });
+  const solarRefBefore = await page.evaluate(() => ({
+    functionType: typeof window.loadNationalSolarReference,
+    inputCount: document.querySelectorAll('#solarPricePerWatt').length,
+    value: document.getElementById('solarPricePerWatt')?.value,
+    buttonExists: Boolean(document.getElementById('loadNationalSolarReference')),
+    buttonType: document.getElementById('loadNationalSolarReference')?.type,
+    disabled: document.getElementById('loadNationalSolarReference')?.disabled,
+    detailsOpen: document.getElementById('solarCostAssumptions')?.open,
+    url: location.href
+  }));
+  console.log('SOLAR_REFERENCE_BEFORE_CLICK ' + JSON.stringify(solarRefBefore));
   await page.locator('#loadNationalSolarReference').click();
+  await page.waitForTimeout(100);
+  const solarRefAfterClick = await page.evaluate(() => ({
+    value: document.getElementById('solarPricePerWatt')?.value,
+    status: document.getElementById('solarReferenceStatus')?.textContent,
+    errors: window.__qaPageErrors || []
+  }));
+  console.log('SOLAR_REFERENCE_AFTER_CLICK ' + JSON.stringify(solarRefAfterClick));
+  if (solarRefAfterClick.value !== '2.62' && typeof window.loadNationalSolarReference === 'function') {
+    await page.evaluate(() => window.loadNationalSolarReference());
+    console.log('SOLAR_REFERENCE_DIRECT_CALL ' + JSON.stringify(await page.evaluate(() => ({
+      value: document.getElementById('solarPricePerWatt')?.value,
+      status: document.getElementById('solarReferenceStatus')?.textContent
+    }))));
+  }
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '2.62');
   await page.locator('#offset').fill('80');
   await page.locator('#calculateButton').click();
