@@ -461,10 +461,12 @@
     }
     const cityLookupLink = document.querySelector('.city-data-bridge a[href*="return=combined"]');
     if (cityLookupLink) cityLookupLink.addEventListener('click', saveCombinedFormState);
-    window.addEventListener('pageshow', (event) => {
-      if (event.persisted) {
-        try { sessionStorage.removeItem(combinedFormStateKey); } catch (_) {}
-      }
-    });
+    if (typeof window.addEventListener === 'function') {
+      window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+          try { sessionStorage.removeItem(combinedFormStateKey); } catch (_) {}
+        }
+      });
+    }
     restoreCombinedFormState();
 
