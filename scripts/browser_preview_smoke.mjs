@@ -382,6 +382,7 @@ try {
   await page.locator('#selfUse').fill('40');
   await page.locator('#exportRate').fill('0.04');
   await page.locator('#solarPricePerWatt').fill('3.05');
+  await page.locator('#productionPerKw').fill('1450'); // stale manual yield must not override the city PV result
   await page.locator('#offset').fill('80');
   await page.locator('.city-data-bridge a').evaluate(anchor => {
     const url = new URL(anchor.href);
@@ -417,7 +418,8 @@ try {
   assert.equal(await page.locator('#exportRate').inputValue(), '0.04');
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '3.05');
   assert.equal(await page.locator('#offset').inputValue(), '80');
-  assert.ok(Number(await page.locator('#productionPerKw').inputValue()) > 0, 'PVWatts production value must be prefilled on return');
+  const returnedProduction = Number(await page.locator('#productionPerKw').inputValue());
+  assert.ok(returnedProduction > 0 && returnedProduction !== 1450, 'fresh PVWatts production must replace the stale manually entered yield');
   assert.ok(await page.locator('#combinedRestoreStatus').isVisible(), 'restoration confirmation should be visible');
   results.push('combined calculator city-handoff state preservation and return: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-return-restored.png'), fullPage: true });
