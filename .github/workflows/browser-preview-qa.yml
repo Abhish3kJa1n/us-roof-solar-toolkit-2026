@@ -64,3 +64,5 @@ jobs:
           path: browser-qa-output/*.png
           if-no-files-found: warn
           retention-days: 3
+
+# Dedicated preview-browser verification branch for PR #37; no application code changes.
