@@ -240,22 +240,34 @@ try {
     url: location.href
   }));
   console.log('SOLAR_REFERENCE_BEFORE_CLICK ' + JSON.stringify(solarRefBefore));
+  await page.evaluate(() => {
+    const button = document.getElementById('loadNationalSolarReference');
+    window.__solarReferenceClickProbe = { count: 0 };
+    button?.addEventListener('click', () => { window.__solarReferenceClickProbe.count += 1; }, true);
+  });
   await page.locator('#loadNationalSolarReference').click();
   await page.waitForTimeout(100);
   const solarRefAfterClick = await page.evaluate(() => ({
     value: document.getElementById('solarPricePerWatt')?.value,
-    status: document.getElementById('solarReferenceStatus')?.textContent
+    status: document.getElementById('solarReferenceStatus')?.textContent,
+    clickCount: window.__solarReferenceClickProbe?.count ?? null,
+    functionType: typeof window.loadNationalSolarReference,
+    buttonConnected: document.getElementById('loadNationalSolarReference')?.isConnected,
+    buttonDisabled: document.getElementById('loadNationalSolarReference')?.disabled,
+    detailsOpen: document.getElementById('solarCostAssumptions')?.open
   }));
   console.log('SOLAR_REFERENCE_AFTER_CLICK ' + JSON.stringify({ ...solarRefAfterClick, errors: browserPageErrors }));
-  if (solarRefAfterClick.value !== '2.62' && typeof window.loadNationalSolarReference === 'function') {
-    await page.evaluate(() => window.loadNationalSolarReference());
-    const directSolarRefState = await page.evaluate(() => ({
-      value: document.getElementById('solarPricePerWatt')?.value,
-      status: document.getElementById('solarReferenceStatus')?.textContent
-    }));
-    console.log('SOLAR_REFERENCE_DIRECT_CALL ' + JSON.stringify({ ...directSolarRefState, errors: browserPageErrors }));
+  if (solarRefAfterClick.value !== '2.62' && solarRefAfterClick.functionType === 'function') {
+    const directSolarRefState = await page.evaluate(() => {
+      window.loadNationalSolarReference();
+      return {
+        value: document.getElementById('solarPricePerWatt')?.value,
+        status: document.getElementById('solarReferenceStatus')?.textContent
+      };
+    });
+    console.log('SOLAR_REFERENCE_DIRECT_CALL_DIAGNOSTIC ' + JSON.stringify({ ...directSolarRefState, errors: browserPageErrors }));
   }
-  assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '2.62');
+  assert.equal(solarRefAfterClick.value, '2.62', 'national solar reference button click must load the editable $2.62/W value; see SOLAR_REFERENCE_AFTER_CLICK diagnostics');
   await page.locator('#offset').fill('80');
   await page.locator('#calculateButton').click();
   await page.locator('#results.show').waitFor({ state: 'visible', timeout: 15000 });
