@@ -71,6 +71,8 @@ const context = await browser.newContext({
   reducedMotion: 'reduce',
 });
 const page = await context.newPage();
+const browserPageErrors = [];
+page.on('pageerror', error => browserPageErrors.push(error.message));
 if (expectedPreviewSha) {
   const previewOrigin = new URL(base).origin;
   await page.route('**/assets/**', async (route) => {
@@ -243,7 +245,7 @@ try {
   const solarRefAfterClick = await page.evaluate(() => ({
     value: document.getElementById('solarPricePerWatt')?.value,
     status: document.getElementById('solarReferenceStatus')?.textContent,
-    errors: window.__qaPageErrors || []
+    errors: browserPageErrors
   }));
   console.log('SOLAR_REFERENCE_AFTER_CLICK ' + JSON.stringify(solarRefAfterClick));
   if (solarRefAfterClick.value !== '2.62' && typeof window.loadNationalSolarReference === 'function') {
