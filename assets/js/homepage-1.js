@@ -400,7 +400,8 @@
           if (field.checked) values[`radio:${field.name}`] = field.value;
         } else if (field.type === 'checkbox') {
           values[`checkbox:${field.id}`] = field.checked;
-        } else if (field.id) {
+        } else if (field.id && field.id !== 'productionPerKw') {
+          // The fresh city PV handoff must win over any older manually entered production value.
           values[field.id] = field.value;
         }
       });
