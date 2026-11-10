@@ -159,6 +159,10 @@ try {
   await page.screenshot({ path: path.join(screenshotDir, 'homepage-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
+  assert.equal(await page.locator('#tools .resource-card').count(), 5, 'homepage tool directory should list only the five specialist calculators');
+  const guideHrefs = await page.locator('#guides .guide-list a').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
+  assert.equal(guideHrefs.length, 12, 'homepage should retain all twelve distinct homeowner guides');
+  assert.equal(new Set(guideHrefs).size, guideHrefs.length, 'homepage guide links must not be duplicated');
 
   // Roof-price defaults must remain blank until the visitor explicitly requests the national reference.
   assert.equal(await page.locator('#roofRateLow').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
@@ -362,6 +366,61 @@ try {
   const tariffText = await page.locator('#tariffResults').innerText();
   assert.match(tariffText, /OpenEI|candidate|utility|tariff|rate/i);
   results.push('OpenEI browser lookup flow: PASS');
+
+
+  // Combined estimator -> city PV lookup -> return: preserve inputs and resume at energy step.
+  await open('/index.html');
+  await page.locator('#roofType').selectOption('asphalt');
+  await page.locator('#roofAge').fill('12');
+  await page.locator('#roofArea').fill('1800');
+  await page.locator('#roofRateLow').fill('5.25');
+  await page.locator('#roofRateHigh').fill('8.75');
+  await page.locator('#condition').selectOption('fair');
+  await page.locator('button[data-next="2"]').click();
+  await page.locator('#annualKwh').fill('10800');
+  await page.locator('#rate').fill('0.18');
+  await page.locator('#selfUse').fill('40');
+  await page.locator('#exportRate').fill('0.04');
+  await page.locator('#solarPricePerWatt').fill('3.05');
+  await page.locator('#offset').fill('80');
+  await page.locator('.city-data-bridge a').evaluate(anchor => {
+    const url = new URL(anchor.href);
+    url.searchParams.set('city', 'Austin');
+    url.searchParams.set('state', 'TX');
+    anchor.href = url.toString();
+  });
+  await page.locator('.city-data-bridge a').click();
+  await page.locator('#placeField').waitFor({ state: 'visible', timeout: 30000 });
+  const returnPlaceOptions = await page.locator('#place option').evaluateAll(items => items.map(item => ({ value: item.value, text: item.textContent })));
+  const returnPlace = returnPlaceOptions.find(item => item.value);
+  assert.ok(returnPlace, 'return-flow city lookup did not produce a Census place');
+  await page.locator('#place').selectOption(returnPlace.value);
+  await page.locator('#estimate').click();
+  await page.waitForFunction(() => {
+    const text = document.querySelector('#result')?.innerText || '';
+    return Boolean(text) && !/Waiting for location and inputs|Model needs updating|Calculating(?:…|\.\.\.)?/i.test(text);
+  }, undefined, { timeout: 60000 });
+  await page.locator('#combinedLink').waitFor({ state: 'visible' });
+  assert.match(await page.locator('#continueTitle').innerText(), /Return to your combined estimate/i);
+  assert.ok(!(await page.locator('#combinedLink').getAttribute('class')).includes('btn-outline'), 'combined return action should be primary when the visitor came from the combined calculator');
+  await page.locator('#combinedLink').click();
+  await page.locator('[data-panel="2"]').waitFor({ state: 'visible', timeout: 15000 });
+  assert.equal(await page.locator('#roofType').inputValue(), 'asphalt');
+  assert.equal(await page.locator('#roofAge').inputValue(), '12');
+  assert.equal(await page.locator('#roofArea').inputValue(), '1800');
+  assert.equal(await page.locator('#roofRateLow').inputValue(), '5.25');
+  assert.equal(await page.locator('#roofRateHigh').inputValue(), '8.75');
+  assert.equal(await page.locator('#condition').inputValue(), 'fair');
+  assert.equal(await page.locator('#annualKwh').inputValue(), '10800');
+  assert.equal(await page.locator('#rate').inputValue(), '0.18');
+  assert.equal(await page.locator('#selfUse').inputValue(), '40');
+  assert.equal(await page.locator('#exportRate').inputValue(), '0.04');
+  assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '3.05');
+  assert.equal(await page.locator('#offset').inputValue(), '80');
+  assert.ok(Number(await page.locator('#productionPerKw').inputValue()) > 0, 'PVWatts production value must be prefilled on return');
+  assert.ok(await page.locator('#combinedRestoreStatus').isVisible(), 'restoration confirmation should be visible');
+  results.push('combined calculator city-handoff state preservation and return: PASS');
+  await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-return-restored.png'), fullPage: true });
 
   // Standalone savings calculator.
   await open('/calculators/solar-savings.html');
