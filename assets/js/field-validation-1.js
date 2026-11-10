@@ -135,6 +135,7 @@
     const hintId = `${id}-checker-hint`;
     const messageId = `${id}-checker-message`;
     const field = element.closest('.field') || element.parentElement;
+    field.classList.add('has-field-checker-hint');
     const hint = document.createElement('small');
     hint.className = 'field-checker-hint';
     hint.id = hintId;
