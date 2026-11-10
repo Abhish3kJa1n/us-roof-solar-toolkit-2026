@@ -64,3 +64,5 @@ jobs:
           path: browser-qa-output/*.png
           if-no-files-found: warn
           retention-days: 3
+
+# temporary QA trigger marker [browser-qa]; removed in follow-up commit.
