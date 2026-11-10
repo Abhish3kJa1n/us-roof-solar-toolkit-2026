@@ -1,4 +1,5 @@
 name: Real-browser Preview QA
+# [browser-qa] Contrast retest after darkening the roof journey label.
 # [browser-qa] Audit-only trigger for the homepage journey redesign preview.
 
 on:
