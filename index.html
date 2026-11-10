@@ -345,6 +345,24 @@
     .field:focus-within .field-checker-hint{position:static!important;width:auto!important;height:auto!important;padding:0!important;margin:5px 0 0!important;overflow:visible!important;clip:auto!important;white-space:normal!important;border:0!important}
     @media(max-width:850px){.resource-grid{grid-template-columns:1fr}.editorial-grid{grid-template-columns:1fr;gap:30px}}
 
+
+    .optional-assumptions{grid-column:1/-1;border:1px solid var(--line);border-radius:10px;background:#fbfcfd;padding:0 14px;margin:4px 0 8px}
+    .optional-assumptions summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;padding:13px 0;color:var(--navy);font-weight:750}
+    .optional-assumptions summary::-webkit-details-marker{display:none}
+    .optional-assumptions summary::after{content:'+';color:#8a5a12;font-size:20px;font-weight:500;line-height:1}
+    .optional-assumptions[open] summary::after{content:'−'}
+    .optional-assumptions summary small{color:#617283;font-size:11px;font-weight:650;text-align:right}
+    .optional-assumptions-note{margin:0 0 12px;color:#526577;font-size:12px;line-height:1.5}
+    .optional-assumptions-grid{margin:0!important;padding:0 0 12px!important;gap:14px}
+    .optional-assumptions summary:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+    .how-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:34px}
+    .how-card{background:transparent;border:0;border-top:2px solid var(--gold);border-radius:0;padding:18px 0;box-shadow:none}
+    .how-no{width:auto;height:auto;border-radius:0;background:transparent;color:#8a5a12;font-size:12px;letter-spacing:.08em;font-weight:800}
+    .how-card h3{margin:9px 0 7px;font-size:17px}
+    .how-card p{font-size:13px;line-height:1.6;color:#526577}
+    @media(max-width:850px){.how-grid{grid-template-columns:1fr;gap:20px}}
+    @media(max-width:600px){.optional-assumptions summary{align-items:flex-start;flex-direction:column;gap:4px}.optional-assumptions summary small{text-align:left}}
+
 </style>
 <link rel="canonical" href="https://getroofsolarcalculator.online/" />
 <meta property="og:url" content="https://getroofsolarcalculator.online/" />
@@ -430,9 +448,16 @@
 <div class="field" hidden="" id="homeAreaField"><label for="homeArea">Above-ground finished home area <span class="required-mark">*</span></label><div class="input-with-suffix"><input id="homeArea" data-validation-unit="sq ft" data-validation-required="true" max="50000" min="100" step="1" placeholder="e.g. 1,600" type="number"/><span>sq ft</span></div><span class="hint">Approximate only. Exclude basements, garages and areas not under the main roof where possible.</span></div>
 <div class="field" hidden="" id="storiesField"><label for="stories">Number of above-ground stories</label><select id="stories"><option value="" selected>Choose stories</option><option value="1">1 story</option><option value="2">2 stories</option><option value="3">3 stories</option></select><span class="hint">Used to approximate building footprint as total floor area ÷ stories.</span></div>
 <div class="field"><label for="pitch">Roof pitch <span class="hint">(required only for home-area mode)</span></label><select id="pitch"><option selected="" value="">Select approximate pitch</option><option value="low">Low · 2:12 (1.014×)</option><option value="moderate">Moderate · 6:12 (1.118×)</option><option value="steep">Steep · 9:12 (1.250×)</option></select><span class="hint">A measured roof-surface area is used as entered; pitch is not applied a second time.</span></div>
+<details class="optional-assumptions full" id="roofPriceAssumptions">
+<summary><span>Add roof-price assumptions</span><small>Optional · needed for a roof-cost range</small></summary>
+<p class="optional-assumptions-note">Enter comparable local installed rates, or deliberately load the broad national reference. Leave these blank if you only need the roof-condition and solar-sizing results.</p>
+<div class="form-grid optional-assumptions-grid">
 <div class="field"><label for="roofRateLow">Low installed roof-price assumption <span class="hint">(editable reference)</span></label><div class="input-with-prefix"><span>$</span><input id="roofRateLow" data-validation-unit="$/roof sq ft" data-validation-required-with-peer="#roofRateHigh" data-validation-warning-max="20" max="100" min="0.10" placeholder="e.g. 5.50" step="0.01" type="number"/></div><span class="hint">No roof-price range is prefilled. Both rates are optional; leave them blank to skip roof cost or enter comparable local installed rates.</span></div>
 <div class="field"><label for="roofRateHigh">High installed roof-price assumption <span class="hint">(editable reference)</span></label><div class="input-with-prefix"><span>$</span><input id="roofRateHigh" data-validation-unit="$/roof sq ft" data-validation-required-with-peer="#roofRateLow" data-validation-min-peer="#roofRateLow" data-validation-warning-max="20" max="100" min="0.10" placeholder="e.g. 8.00" step="0.01" type="number"/></div><span class="hint">Use the same scope and unit as the low rate.</span></div>
 <div class="field full"><button class="btn btn-outline" id="loadNationalRoofReference" type="button">Load broad national roof-price fallback ($4–$11 / sq ft)</button><small id="roofReferenceStatus" class="field-import-note" hidden></small></div>
+
+</div>
+</details>
 <div class="field"><label for="condition">Current roof condition</label><select id="condition"><option value="good">Good — no known issues</option><option value="fair">Fair — aging or minor wear</option><option value="poor">Poor — leaks or visible damage</option><option selected="" value="unknown">Not sure</option></select></div>
 </div>
 <div class="error-message" id="error1" role="alert"></div>
@@ -445,15 +470,22 @@
 
 <div class="field"><label for="annualKwh">Annual electricity use <span class="hint">(required)</span></label><div class="input-with-suffix"><input id="annualKwh" data-validation-unit="kWh/year" data-validation-required="true" max="200000" min="1" placeholder="e.g. 10,800" step="1" type="number"/><span>kWh / yr</span></div><span class="hint">Use the total kWh from the last 12 months of utility bills. Do not estimate usage from the dollar amount.</span></div>
 <div class="field"><label for="rate">Marginal electricity import rate <span class="hint">(optional; required for dollar-value estimates)</span></label><div class="input-with-prefix"><span>$</span><input id="rate" data-validation-unit="$/kWh" max="5" min="0" placeholder="e.g. 0.1819" step="0.0001" type="number"/></div><span class="hint">Use the marginal energy charge on your bill. Avoid dividing the total bill by kWh when it includes fixed charges or taxes.</span></div>
+<div class="field"><label for="productionPerKw">Estimated production per kW <span class="required-mark">*</span></label><div class="input-with-suffix"><input id="productionPerKw" data-validation-unit="kWh/kW DC/year" data-validation-required="true" max="4000" min="100" placeholder="e.g. 1,300" step="0.1" type="number"/><span>kWh / kW DC / yr</span></div><span class="hint">Use the city PVWatts lookup or a site-specific model. Do not guess this value.</span></div>
+<div class="field full"><label for="offset">Target annual solar generation (% of annual use) <span class="required-mark">*</span></label><div class="input-with-suffix"><input id="offset" data-validation-unit="% of annual use" data-validation-required="true" max="100" min="5" placeholder="e.g. 80" required aria-required="true" step="1" type="number"/><span>%</span></div><span class="hint">Choose a target for annual generation relative to annual use. It does not guarantee the same reduction in your total bill.</span></div>
+<details class="optional-assumptions full" id="solarCostAssumptions">
+<summary><span>Add bill-value and project-cost details</span><small>Optional · unlocks dollar savings and payback</small></summary>
+<p class="optional-assumptions-note">Add a modeled self-use share and utility export credit; enter a written cash price or deliberately load the national reference to estimate payback. Leave unknown values blank.</p>
+<div class="form-grid optional-assumptions-grid">
 <div class="field"><label for="selfUse">Annual solar generation used in the home (%)</label><div class="input-with-suffix"><input id="selfUse" data-validation-unit="%" max="100" min="0" step="1" type="number" placeholder="Enter modeled share"/><span>%</span></div><span class="hint">Enter a modeled annual share of solar generation used in the home. Leave blank if unknown; this is not an hourly load simulation.</span></div>
 <div class="field"><label for="exportRate">Utility export compensation <span class="hint">(optional)</span></label><div class="input-with-prefix"><span>$</span><input id="exportRate" data-validation-unit="$/kWh" max="5" min="0" placeholder="e.g. 0.04" step="0.001" type="number"/></div><span class="hint">Enter the utility credit per exported kWh. Leave blank if unknown; exported energy will not be assigned a value.</span></div>
-<div class="field"><label for="productionPerKw">Estimated production per kW <span class="required-mark">*</span></label><div class="input-with-suffix"><input id="productionPerKw" data-validation-unit="kWh/kW DC/year" data-validation-required="true" max="4000" min="100" placeholder="e.g. 1,300" step="0.1" type="number"/><span>kWh / kW DC / yr</span></div><span class="hint">Use the city PVWatts lookup or a site-specific model. Do not guess this value.</span></div>
-<div class="field"><label for="solarPricePerWatt">Installed solar price <span class="hint">(optional)</span></label><div class="input-with-prefix"><span>$</span><input id="solarPricePerWatt" data-validation-unit="$/W DC" max="20" min="0.10" placeholder="e.g. 3.00" step="0.01" type="number"/></div><span class="hint">Use a current written cash quote per DC watt.</span></div>
-<div class="field full"><button class="btn btn-outline" id="loadNationalSolarReference" type="button">Reload national solar-price fallback</button><small id="solarReferenceStatus" class="field-import-note" hidden></small></div>
-<div class="field full"><label for="offset">Target annual solar generation (% of annual use) <span class="required-mark">*</span></label><div class="input-with-suffix"><input id="offset" data-validation-unit="% of annual use" data-validation-required="true" max="100" min="5" placeholder="e.g. 80" required aria-required="true" step="1" type="number"/><span>%</span></div><span class="hint">Choose a target for annual generation relative to annual use. It does not guarantee the same reduction in your total bill.</span></div>
+<div class="field"><label for="solarPricePerWatt">Installed solar price <span class="hint">(optional)</span></label><div class="input-with-prefix"><span>$</span><input id="solarPricePerWatt" data-validation-unit="$/W DC" max="20" min="0.10" placeholder="e.g. 3.00" step="0.01" type="number"/></div><span class="hint">Use a current written cash quote per DC watt, or load the national reference below.</span></div>
+<div class="field full"><button class="btn btn-outline" id="loadNationalSolarReference" type="button">Load national solar-price reference ($2.62/W)</button><small id="solarReferenceStatus" class="field-import-note" hidden></small></div>
 <div class="field full" role="group" aria-labelledby="financingLabel"><span class="field-label" id="financingLabel">How are you thinking about paying for solar?</span><div class="segmented"><div class="segment"><input checked="" id="cash" name="financing" type="radio" value="cash"/><label for="cash">Cash / not sure yet</label></div><div class="segment"><input id="loan" name="financing" type="radio" value="loan"/><label for="loan">Explore a loan estimate</label></div></div></div>
 <div class="field" hidden="" id="aprField"><label for="apr">Illustrative financing interest rate</label><div class="input-with-suffix"><input id="apr" data-validation-unit="% APR" max="35" min="0" placeholder="Enter quoted APR" step="0.1" type="number"/><span>% APR</span></div></div>
 <div class="field" hidden="" id="termField"><label for="term">Illustrative loan term</label><div class="input-with-suffix"><input id="term" data-validation-unit="years" max="30" min="1" placeholder="Enter term" step="1" type="number"/><span>years</span></div></div>
+
+</div>
+</details>
 <div class="field full note-box">Tax credits and incentives are not included. Review the current IRS guidance below; this calculator does not determine eligibility.</div>
 </div>
 <div class="error-message" id="error2" role="alert"></div>
@@ -480,11 +512,11 @@
 </div>
 </section>
 <section class="section" id="how">
-<div class="container"><div class="section-head"><div class="section-kicker">How it works</div><h2>Simple tools. Visible assumptions. No sales funnel.</h2><p>Use the calculators to build a rough planning view, then validate the details that a browser-based estimate cannot measure.</p></div>
+<div class="container"><div class="section-head"><div class="section-kicker">Using your estimate</div><h2>Turn a planning range into better project questions.</h2><p>Start with the measurements and utility data you have. Add price assumptions only when you can compare them on the same basis.</p></div>
 <div class="how-grid">
-<article class="how-card"><div class="how-no">01</div><h3>Enter what you know</h3><p>Start with roof material, age, area and electricity-use details. Enter your own marginal import rate to estimate dollar savings; without it, the calculator shows system size and production only.</p></article>
-<article class="how-card"><div class="how-no">02</div><h3>Inspect the calculation</h3><p>Review the modeled roof-cost range, system size, production, savings and payback. Open the assumptions instead of treating a single output as a fact.</p></article>
-<article class="how-card"><div class="how-no">03</div><h3>Verify before spending</h3><p>Confirm roof measurements, structural condition, pricing, system design, utility tariff and incentive eligibility with authoritative local sources and qualified professionals.</p></article>
+<article class="how-card"><div class="how-no">01</div><h3>Start with your measurements</h3><p>Use measured roof area and annual kWh where available. Leave unknown values blank rather than guessing.</p></article>
+<article class="how-card"><div class="how-no">02</div><h3>Add comparable assumptions</h3><p>Use local installed-price ranges, your marginal utility rate and the export credit in your plan. National references are optional.</p></article>
+<article class="how-card"><div class="how-no">03</div><h3>Verify the written scope</h3><p>Confirm roof condition, measurements, exclusions, warranties and utility rules before committing.</p></article>
 </div>
 </div>
 </section>
@@ -533,15 +565,15 @@
 </section>
 <section aria-label="Solar tax incentive information" class="section"><div class="container"><div class="note-box"><strong>Federal homeowner solar tax credit in 2026:</strong> As of October 31, 2026, the IRS Section 25D law-change FAQ states that the homeowner Residential Clean Energy Credit is not allowed for expenditures after December 31, 2025. For an individual item, the expenditure is treated as made when its original installation is completed; paying on or before December 31, 2025 does not preserve the credit if installation is completed after that date. The FAQ states a separate timing rule for expenditures connected with construction or reconstruction of a structure. This is general information about homeowner Section 25D, not a determination of an individual's eligibility. This calculator does not model tax credits, leases, power-purchase agreements or provider-level tax treatment. Verify current rules with the IRS and a qualified tax professional. Read the <a href="https://www.irs.gov/newsroom/faqs-for-modification-of-sections-25c-25d-25e-30c-30d-45l-45w-and-179d-under-public-law-119-21-139-stat-72-july-4-2025-commonly-known-as-the-one-big-beautiful-bill-obbb" rel="noopener" target="_blank">IRS law-change FAQs for the current Section 25D timing rule</a>. State, local and utility programs are separate and may change.</div></div></section>
 <section class="section" id="about"><div class="container about-grid">
-<div class="about-visual"><div class="about-mark">About Roof &amp; Solar Toolkit</div><strong>Practical tools for better-informed home decisions.</strong><span style="color:#aebdca;font-size:12px;position:relative;z-index:1;">Brand-led homeowner planning resource with source-linked guides, transparent assumptions and practical calculators.</span></div>
-<div class="about-copy"><div class="section-kicker">About this resource</div><h2>Useful estimates, with the caveats in view.</h2><p>Free calculators and guides for early roof and solar planning. Results are estimates based on your inputs, not inspections or quotes.</p><p>Guides link to key sources and explain the assumptions behind their estimates.</p>
+<div class="about-visual"><div class="about-mark">About Roof &amp; Solar Toolkit</div><strong>Practical tools for better-informed home decisions.</strong><span style="color:#aebdca;font-size:12px;position:relative;z-index:1;">Source-linked guides and practical calculators for early roof and solar decisions.</span></div>
+<div class="about-copy"><div class="section-kicker">About this resource</div><h2>A practical starting point for roof and solar planning.</h2><p>Free calculators and guides for early roof and solar planning. Results are estimates based on your inputs, not inspections or quotes.</p><p>Guides link to key sources and explain the assumptions behind their estimates.</p>
 
 </div>
 </div></section>
 
 </main>
 <footer><div class="container">
-<div class="footer-main"><div><a class="brand" href="#home"><span class="brand-mark"><svg fill="none" height="21" viewbox="0 0 24 24" width="21"><path d="M3 11.3 12 4l9 7.3M5.8 10.1V20h12.4v-9.9M9 20v-5.8h6V20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg></span><span>Roof &amp; Solar Toolkit</span></a><p class="footer-copy">A US-focused homeowner toolkit for roof and solar planning. Calculators use visible assumptions; location-based tools query Census, PVWatts and OpenEI for representative-place modeling and candidate utility-rate records, not your actual tariff or a contractor quote.</p></div><div class="footer-links"><a href="#calculator">Main calculator</a><a href="#tools">All tools</a><a href="#guides">Guides</a><a href="#faq">FAQs</a><a href="#about">About</a><a href="privacy">Privacy</a><a href="terms">Terms</a><a href="editorial-policy">Editorial policy</a><a href="editorial-policy#corrections">Corrections &amp; feedback</a><a href="contact">Contact</a><a href="methodology">Calculation methodology</a></div></div>
+<div class="footer-main"><div><a class="brand" href="#home"><span class="brand-mark"><svg fill="none" height="21" viewbox="0 0 24 24" width="21"><path d="M3 11.3 12 4l9 7.3M5.8 10.1V20h12.4v-9.9M9 20v-5.8h6V20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg></span><span>Roof &amp; Solar Toolkit</span></a><p class="footer-copy">A U.S.-focused homeowner toolkit for comparing roof and solar scenarios. Location tools use public datasets for representative-place modeling; check local quotes and utility terms before committing.</p></div><div class="footer-links"><a href="#calculator">Main calculator</a><a href="#tools">All tools</a><a href="#guides">Guides</a><a href="#faq">FAQs</a><a href="#about">About</a><a href="privacy">Privacy</a><a href="terms">Terms</a><a href="editorial-policy">Editorial policy</a><a href="editorial-policy#corrections">Corrections &amp; feedback</a><a href="contact">Contact</a><a href="methodology">Calculation methodology</a></div></div>
 <div class="disclaimer"><strong>Planning estimates:</strong> Results use your inputs and stated assumptions. They are not quotes, inspections or professional advice. Confirm measurements, costs and utility rules locally.</div>
 <div class="copyright"><span>© <span id="year"></span> Roof &amp; Solar Toolkit · Homeowner planning tools</span><span>Free tools and guides for homeowners</span></div>
 </div></footer>
