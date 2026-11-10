@@ -258,16 +258,27 @@ try {
   }));
   console.log('SOLAR_REFERENCE_AFTER_CLICK ' + JSON.stringify({ ...solarRefAfterClick, errors: browserPageErrors }));
   if (solarRefAfterClick.value !== '2.62' && solarRefAfterClick.functionType === 'function') {
-    const directSolarRefState = await page.evaluate(() => {
-      window.loadNationalSolarReference();
+    const syntheticClickDiagnostic = await page.evaluate(() => {
+      const button = document.getElementById('loadNationalSolarReference');
+      const rect = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      const hitTest = {
+        tag: hit?.tagName || null,
+        id: hit?.id || null,
+        className: typeof hit?.className === 'string' ? hit.className : '',
+        isButtonOrChild: Boolean(hit && (hit === button || button.contains(hit)))
+      };
+      button.click();
       return {
         value: document.getElementById('solarPricePerWatt')?.value,
-        status: document.getElementById('solarReferenceStatus')?.textContent
+        status: document.getElementById('solarReferenceStatus')?.textContent,
+        clickCount: window.__solarReferenceClickProbe?.count ?? null,
+        hitTest
       };
     });
-    console.log('SOLAR_REFERENCE_DIRECT_CALL_DIAGNOSTIC ' + JSON.stringify({ ...directSolarRefState, errors: browserPageErrors }));
+    console.log('SOLAR_REFERENCE_SYNTHETIC_CLICK_DIAGNOSTIC ' + JSON.stringify({ ...syntheticClickDiagnostic, errors: browserPageErrors }));
   }
-  assert.equal(solarRefAfterClick.value, '2.62', 'national solar reference button click must load the editable $2.62/W value; see SOLAR_REFERENCE_AFTER_CLICK diagnostics');
+  assert.equal(solarRefAfterClick.value, '2.62', 'real browser click on the national solar reference button must load the editable $2.62/W value; see click and hit-test diagnostics');
   await page.locator('#offset').fill('80');
   await page.locator('#calculateButton').click();
   await page.locator('#results.show').waitFor({ state: 'visible', timeout: 15000 });
