@@ -61,6 +61,7 @@ for js in (ROOT / "assets" / "js").rglob("*.js"):
     allowed_location_api = js.name == "location-solar-1.js"
     allowed_public_benchmark_feed = js.name == "price-benchmarks-1.js"
     allowed_solar_savings_registry = js.name == "solar-savings-1.js"
+    allowed_combined_form_session = js.name == "homepage-1.js"
     for pattern, label in [
         (r"\bfetch\s*\(", "fetch"),
         (r"\bXMLHttpRequest\b", "XMLHttpRequest"),
@@ -70,8 +71,21 @@ for js in (ROOT / "assets" / "js").rglob("*.js"):
         (r"\bdocument\.cookie\b", "document.cookie"),
         (r"\bindexedDB\b", "IndexedDB"),
     ]:
-        if re.search(pattern, source) and not ((allowed_location_api or allowed_public_benchmark_feed or allowed_solar_savings_registry) and label == "fetch"):
+        allowed_fetch = (allowed_location_api or allowed_public_benchmark_feed or allowed_solar_savings_registry) and label == "fetch"
+        allowed_tab_session = allowed_combined_form_session and label == "sessionStorage"
+        if re.search(pattern, source) and not (allowed_fetch or allowed_tab_session):
             fail(f"{js.relative_to(ROOT)} uses {label}; review and disclose before launch")
+    if allowed_combined_form_session:
+        for marker in (
+            "roof-solar-toolkit:combined-form:v1",
+            "#calculatorForm input, #calculatorForm select, #calculatorForm textarea",
+            "60 * 60 * 1000",
+            "field.id !== 'productionPerKw'",
+            "sessionStorage.removeItem(combinedFormStateKey)",
+            "No address, name, contact detail or account data is stored.",
+        ):
+            if marker not in source:
+                fail(f"combined-calculator tab storage is missing its guardrail: {marker}")
     if allowed_solar_savings_registry:
         if "../data/price-benchmarks.json" not in source or "credentials:'omit'" not in source:
             fail("solar savings may only verify approved city/state price references against the public same-origin registry without credentials")
@@ -112,6 +126,8 @@ for required_disclosure in (
     "does not collect or use visitors' personal data",
     "or track individual end users across customers' internet properties",
     "calculator inputs are not sent to the site's calculation apis",
+    "temporarily kept in this browser tab so they can be restored when you return",
+    "cleared after restoration or when the tab is closed",
     "does not ask for your street address",
     "openei utility rate database",
     "if advertising is introduced, this notice will be updated to describe the relevant advertising technologies",
@@ -152,7 +168,7 @@ if "Independent educational resource" in source_all:
     fail("premature publisher independence claim remains")
 
 print(f"PASS {len(pages)} HTML pages have no form submission endpoint, no inline JS, and only first-party scripts.")
-print(f"PASS JS assets contain no browser storage/cookie APIs; the city estimator and standalone solar savings use documented same-origin API/static-registry reads; these requests do not send household calculator inputs.")
+print(f"PASS JS assets contain no localStorage, cookies or IndexedDB; only the combined estimator uses disclosed, tab-scoped sessionStorage for the city lookup handoff, with a one-hour restoration limit and no identifying fields. API requests do not send household calculator inputs.")
 print("PASS literal defaults are limited to the four editable PVWatts reference-model assumptions and the source-labelled $2.62/W national solar price reference. The combined calculator may load disclosed, editable national roof/solar references at runtime; household consumption, actual bill usage, self-consumption and export credit remain visitor-specific and unprefilled.")
 print("PASS README and methodology contain no obsolete 50% self-use or blank-export-as-zero claim.")
 print("PASS no ad-serving or analytics script is embedded in repository HTML source; Cloudflare project-level Web Analytics configuration is disclosed separately and live beacon execution remains unverified.")
