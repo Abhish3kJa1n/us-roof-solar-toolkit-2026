@@ -67,7 +67,7 @@ home_js=(ROOT/'assets/js/homepage-1.js').read_text(encoding='utf-8')
 location_js=(ROOT/'assets/js/location-solar-1.js').read_text(encoding='utf-8')
 for phrase in ('City-based solar data','It is not inserted into your tariff field','may deliberately apply it as an illustrative scenario'):
     if phrase.lower() not in home.lower(): fail(f'homepage lacks hybrid-data disclosure: {phrase}')
-for token in ("handoff.get('productionPerKw')", "handoff.get('stateAverageRate')", "useEiaStateAverage", "addEventListener('click'", "PVWatts V8", "FieldValidation.refresh", "loadNationalSolarReference();", "Berkeley Lab Tracking the Sun 2026"):
+for token in ("handoff.get('productionPerKw')", "handoff.get('stateAverageRate')", "useEiaStateAverage", "addEventListener('click'", "PVWatts V8", "FieldValidation.refresh", "Berkeley Lab Tracking the Sun 2026"):
     if token not in home_js: fail(f'homepage hybrid handoff is missing {token}')
 if "getElementById('loadNationalRoofReference').addEventListener('click', loadNationalRoofReference);" not in home_js:
     fail('broad national roof-price reference must be available through an explicit visitor click')
@@ -75,6 +75,13 @@ if re.search(r"^\s*loadNationalRoofReference\(\);", home_js, re.MULTILINE):
     fail('broad national roof-price reference must not be silently prefilled on page load')
 if 'No roof-price range is prefilled' not in home:
     fail('homepage must disclose that roof-price assumptions are not prefilled')
+if re.search(r"^\s*loadNationalSolarReference\(\);", home_js, re.MULTILINE):
+    fail('national solar-price reference must not be silently prefilled on page load')
+if 'Load national solar-price reference ($2.62/W)' not in home:
+    fail('national solar-price reference must be available through an explicit visitor action')
+for details_id in ('roofPriceAssumptions','solarCostAssumptions'):
+    if f'id="{details_id}"' not in home:
+        fail(f'optional assumptions group {details_id} is missing')
 for token in ('productionPerKw', 'stateAverageRate', 'stateAverageSource', 'cityModelSource', 'combinedLink.href', 'roofsolar:solar-price-benchmark'):
     if token not in location_js: fail(f'city estimator handoff is missing {token}')
 
