@@ -296,14 +296,41 @@
       body { padding-bottom: 65px; }
     }
     @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *:before, *:after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
-  </style>
+  
+    /* Homepage UX: clearer project paths and less decorative transparency. */
+    .hero{padding:64px 0 68px}
+    .hero-art{min-height:0;padding:8px 0 0;border:0;border-radius:0;background:transparent;box-shadow:none}
+    .hero-art .art-top{padding:0 4px}
+    .house-art{height:245px;margin-top:8px}
+    .art-footer{padding:0 4px}
+    .journey-section{background:#fff;padding:42px 0 48px;border-bottom:1px solid var(--line)}
+    .journey-heading{display:flex;align-items:end;justify-content:space-between;gap:28px;margin-bottom:22px}
+    .journey-heading h2{font-size:clamp(25px,3vw,34px);margin:7px 0 0}
+    .journey-heading>p{max-width:380px;margin:0 0 3px;color:var(--muted);font-size:13px;line-height:1.65}
+    .journey-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+    .journey-card{--journey-accent:#b8750d;min-width:0;display:flex;flex-direction:column;align-items:flex-start;padding:22px 22px 20px;border:1px solid var(--line);border-top:3px solid var(--journey-accent);border-radius:13px;background:#fff}
+    .journey-roof{--journey-accent:#744700}
+    .journey-solar{--journey-accent:#386b8c}
+    .journey-combined{--journey-accent:#183650;background:#f6f8fa}
+    .journey-meta{display:flex;align-items:center;gap:9px;color:var(--journey-accent);font-size:10px;font-weight:850;letter-spacing:.09em}
+    .journey-meta span{color:#617285;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+    .journey-card h3{margin:14px 0 7px;color:var(--navy);font-size:18px;line-height:1.25;letter-spacing:-.025em}
+    .journey-card p{min-height:64px;margin:0 0 15px;color:var(--muted);font-size:12px;line-height:1.65}
+    .journey-card>a:not(.journey-secondary){margin-top:auto;color:var(--navy);font-size:12px;font-weight:850;text-decoration:none}
+    .journey-card>a:not(.journey-secondary):hover,.journey-secondary:hover{text-decoration:underline;text-underline-offset:3px}
+    .journey-secondary{display:block;margin-top:9px;color:#627386;font-size:11px;font-weight:650;text-decoration:underline;text-decoration-color:#cbd5de;text-underline-offset:3px}
+    .journey-note{font-style:normal;text-decoration:none}
+    .calc-subtitle{max-width:660px}
+    @media(max-width:850px){.journey-grid{grid-template-columns:1fr}.journey-card p{min-height:0}.journey-heading{align-items:flex-start;flex-direction:column;gap:8px}.hero-art{max-width:560px;margin-inline:auto}}
+    @media(max-width:640px){.hero{padding:43px 0 45px}.hero-art{padding-top:0}.house-art{height:205px}.journey-section{padding:32px 0 36px}.journey-card{padding:19px}.journey-heading h2{font-size:28px}}
+</style>
 <link rel="canonical" href="https://getroofsolarcalculator.online/" />
 <meta property="og:url" content="https://getroofsolarcalculator.online/" />
 <meta name="google-adsense-account" content="ca-pub-6193507831935325" />
 </head>
 <body><a class="skip-link" href="#main-content">Skip to main content</a>
 
-<div class="topbar"><div class="container"><span><strong>Free homeowner tools.</strong> Roof and solar planning resources.</span><span>Educational estimates · No quote requests</span></div></div>
+<div class="topbar"><div class="container"><span><strong>Free homeowner tools.</strong> Roof and solar planning for U.S. homeowners.</span><span>Independent planning resource</span></div></div>
 <header>
 <div class="container nav">
 <a aria-label="Roof &amp; Solar Toolkit home" class="brand" href="#home">
@@ -322,9 +349,9 @@
 <div>
 <div class="eyebrow"><span class="dot"></span> Free tools for smarter home-upgrade planning</div>
 <h1>Estimate Your Roof and Solar Potential</h1>
-<p class="hero-copy">Estimate roof replacement costs, map a rough roof area, and explore how solar could interact with your electricity bill. Use the free tools, inspect the math, and learn which details need local verification.</p>
-<div class="hero-actions"><a class="btn btn-primary" href="#calculator">Start free roof + solar estimate <span aria-hidden="true">→</span></a><a class="btn btn-outline" href="#tools">Explore all tools</a></div>
-<div class="hero-note"><svg aria-hidden="true" fill="none" height="15" viewbox="0 0 20 20" width="15"><path d="M10 2.3 17 5v4.7c0 4.2-2.8 6.8-7 8-4.2-1.2-7-3.8-7-8V5l7-2.7Z" stroke="currentColor" stroke-width="1.5"></path><path d="m6.8 9.9 2.1 2.1 4.3-4.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path></svg><span>Planning estimates only. Results are estimates for education and early planning. Verify measurements, condition, utility rules and project pricing locally.</span></div>
+<p class="hero-copy">Plan a roof replacement, estimate solar production, or explore what solar could mean for your electric bill. Start with the decision you are working through and use the tools that fit.</p>
+<div class="hero-actions"><a class="btn btn-primary" href="#calculator">Start combined estimate <span aria-hidden="true">→</span></a><a class="btn btn-outline" href="#tools">Explore all tools</a></div>
+<div class="hero-note"><svg aria-hidden="true" fill="none" height="15" viewbox="0 0 20 20" width="15"><path d="M10 2.3 17 5v4.7c0 4.2-2.8 6.8-7 8-4.2-1.2-7-3.8-7-8V5l7-2.7Z" stroke="currentColor" stroke-width="1.5"></path><path d="m6.8 9.9 2.1 2.1 4.3-4.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"></path></svg><span>Early planning only. Confirm roof measurements, written project scope and utility details before committing.</span></div>
 </div>
 <div aria-label="Illustration of an American home with a roof and solar panels" class="hero-art" role="img">
 <div class="art-top"><span>Roof + solar planning</span><span class="art-chip">Homeowner toolkit</span></div>
@@ -348,16 +375,21 @@
 </div>
 </div>
 </section>
-<div class="trust-strip"><div class="container trust-grid">
-<div class="trust-item"><span class="trust-icon"><svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M4 19V9l8-6 8 6v10h-6v-6h-4v6H4Z" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"></path></svg></span><div><strong>Estimate, then verify</strong>Clear calculator inputs</div></div>
-<div class="trust-item"><span class="trust-icon"><svg fill="none" height="18" viewbox="0 0 24 24" width="18"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.7"></circle><path d="M12 2v3m0 14v3M2 12h3m14 0h3M4.9 4.9 7 7m10 10 2.1 2.1m0-14.2L17 7M7 17l-2.1 2.1" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"></path></svg></span><div><strong>Solar planning</strong>Usage, roof-space and savings math</div></div>
-<div class="trust-item"><span class="trust-icon"><svg fill="none" height="18" viewbox="0 0 24 24" width="18"><path d="M4 5h16v14H4zM8 9h8M8 13h5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"></path></svg></span><div><strong>Educational resources</strong>Practical guides for homeowners</div></div>
-</div></div>
+<section class="journey-section" aria-labelledby="journey-title">
+<div class="container">
+<div class="journey-heading"><div><div class="section-kicker">Choose your starting point</div><h2 id="journey-title">What are you planning?</h2></div><p>Go straight to the tool that matches your project. You can explore the other options later.</p></div>
+<div class="journey-grid">
+<article class="journey-card journey-roof"><div class="journey-meta">01 <span>Roof replacement</span></div><h3>Understand the roof project</h3><p>Estimate a replacement range from roof area and your own price assumptions, then compare written bids.</p><a href="calculators/roof-replacement-cost">Estimate roof replacement cost <span aria-hidden="true">→</span></a><a class="journey-secondary" href="guides/roof-replacement-cost-factors">Use the three-bid comparison worksheet</a></article>
+<article class="journey-card journey-solar"><div class="journey-meta">02 <span>Solar planning</span></div><h3>Explore solar for your home</h3><p>Model annual production and potential bill value using your electricity use, rates and system assumptions.</p><a href="calculators/solar-savings">Estimate solar savings <span aria-hidden="true">→</span></a><a class="journey-secondary" href="calculators/location-solar">Estimate production by U.S. city</a></article>
+<article class="journey-card journey-combined"><div class="journey-meta">03 <span>Roof + solar</span></div><h3>Plan both decisions together</h3><p>Build an initial snapshot of roof condition, replacement cost and a solar energy scenario in one place.</p><a href="#calculator">Open the combined estimator <span aria-hidden="true">→</span></a><span class="journey-secondary journey-note">Three steps · about one minute to enter the basics</span></article>
+</div>
+</div>
+</section>
 <section class="section calculator-section" id="calculator">
 <div class="container">
 <div class="section-head"><div class="section-kicker">The planning calculator</div><h2>Estimate your roof and solar potential.</h2><p>The combined calculator uses measurements and electricity details you enter. A separate city solar estimator can look up a Census representative place and request modeled PV production; it does not identify your roof, utility account or exact tariff.</p></div>
 <div class="calculator-shell">
-<div class="calc-header"><div><div class="calc-title">Roof &amp; solar estimator <span class="calc-subtitle">The combined calculator processes your roof and energy inputs in your browser; those values are not sent to our calculation APIs. The separate city-based solar estimator and optional utility-rate lookup make requests only when you choose to use those features.</span></div></div><div class="step-count" id="stepCount">STEP 1 OF 3</div></div>
+<div class="calc-header"><div><div class="calc-title">Roof &amp; solar estimator <span class="calc-subtitle">Three steps to a roof and energy planning snapshot.</span></div></div><div class="step-count" id="stepCount">STEP 1 OF 3</div></div>
 <div aria-label="Calculator progress" aria-valuemax="3" aria-valuemin="1" aria-valuenow="1" class="progress-track" id="stepProgress" role="progressbar"><div class="progress-value" id="progressValue"></div></div>
 <div aria-label="Calculator progress" class="steps">
 <div aria-current="step" class="step-label active" data-step-label="1"><span class="step-number">1</span><span>Property &amp; roof</span></div>
