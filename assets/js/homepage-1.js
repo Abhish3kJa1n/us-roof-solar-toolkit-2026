@@ -434,6 +434,10 @@
         try { sessionStorage.removeItem(combinedFormStateKey); } catch (_) {}
         return false;
       }
+      const meta = saved.meta || {};
+      const incomingSolarPrice = Number(new URLSearchParams(window.location.search).get('solarPricePerWatt'));
+      const savedSolarBasis = typeof meta.solarPriceBasis === 'string' ? meta.solarPriceBasis : '';
+      const preferIncomingSolarPrice = incomingSolarPrice > 0 && !/user-entered|user-edited/i.test(savedSolarBasis);
       document.querySelectorAll('#calculatorForm input, #calculatorForm select, #calculatorForm textarea').forEach((field) => {
         if (field.type === 'radio') {
           const value = saved.values[`radio:${field.name}`];
@@ -441,6 +445,8 @@
         } else if (field.type === 'checkbox') {
           const value = saved.values[`checkbox:${field.id}`];
           if (value !== undefined) field.checked = Boolean(value);
+        } else if (field.id === 'solarPricePerWatt' && preferIncomingSolarPrice) {
+          // Keep the approved city price already applied from the URL.
         } else if (field.id && Object.prototype.hasOwnProperty.call(saved.values, field.id)) {
           field.value = saved.values[field.id];
         }
@@ -451,21 +457,19 @@
       document.querySelectorAll('#calculatorForm details').forEach((detail) => {
         detail.open = openDetails.includes(detail.id);
       });
-      const incomingSolarPrice = Number(new URLSearchParams(window.location.search).get('solarPricePerWatt'));
-      if (incomingSolarPrice > 0) {
+      if (preferIncomingSolarPrice) {
         const solarDetails = document.getElementById('solarCostAssumptions');
         if (solarDetails) solarDetails.open = true;
       }
-      const meta = saved.meta || {};
       if (typeof meta.roofRateBasis === 'string') roofRateBasis = meta.roofRateBasis;
-      if (typeof meta.solarPriceBasis === 'string') solarPriceBasis = meta.solarPriceBasis;
+      if (typeof meta.solarPriceBasis === 'string' && !preferIncomingSolarPrice) solarPriceBasis = meta.solarPriceBasis;
       if (typeof meta.importRateBasis === 'string') importRateBasis = meta.importRateBasis;
       if (typeof meta.importedCityLabel === 'string') importedCityLabel = meta.importedCityLabel;
       if (typeof meta.roofReferenceStatus === 'string') {
         roofReferenceStatus.textContent = meta.roofReferenceStatus;
         roofReferenceStatus.hidden = Boolean(meta.roofReferenceStatusHidden);
       }
-      if (typeof meta.solarReferenceStatus === 'string') {
+      if (typeof meta.solarReferenceStatus === 'string' && !preferIncomingSolarPrice) {
         solarReferenceStatus.textContent = meta.solarReferenceStatus;
         solarReferenceStatus.hidden = Boolean(meta.solarReferenceStatusHidden);
       }
