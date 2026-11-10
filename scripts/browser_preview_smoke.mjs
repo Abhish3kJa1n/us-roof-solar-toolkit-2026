@@ -256,6 +256,7 @@ try {
     buttonDisabled: document.getElementById('loadNationalSolarReference')?.disabled,
     detailsOpen: document.getElementById('solarCostAssumptions')?.open
   }));
+  // Keep the real pointer-click result separate from the synthetic-click diagnostic below.
   console.log('SOLAR_REFERENCE_AFTER_CLICK ' + JSON.stringify({ ...solarRefAfterClick, errors: browserPageErrors }));
   if (solarRefAfterClick.value !== '2.62' && solarRefAfterClick.functionType === 'function') {
     const syntheticClickDiagnostic = await page.evaluate(() => {
