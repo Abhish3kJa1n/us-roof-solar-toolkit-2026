@@ -159,6 +159,9 @@ try {
   await page.screenshot({ path: path.join(screenshotDir, 'homepage-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
+  assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'combined calculator must not silently prefill a national solar price');
+  assert.equal(await page.locator('#roofPriceAssumptions').evaluate(node => node.open), false, 'roof price assumptions should be collapsed initially');
+  assert.equal(await page.locator('#solarCostAssumptions').evaluate(node => node.open), false, 'solar cost assumptions should be collapsed initially');
   assert.equal(await page.locator('#tools .resource-card').count(), 5, 'homepage tool directory should list only the five specialist calculators');
   const guideHrefs = await page.locator('#guides .guide-list a').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
   assert.equal(guideHrefs.length, 12, 'homepage should retain all twelve distinct homeowner guides');
@@ -167,6 +170,7 @@ try {
   // Roof-price defaults must remain blank until the visitor explicitly requests the national reference.
   assert.equal(await page.locator('#roofRateLow').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
+  await page.locator('#roofPriceAssumptions summary').click();
   await page.locator('#loadNationalRoofReference').click();
   assert.equal(await page.locator('#roofRateLow').inputValue(), '4');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '11');
@@ -188,10 +192,13 @@ try {
   await page.locator('[data-panel="2"]').waitFor({ state: 'visible' });
   await page.locator('#annualKwh').fill('10800');
   await page.locator('#rate').fill('0.18');
+  await page.locator('#solarCostAssumptions summary').click();
   await page.locator('#selfUse').fill('40');
   await page.locator('#exportRate').fill('0.04');
   await page.locator('#productionPerKw').fill('1300');
-  await page.locator('#solarPricePerWatt').fill('2.62');
+  assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'solar price must remain blank until requested');
+  await page.locator('#loadNationalSolarReference').click();
+  assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '2.62');
   await page.locator('#offset').fill('80');
   await page.locator('#calculateButton').click();
   await page.locator('#results.show').waitFor({ state: 'visible', timeout: 15000 });
@@ -393,12 +400,14 @@ try {
   await page.locator('#roofType').selectOption('asphalt');
   await page.locator('#roofAge').fill('12');
   await page.locator('#roofArea').fill('1800');
+  await page.locator('#roofPriceAssumptions summary').click();
   await page.locator('#roofRateLow').fill('5.25');
   await page.locator('#roofRateHigh').fill('8.75');
   await page.locator('#condition').selectOption('fair');
   await page.locator('button[data-next="2"]').click();
   await page.locator('#annualKwh').fill('10800');
   await page.locator('#rate').fill('0.18');
+  await page.locator('#solarCostAssumptions summary').click();
   await page.locator('#selfUse').fill('40');
   await page.locator('#exportRate').fill('0.04');
   await page.locator('#solarPricePerWatt').fill('3.05');
@@ -438,6 +447,8 @@ try {
   assert.equal(await page.locator('#exportRate').inputValue(), '0.04');
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '3.05');
   assert.equal(await page.locator('#offset').inputValue(), '80');
+  assert.equal(await page.locator('#roofPriceAssumptions').evaluate(node => node.open), true, 'roof assumptions disclosure state must be restored');
+  assert.equal(await page.locator('#solarCostAssumptions').evaluate(node => node.open), true, 'solar assumptions disclosure state must be restored');
   const returnedProduction = Number(await page.locator('#productionPerKw').inputValue());
   assert.ok(returnedProduction > 0 && returnedProduction !== 1450, 'fresh PVWatts production must replace the stale manually entered yield');
   assert.ok(await page.locator('#combinedRestoreStatus').isVisible(), 'restoration confirmation should be visible');
