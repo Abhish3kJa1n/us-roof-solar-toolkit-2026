@@ -243,18 +243,18 @@ try {
   await page.evaluate(() => {
     const button = document.getElementById('loadNationalSolarReference');
     window.__solarReferenceClickProbe = { count: 0, events: [] };
-    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'pointercancel', 'click']) {
       window.addEventListener(type, (event) => {
-        if (event.target?.id === 'loadNationalSolarReference') {
-          const scoped = event.target.closest('[data-field-validation-scope]');
-          window.__solarReferenceClickProbe.events.push({
-            type,
-            phase: event.eventPhase,
-            defaultPrevented: event.defaultPrevented,
-            targetId: event.target.id,
-            closestScope: scoped?.id || scoped?.getAttribute('data-field-validation-scope') || null
-          });
-        }
+        const scoped = event.target?.closest?.('[data-field-validation-scope]');
+        window.__solarReferenceClickProbe.events.push({
+          type,
+          phase: event.eventPhase,
+          defaultPrevented: event.defaultPrevented,
+          targetId: event.target?.id || null,
+          targetTag: event.target?.tagName || null,
+          targetClass: typeof event.target?.className === 'string' ? event.target.className : '',
+          closestScope: scoped?.id || scoped?.getAttribute('data-field-validation-scope') || null
+        });
       }, true);
     }
     button?.addEventListener('click', () => { window.__solarReferenceClickProbe.count += 1; }, true);
