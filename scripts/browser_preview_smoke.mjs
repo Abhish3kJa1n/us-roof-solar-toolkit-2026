@@ -244,16 +244,16 @@ try {
   await page.waitForTimeout(100);
   const solarRefAfterClick = await page.evaluate(() => ({
     value: document.getElementById('solarPricePerWatt')?.value,
-    status: document.getElementById('solarReferenceStatus')?.textContent,
-    errors: browserPageErrors
+    status: document.getElementById('solarReferenceStatus')?.textContent
   }));
-  console.log('SOLAR_REFERENCE_AFTER_CLICK ' + JSON.stringify(solarRefAfterClick));
+  console.log('SOLAR_REFERENCE_AFTER_CLICK ' + JSON.stringify({ ...solarRefAfterClick, errors: browserPageErrors }));
   if (solarRefAfterClick.value !== '2.62' && typeof window.loadNationalSolarReference === 'function') {
     await page.evaluate(() => window.loadNationalSolarReference());
-    console.log('SOLAR_REFERENCE_DIRECT_CALL ' + JSON.stringify(await page.evaluate(() => ({
+    const directSolarRefState = await page.evaluate(() => ({
       value: document.getElementById('solarPricePerWatt')?.value,
       status: document.getElementById('solarReferenceStatus')?.textContent
-    }))));
+    }));
+    console.log('SOLAR_REFERENCE_DIRECT_CALL ' + JSON.stringify({ ...directSolarRefState, errors: browserPageErrors }));
   }
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '2.62');
   await page.locator('#offset').fill('80');
