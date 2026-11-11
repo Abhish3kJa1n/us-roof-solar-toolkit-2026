@@ -294,10 +294,14 @@ try {
   solarText = await page.locator('#result').innerText();
   assert.match(solarText, /30% low case: \$1,140 annual energy value/);
   assert.match(solarText, /70% high case: \$1,860 annual energy value/);
+  assert.match(solarText, /14\.0 years/);
+  assert.equal(await page.locator('#price').inputValue(), '2.62', 'the national reference must persist through sensitivity validation');
   await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-results.png'), fullPage: true });
   await page.locator('#selfUseSensitivity summary').click();
   await page.locator('#run').click();
-  assert.doesNotMatch(await page.locator('#result').innerText(), /User-selected self-consumption sensitivity/);
+  solarText = await page.locator('#result').innerText();
+  assert.doesNotMatch(solarText, /User-selected self-consumption sensitivity/);
+  assert.match(solarText, /14\.0 years/, 'closing sensitivity must not clear the installed-price assumption');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
