@@ -27,8 +27,8 @@ if(nationalPriceButton) nationalPriceButton.addEventListener('click',()=>{
   priceEl.value='2.62';
   priceEdited=false;
   priceOptIn=true;
-  priceBasis='EnergySage H1 2026 solar-only marketplace median: $2.62/W DC; national marketplace reference, not city-specific or an installer quote.';
-  if(priceContextEl) priceContextEl.textContent='National solar-only benchmark loaded because you requested it. It is not a local price or installer quote; replace it with a comparable written cash quote.';
+  priceBasis='EnergySage H1 2026 solar-only marketplace median: $2.62/W DC before incentives; national marketplace reference, not city-specific or an installer quote.';
+  if(priceContextEl) priceContextEl.textContent='National solar-only benchmark loaded because you requested it. This H1 2026 marketplace median is before incentives, not a local price or installer quote; replace it with a comparable written cash quote.';
   if(typeof window!=='undefined'&&window.FieldValidation&&typeof window.FieldValidation.refresh==='function') window.FieldValidation.refresh(priceEl);
 });
 function validApprovedSolarRow(row, registry){
