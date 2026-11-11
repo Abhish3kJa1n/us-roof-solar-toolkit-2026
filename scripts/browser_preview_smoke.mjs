@@ -248,6 +248,12 @@ try {
   await accessibilityScan('solar-savings');
   assert.equal(await page.locator('#price').inputValue(), '', 'standalone solar calculator must not silently prefill a national price');
   assert.equal(await page.locator('#selfUseSensitivity').evaluate(node => node.open), false, 'self-use sensitivity should be collapsed initially');
+  assert.equal(await page.locator('#assumptionDisclosure').evaluate(node => node.open), false, 'detailed limitations should be collapsed initially');
+  await page.locator('#assumptionDisclosure summary').click();
+  const limitationsText = await page.locator('#assumptionDisclosure').innerText();
+  assert.match(limitationsText, /not a utility-bill simulator/i);
+  assert.match(limitationsText, /unknown, not zero/i);
+  await page.locator('#assumptionDisclosure summary').click();
   await page.locator('#annualUse').fill('12000');
   await page.locator('#offset').fill('100');
   await page.locator('#production').fill('1500');
