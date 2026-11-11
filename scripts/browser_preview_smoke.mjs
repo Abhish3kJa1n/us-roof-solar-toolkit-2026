@@ -266,8 +266,8 @@ try {
   assert.match(ahsStatus, /No AHS metro roofing distribution is currently approved/i);
   assert.match(ahsStatus, /national point estimates reproduce the Census Table C-16/i);
 
-  const styleValues = await page.locator('#metalSystem optgroup[label="By roof style / system"] option').evaluateAll(options => options.map(option => option.value));
-  const materialValues = await page.locator('#metalSystem optgroup[label="By base metal / material"] option').evaluateAll(options => options.map(option => option.value));
+  const styleValues = await page.locator('#metalSystem optgroup[label="Roof style / system"] option').evaluateAll(options => options.map(option => option.value));
+  const materialValues = await page.locator('#metalSystem optgroup[label="Base metal / material"] option').evaluateAll(options => options.map(option => option.value));
   assert.deepEqual(styleValues, ['corrugated', 'standing_seam', 'metal_shingles'], 'style/system group must contain only HomeGuide style ranges');
   assert.deepEqual(materialValues, ['galvanized_steel', 'galvalume_steel', 'aluminum', 'copper', 'zinc', 'tin_terne', 'stainless_steel', 'corten_steel', 'metal_slate', 'stone_coated_steel'], 'material group must contain HomeGuide metal-type ranges');
 
