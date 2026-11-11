@@ -59,3 +59,7 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .benchmark-button:hover{background:#f1f5f8}
 
 .calculator>.calculator-section-heading:first-child{border-top:0;padding-top:0}
+
+.method-disclosure{margin:12px 0;background:#f8fafb;border:1px solid #dce4eb;border-radius:10px;padding:12px 14px}
+.method-disclosure summary{cursor:pointer;color:#30465b;font-size:12px;font-weight:800}
+.method-disclosure p{margin:8px 0 0;color:#5d6b7a;font-size:12px;line-height:1.55}
