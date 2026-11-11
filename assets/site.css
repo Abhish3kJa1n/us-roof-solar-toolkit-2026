@@ -57,3 +57,5 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .calculator-sensitivity-fields{margin:12px 0 0;gap:12px}
 .benchmark-button{display:inline-flex;margin-top:8px;background:#fff;color:#30465b;border:1px solid #cbd7e1;padding:8px 11px}
 .benchmark-button:hover{background:#f1f5f8}
+
+.calculator>.calculator-section-heading:first-child{border-top:0;padding-top:0}
