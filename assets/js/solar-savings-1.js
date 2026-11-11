@@ -12,13 +12,24 @@ const exportRateEl=document.getElementById('exportRate');
 const priceEl=document.getElementById('price');
 const resultEl=document.getElementById('result');
 const priceContextEl=document.getElementById('priceContext');
-let priceBasis='EnergySage H1 2026 national solar-only marketplace median: $2.62/W DC (published October 7, 2026); not a city quote or a property-specific price.';
+let priceBasis='No installed price entered; cost and payback are not calculated.';
 let priceEdited=false;
-if(priceContextEl) priceContextEl.textContent='Prefilled with EnergySage H1 2026 solar-only marketplace median: $2.62/W DC (published October 7, 2026). This is a national planning reference, not your quote or a city price. It is editable; replace it with a comparable written cash quote.';
+let priceOptIn=false;
+if(priceContextEl) priceContextEl.textContent='No price is assumed. Enter a comparable written cash price per DC watt, or deliberately load the optional national solar-only benchmark.';
 priceEl.addEventListener('input',()=>{
   priceEdited=true;
+  priceOptIn=false;
   priceBasis='Visitor-entered price; source not asserted.';
-  if(priceContextEl) priceContextEl.textContent='You edited the price. The calculation now uses your value, not the national reference. Use a comparable PV-only cash price per DC watt.';
+  if(priceContextEl) priceContextEl.textContent='You entered this price. The calculation uses your value; the site does not verify the quote. Compare PV-only cash prices on the same scope.';
+});
+const nationalPriceButton=document.getElementById('loadNationalPriceReference');
+if(nationalPriceButton) nationalPriceButton.addEventListener('click',()=>{
+  priceEl.value='2.62';
+  priceEdited=false;
+  priceOptIn=true;
+  priceBasis='EnergySage H1 2026 solar-only marketplace median: $2.62/W DC; national marketplace reference, not city-specific or an installer quote.';
+  if(priceContextEl) priceContextEl.textContent='National solar-only benchmark loaded because you requested it. It is not a local price or installer quote; replace it with a comparable written cash quote.';
+  if(typeof window!=='undefined'&&window.FieldValidation&&typeof window.FieldValidation.refresh==='function') window.FieldValidation.refresh(priceEl);
 });
 function validApprovedSolarRow(row, registry){
   if(!row || row.record_type!=='solar_installed_price' || row.publication_status!=='approved' || row.metric!=='usd_per_w_dc') return false;
@@ -35,7 +46,7 @@ function validApprovedSolarRow(row, registry){
     ((cityLevel&&typeof row.city==='string'&&row.city.trim()&&/^[A-Z]{2}$/.test(row.state||''))||(stateLevel&&/^[A-Z]{2}$/.test(row.state||'')));
 }
 async function applyApprovedCityPrice(city,state){
-  if(!city||!state||priceEdited) return;
+  if(!city||!state||priceEdited||priceOptIn) return;
   try{
     const response=await fetch('../data/price-benchmarks.json',{headers:{Accept:'application/json'},credentials:'omit'});
     if(!response.ok) return;
@@ -45,7 +56,7 @@ async function applyApprovedCityPrice(city,state){
     const rows=registry.records.filter(row=>validApprovedSolarRow(row,registry));
     const row=rows.find(item=>item.geography_level==='city'&&normalized(item.city)===normalized(city)&&String(item.state||'').toUpperCase()===String(state).toUpperCase())||
       rows.find(item=>item.geography_level==='state'&&String(item.state||'').toUpperCase()===String(state).toUpperCase());
-    if(!row||priceEdited) return;
+    if(!row||priceEdited||priceOptIn) return;
     priceEl.value=Number(row.median).toFixed(2);
     const geography=row.geography_level==='city'?`${row.city}, ${row.state}`:`${row.state_name||row.state} state-wide (not city-specific)`;
     priceBasis=`Berkeley Lab Tracking the Sun 2026 historical ${row.geography_level} distribution for ${geography}; median $${Number(row.median).toFixed(2)}/W DC; n=${row.sample_n}; installations ${row.installation_year_min}–${row.installation_year_max}. Not a current quote.`;
@@ -105,8 +116,9 @@ document.getElementById('run').addEventListener('click',()=>{
   const productionPerKw=Number(productionEl.value);
   const selfUseText=selfUseEl.value.trim();
   const selfUseShare=selfUseText===''?null:Number(selfUseText)/100;
-  const selfUseLowText=selfUseLowEl.value.trim();
-  const selfUseHighText=selfUseHighEl.value.trim();
+  const sensitivityOpen=document.getElementById('selfUseSensitivity')?.open===true;
+  const selfUseLowText=sensitivityOpen?selfUseLowEl.value.trim():'';
+  const selfUseHighText=sensitivityOpen?selfUseHighEl.value.trim():'';
   const selfUseLow=selfUseLowText===''?null:Number(selfUseLowText)/100;
   const selfUseHigh=selfUseHighText===''?null:Number(selfUseHighText)/100;
   const exportText=exportRateEl.value.trim();
