@@ -15,14 +15,15 @@ ROOT = Path(__file__).resolve().parents[1]
 JS_FILE = ROOT / "assets" / "js" / "solar-savings-1.js"
 
 HARNESS = r"""
-const ids=['annualUse','importRate','offset','production','selfUse','selfUseLow','selfUseHigh','exportRate','price','run','result'];
+const ids=['annualUse','importRate','offset','production','selfUse','selfUseLow','selfUseHigh','exportRate','price','run','result','selfUseSensitivity','loadNationalPriceReference'];
 const elements={};
-for (const id of ids) elements[id]={id,value:'',innerHTML:'',handlers:{},addEventListener(type,fn){this.handlers[type]=fn;}};
+for (const id of ids) elements[id]={id,value:'',innerHTML:'',handlers:{},open:false,addEventListener(type,fn){this.handlers[type]=fn;}};
 global.document={getElementById(id){return elements[id] || (elements[id]={id,value:'',innerHTML:'',handlers:{},addEventListener(type,fn){this.handlers[type]=fn;}})}};
 """
 
 CASES = [
     ("no_share_no_tariff", {"annualUse": "10800", "offset": "80", "production": "1200", "price": "3"}, ["7.2 kW DC system", "Not modeled — enter an annual direct-use share", "Not calculated — missing annual direct-use share"]),
+    ("no_price_entered", {"annualUse": "10800", "offset": "80", "production": "1200"}, ["Modeled installed cash price:</strong>Not entered", "Simple pre-incentive cash payback:</strong>Not calculated"]),
     ("share_but_export_unknown", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "importRate": "0.20", "price": "3"}, ["4,320 kWh", "avoided import charges", "export value requires both", "Not calculated — missing utility export credit"]),
     ("complete_export_tariff", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "importRate": "0.20", "exportRate": "0.04", "price": "3"}, ["8,640 kWh", "1,037", "20.8 years"]),
     ("all_generation_used_directly", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "100", "importRate": "0.20", "price": "3"}, ["8,640 kWh", "1,728", "12.5 years"]),
@@ -47,7 +48,7 @@ def main() -> int:
     for name, values, expected in CASES:
         runner = HARNESS + js + "\n" + (
             f"for (const [k,v] of Object.entries({json.dumps(values, ensure_ascii=False)})) "
-            "elements[k].value=v; elements.run.handlers.click(); "
+            "elements[k].value=v; elements.selfUseSensitivity.open=Boolean(elements.selfUseLow.value || elements.selfUseHigh.value); elements.run.handlers.click(); "
             "console.log(elements.result.innerHTML);"
         )
         with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
@@ -67,7 +68,28 @@ def main() -> int:
             return 1
         print(f"PASS {name}")
         passed += 1
-    print(f"Passed {passed}/{len(CASES)} standalone solar calculation scenarios.")
+    # The national EnergySage solar-only benchmark must load only after an explicit button action.
+    init_runner = HARNESS + js + r"""
+const initialPrice=elements.price.value;
+elements.loadNationalPriceReference.handlers.click();
+const loadedPrice=elements.price.value;
+elements.run.handlers.click();
+console.log(JSON.stringify({initialPrice,loadedPrice,result:elements.result.innerHTML}));
+"""
+    with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as handle:
+        handle.write(init_runner)
+        temp_path = Path(handle.name)
+    try:
+        result = subprocess.run(["node", str(temp_path)], capture_output=True, text=True, check=False)
+    finally:
+        temp_path.unlink(missing_ok=True)
+    if result.returncode:
+        raise SystemExit(f"FAIL national solar price opt-in: {result.stderr.strip()}")
+    opt_in = json.loads(result.stdout)
+    if opt_in["initialPrice"] != "" or opt_in["loadedPrice"] != "2.62" or "EnergySage H1 2026 solar-only marketplace median" not in opt_in["result"]:
+        raise SystemExit(f"FAIL national solar price opt-in behavior: {opt_in}")
+    print("PASS national solar-only price benchmark is blank by default and loads only on explicit request")
+    print(f"Passed {passed}/{len(CASES)} standalone solar calculation scenarios plus price opt-in.")
     print("Limit: DOM stubs exercise calculation logic, not real browser rendering, accessibility or utility tariff accuracy.")
     return 0
 
