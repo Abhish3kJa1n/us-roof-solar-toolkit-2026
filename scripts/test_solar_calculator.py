@@ -70,6 +70,9 @@ def main() -> int:
         passed += 1
     # The national EnergySage solar-only benchmark must load only after an explicit button action.
     init_runner = HARNESS + js + r"""
+elements.annualUse.value='10800';
+elements.offset.value='80';
+elements.production.value='1200';
 const initialPrice=elements.price.value;
 elements.loadNationalPriceReference.handlers.click();
 const loadedPrice=elements.price.value;
