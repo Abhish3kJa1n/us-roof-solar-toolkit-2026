@@ -38,7 +38,6 @@
       const highText = document.getElementById('roofRateHigh').value.trim();
       const low = lowText === '' ? null : Number(lowText);
       const high = highText === '' ? null : Number(highText);
-      if (!material) return showError(1, 'Select a roof material.'), false;
       if (ageText !== '' && (!Number.isFinite(age) || age < 0 || age > 100)) return showError(1, 'Enter a roof age between 0 and 100 years, or leave it blank if unknown.'), false;
       if (mode === 'home' && !pitch) return showError(1, 'Select the closest roof pitch category when converting home floor area to roof surface area.'), false;
       if (mode === 'home' && !document.getElementById('stories').value) return showError(1, 'Select the number of above-ground stories before using total finished floor area as a footprint estimate.'), false;
