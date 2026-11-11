@@ -241,6 +241,61 @@ try {
   results.push('combined calculator: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png'), fullPage: true });
 
+  // Standalone solar savings: separate sizing inputs, optional tariff modelling and explicit price reference.
+  await open('/calculators/solar-savings.html');
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-desktop.png'), fullPage: true });
+  await assertNoHorizontalOverflow('solar-savings');
+  await accessibilityScan('solar-savings');
+  assert.equal(await page.locator('#price').inputValue(), '', 'standalone solar calculator must not silently prefill a national price');
+  assert.equal(await page.locator('#selfUseSensitivity').evaluate(node => node.open), false, 'self-use sensitivity should be collapsed initially');
+  await page.locator('#annualUse').fill('12000');
+  await page.locator('#offset').fill('100');
+  await page.locator('#production').fill('1500');
+  await page.locator('#run').click();
+  let solarText = await page.locator('#result').innerText();
+  assert.match(solarText, /8\.0 kW DC system/);
+  assert.match(solarText, /Not modeled — enter an annual direct-use share/);
+  assert.match(solarText, /Not calculated — missing annual direct-use share/);
+
+  await page.locator('#importRate').fill('0.20');
+  await page.locator('#selfUse').fill('50');
+  await page.locator('#exportRate').fill('0.05');
+  await page.locator('#run').click();
+  solarText = await page.locator('#result').innerText();
+  assert.match(solarText, /\$1,500/);
+  assert.match(solarText, /Modeled installed cash price:\s*Not entered/);
+  assert.match(solarText, /Not calculated — requires a complete energy-value model and installed price/);
+
+  await page.locator('#loadNationalPriceReference').click();
+  assert.equal(await page.locator('#price').inputValue(), '2.62', 'national solar-only price reference must load only after an explicit click');
+  await page.locator('#run').click();
+  solarText = await page.locator('#result').innerText();
+  assert.match(solarText, /14\.0 years/);
+  assert.match(solarText, /EnergySage H1 2026 solar-only marketplace median/);
+
+  // Closed sensitivity controls are excluded; opening them makes their values part of validation and calculation.
+  await page.locator('#selfUseLow').fill('101');
+  await page.locator('#selfUseHigh').fill('110');
+  await page.locator('#run').click();
+  assert.doesNotMatch(await page.locator('#result').innerText(), /User-selected self-consumption sensitivity/);
+  await page.locator('#selfUseSensitivity summary').click();
+  await page.locator('#run').click();
+  assert.equal(await page.locator('#selfUseLow').getAttribute('aria-invalid'), 'true');
+  assert.ok(await page.locator('#selfUseLow-checker-message').isVisible(), 'opened sensitivity inputs must show inline range errors');
+  await page.locator('#selfUseLow').fill('30');
+  await page.locator('#selfUseHigh').fill('70');
+  await page.locator('#run').click();
+  solarText = await page.locator('#result').innerText();
+  assert.match(solarText, /30% low case: \$1,140 annual energy value/);
+  assert.match(solarText, /70% high case: \$1,860 annual energy value/);
+  await page.locator('#selfUseSensitivity summary').click();
+  await page.locator('#run').click();
+  assert.doesNotMatch(await page.locator('#result').innerText(), /User-selected self-consumption sensitivity/);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-mobile.png'), fullPage: true });
+  await page.setViewportSize({ width: 1365, height: 900 });
+  results.push('standalone solar sizing, tariff value, explicit price reference, sensitivity disclosure and responsive layout: PASS');
+
   // Standalone roof-cost calculator: AHS availability state, material changes and all metal-system references.
   await open('/calculators/roof-replacement-cost.html');
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-desktop.png'), fullPage: true });
