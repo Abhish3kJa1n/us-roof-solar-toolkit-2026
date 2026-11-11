@@ -213,9 +213,6 @@ try {
   await page.locator('button[data-next="2"]').click();
   await page.locator('[data-panel="2"]').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#roofType').inputValue(), '', 'combined calculator must allow the visitor to continue without choosing roof material');
-
-  await page.locator('button[data-next="2"]').click();
-  await page.locator('[data-panel="2"]').waitFor({ state: 'visible' });
   await page.locator('#annualKwh').fill('10800');
   await page.locator('#rate').fill('0.18');
   await page.locator('#solarCostAssumptions summary').click();
