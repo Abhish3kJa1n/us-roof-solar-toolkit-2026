@@ -13,7 +13,7 @@ class FakeNode {
   constructor(tag = 'div', id = '') {
     this.nodeType = 1; this.tagName = tag.toUpperCase(); this.id = id;
     this.value = ''; this.type = tag === 'input' ? 'number' : '';
-    this.required = false; this.disabled = false; this.hidden = false;
+    this.required = false; this.disabled = false; this.hidden = false; this.open = false;
     this.minLength = -1; this.maxLength = -1; this.dataset = {};
     this.attributes = {}; this.children = []; this.handlers = {};
     this.parentElement = null; this.parent = null; this.className = '';
@@ -29,7 +29,7 @@ class FakeNode {
   dispatch(type) { for (const fn of (this.handlers[type] || [])) fn({ target: this }); }
   closest(selector) { if (selector === '.field') return this.fieldWrapper || null; return null; }
   querySelector(selector) { return null; }
-  querySelectorAll() { return this.children.filter((item) => ['INPUT', 'SELECT', 'TEXTAREA'].includes(item.tagName)); }
+  querySelectorAll() { const found=[]; const visit=node=>node.children.forEach(item=>{if(['INPUT','SELECT','TEXTAREA'].includes(item.tagName)) found.push(item); visit(item);}); visit(this); return found; }
   getAttributeSafe(k) { return this.getAttribute(k); }
   focus() { this.focused = true; }
 }
@@ -49,11 +49,15 @@ const makeInput = (id, { min = null, max = null, step = null, required = false, 
 };
 const amount = makeInput('amount', { min: 1, max: 10, step: 1, required: true });
 const contextValue = makeInput('contextValue', { min: 0, max: 100, step: 1, warningMax: 20 });
-const nodes = { '#root': root, '#amount': amount, '#contextValue': contextValue };
+const details = new FakeNode('details'); details.open = false; root.append(details);
+const advanced = new FakeNode('input', 'advanced');
+advanced.type = 'number'; advanced.value = '101'; advanced.setAttribute('min', '0'); advanced.setAttribute('max', '100'); advanced.setAttribute('step', '1');
+advanced.fieldWrapper = fieldWrapper; details.append(advanced);
+const nodes = { '#root': root, '#amount': amount, '#contextValue': contextValue, '#advanced': advanced };
 const documentListeners = {};
 const document = {
   querySelector: (selector) => nodes[selector] || null,
-  querySelectorAll: () => [amount, contextValue],
+  querySelectorAll: () => [amount, contextValue, advanced],
   createElement: (tag) => new FakeNode(tag),
   addEventListener: (type, fn) => { (documentListeners[type] ||= []).push(fn); },
 };
@@ -94,4 +98,11 @@ assert.equal(prevented, true, 'invalid scope must prevent the calculator action'
 assert.equal(stopped, true, 'invalid scope must stop later Calculate handlers');
 assert.equal(amount.focused, true, 'first invalid field should receive focus');
 
-console.log('PASS: live inline hard errors, correction clearing, non-blocking plausibility warnings, required-on-blur feedback, and final click blocking/focus behavior.');
+amount.value = '7'; amount.dispatch('input');
+assert.equal(window.FieldValidation.validateScope(root).valid, true, 'invalid controls inside a collapsed details section must not block the calculator');
+details.open = true;
+const openedDetailsValidation = window.FieldValidation.validateScope(root);
+assert.equal(openedDetailsValidation.valid, false, 'opening a details section must make its invalid fields subject to validation');
+assert.equal(advanced.focused, true, 'the first invalid field in an opened details section should receive focus');
+
+console.log('PASS: inline validation, correction clearing, warnings, click blocking, and collapsed-details validation behavior.');
