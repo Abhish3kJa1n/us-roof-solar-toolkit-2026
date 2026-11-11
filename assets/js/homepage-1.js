@@ -129,8 +129,8 @@
     const roofReferenceStatus = document.getElementById('roofReferenceStatus');
     const solarReferenceStatus = document.getElementById('solarReferenceStatus');
     let roofRateBasis = 'No roof-price reference loaded; roof cost is not estimated.';
-    let solarPriceBasis = 'User-entered quote.';
-    let importRateBasis = 'User-entered marginal tariff rate.';
+    let solarPriceBasis = 'No solar price entered; payback is not estimated.';
+    let importRateBasis = 'No marginal tariff entered; dollar value is not estimated.';
     let importedCityLabel = '';
 
     function addFieldNote(input, id, message, sourceUrl) {
@@ -210,7 +210,7 @@
       solarRateInput.value = '2.62';
       solarPriceBasis = 'EnergySage H1 2026 solar-only marketplace median; national marketplace reference, not city-specific or an installer quote.';
       solarReferenceStatus.hidden = false;
-      solarReferenceStatus.textContent = `${solarPriceBasis} It is prefilled only as a planning fallback. Replace with a comparable written cash quote; the value remains editable.`;
+      solarReferenceStatus.textContent = `${solarPriceBasis} Loaded because you requested it; this is a national marketplace reference, not a local quote. Replace it with a comparable written cash quote when available.`;
       refreshField(solarRateInput);
     }
     document.getElementById('loadNationalRoofReference').addEventListener('click', loadNationalRoofReference);
@@ -218,9 +218,7 @@
     // A national source is an explicit fallback where city-level installed-price records
     // have not passed publication gates. City-specific approved records can override it
     // through the location-data handoff; neither fallback is presented as a local quote.
-    // Do not silently anchor roof-cost estimates to a broad national range. Visitors
-    // must deliberately load it; otherwise the roof-cost component stays unestimated.
-    loadNationalSolarReference();
+    // The national solar-price reference is opt-in. It is never prefilled on page load.
 
     // An approved city/state historical LBNL distribution overrides the national
     // EnergySage fallback. The project registry remains empty until data licensing,
@@ -263,16 +261,26 @@
       }
     });
     solarRateInput.addEventListener('input', () => {
-      if (solarPriceBasis.startsWith('EnergySage') || solarPriceBasis.startsWith('Berkeley Lab')) {
+      if (solarRateInput.value.trim() === '') {
+        solarPriceBasis = 'No solar price entered; payback is not estimated.';
+        solarReferenceStatus.hidden = true;
+      } else if (solarPriceBasis.startsWith('EnergySage') || solarPriceBasis.startsWith('Berkeley Lab')) {
         solarPriceBasis = 'User-edited solar price after loading a published benchmark; no longer the unchanged source statistic.';
         solarReferenceStatus.textContent = solarPriceBasis;
+      } else if (!solarPriceBasis.startsWith('User-entered')) {
+        solarPriceBasis = 'User-entered cash-price quote supplied by visitor.';
       }
     });
     importRateInput.addEventListener('input', () => {
-      if (importRateBasis.startsWith('EIA')) {
+      const note = document.getElementById('importRatePrefillNote');
+      if (importRateInput.value.trim() === '') {
+        importRateBasis = 'No marginal tariff entered; dollar value is not estimated.';
+        if (note) { note.textContent = importRateBasis; note.hidden = true; }
+      } else if (importRateBasis.startsWith('EIA')) {
         importRateBasis = 'User-edited import rate after loading the EIA state-average scenario; verify against the actual tariff.';
-        const note = document.getElementById('importRatePrefillNote');
         if (note) note.textContent = importRateBasis;
+      } else if (!importRateBasis.startsWith('User-entered')) {
+        importRateBasis = 'User-entered marginal tariff rate supplied by visitor.';
       }
     });
 
@@ -388,3 +396,100 @@
       calculate();
     });
         document.getElementById('editInputs').addEventListener('click', () => { document.getElementById('results').classList.remove('show'); setStep(1); });
+
+
+    // Preserve only calculator inputs in this tab while the visitor uses the city PV model.
+    // No address, name, contact detail or account data is stored.
+    const combinedFormStateKey = 'roof-solar-toolkit:combined-form:v1';
+    function saveCombinedFormState() {
+      const values = {};
+      document.querySelectorAll('#calculatorForm input, #calculatorForm select, #calculatorForm textarea').forEach((field) => {
+        if (field.type === 'radio') {
+          if (field.checked) values[`radio:${field.name}`] = field.value;
+        } else if (field.type === 'checkbox') {
+          values[`checkbox:${field.id}`] = field.checked;
+        } else if (field.id && field.id !== 'productionPerKw') {
+          // The fresh city PV handoff must win over any older manually entered production value.
+          values[field.id] = field.value;
+        }
+      });
+      const state = {
+        savedAt: Date.now(),
+        values,
+        openDetails: Array.from(document.querySelectorAll('#calculatorForm details[open]')).map((detail) => detail.id),
+        meta: {
+          roofRateBasis, solarPriceBasis, importRateBasis, importedCityLabel,
+          roofReferenceStatus: roofReferenceStatus.textContent,
+          roofReferenceStatusHidden: roofReferenceStatus.hidden,
+          solarReferenceStatus: solarReferenceStatus.textContent,
+          solarReferenceStatusHidden: solarReferenceStatus.hidden
+        }
+      };
+      try { sessionStorage.setItem(combinedFormStateKey, JSON.stringify(state)); } catch (_) {}
+    }
+    function restoreCombinedFormState() {
+      let saved = null;
+      try { saved = JSON.parse(sessionStorage.getItem(combinedFormStateKey) || 'null'); } catch (_) {}
+      if (!saved || !saved.values || Date.now() - Number(saved.savedAt || 0) > 60 * 60 * 1000) {
+        try { sessionStorage.removeItem(combinedFormStateKey); } catch (_) {}
+        return false;
+      }
+      const meta = saved.meta || {};
+      const incomingSolarPrice = Number(new URLSearchParams(window.location.search).get('solarPricePerWatt'));
+      const savedSolarBasis = typeof meta.solarPriceBasis === 'string' ? meta.solarPriceBasis : '';
+      const preferIncomingSolarPrice = incomingSolarPrice > 0 && !/user-entered|user-edited/i.test(savedSolarBasis);
+      document.querySelectorAll('#calculatorForm input, #calculatorForm select, #calculatorForm textarea').forEach((field) => {
+        if (field.type === 'radio') {
+          const value = saved.values[`radio:${field.name}`];
+          if (value !== undefined) field.checked = field.value === value;
+        } else if (field.type === 'checkbox') {
+          const value = saved.values[`checkbox:${field.id}`];
+          if (value !== undefined) field.checked = Boolean(value);
+        } else if (field.id === 'solarPricePerWatt' && preferIncomingSolarPrice) {
+          // Keep the approved city price already applied from the URL.
+        } else if (field.id && Object.prototype.hasOwnProperty.call(saved.values, field.id)) {
+          field.value = saved.values[field.id];
+        }
+      });
+      syncAreaMode();
+      syncFinancingFields();
+      const openDetails = Array.isArray(saved.openDetails) ? saved.openDetails : [];
+      document.querySelectorAll('#calculatorForm details').forEach((detail) => {
+        detail.open = openDetails.includes(detail.id);
+      });
+      if (preferIncomingSolarPrice) {
+        const solarDetails = document.getElementById('solarCostAssumptions');
+        if (solarDetails) solarDetails.open = true;
+      }
+      if (typeof meta.roofRateBasis === 'string') roofRateBasis = meta.roofRateBasis;
+      if (typeof meta.solarPriceBasis === 'string' && !preferIncomingSolarPrice) solarPriceBasis = meta.solarPriceBasis;
+      if (typeof meta.importRateBasis === 'string') importRateBasis = meta.importRateBasis;
+      if (typeof meta.importedCityLabel === 'string') importedCityLabel = meta.importedCityLabel;
+      if (typeof meta.roofReferenceStatus === 'string') {
+        roofReferenceStatus.textContent = meta.roofReferenceStatus;
+        roofReferenceStatus.hidden = Boolean(meta.roofReferenceStatusHidden);
+      }
+      if (typeof meta.solarReferenceStatus === 'string' && !preferIncomingSolarPrice) {
+        solarReferenceStatus.textContent = meta.solarReferenceStatus;
+        solarReferenceStatus.hidden = Boolean(meta.solarReferenceStatusHidden);
+      }
+      try { sessionStorage.removeItem(combinedFormStateKey); } catch (_) {}
+      const restoredNote = document.getElementById('combinedRestoreStatus');
+      if (restoredNote) {
+        restoredNote.textContent = 'Your previous answers were restored. City-based solar production has been added.';
+        restoredNote.hidden = false;
+      }
+      setStep(2);
+      return true;
+    }
+    const cityLookupLink = document.querySelector('.city-data-bridge a[href*="return=combined"]');
+    if (cityLookupLink) cityLookupLink.addEventListener('click', saveCombinedFormState);
+    if (typeof window.addEventListener === 'function') {
+      window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+          try { sessionStorage.removeItem(combinedFormStateKey); } catch (_) {}
+        }
+      });
+    }
+    restoreCombinedFormState();
+

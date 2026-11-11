@@ -53,6 +53,7 @@ jobs:
         run: node scripts/browser_preview_smoke.mjs
         env:
           PREVIEW_BASE_URL: ${{ steps.preview.outputs.base_url }}
+          EXPECTED_PREVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
           AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
           QA_SCREENSHOT_DIR: browser-qa-output

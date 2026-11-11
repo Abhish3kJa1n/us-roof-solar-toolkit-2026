@@ -83,20 +83,22 @@ def main():
   raise SystemExit(f'FAIL target percentage required: {r.stderr} {r.stdout}')
  print('PASS target_percentage_required')
 
- # The broad roof reference must be an explicit visitor choice; the solar marketplace reference remains disclosed and editable.
- code=HARNESS+JS+"\nconst roofButton=makeEl('loadNationalRoofReference'); const initial={roofLow:makeEl('roofRateLow').value,roofHigh:makeEl('roofRateHigh').value,button:Boolean(roofButton.handlers.click)}; if(roofButton.handlers.click)roofButton.handlers.click(); console.log(JSON.stringify({initial,loaded:{roofLow:makeEl('roofRateLow').value,roofHigh:makeEl('roofRateHigh').value,roofStatus:makeEl('roofReferenceStatus').textContent,solarPrice:makeEl('solarPricePerWatt').value,solarStatus:makeEl('solarReferenceStatus').textContent}}));"
+ # The national roof and solar references are separate explicit visitor choices.
+ code=HARNESS+JS+"\nconst roofButton=makeEl('loadNationalRoofReference'); const solarButton=makeEl('loadNationalSolarReference'); const initial={roofLow:makeEl('roofRateLow').value,roofHigh:makeEl('roofRateHigh').value,solarPrice:makeEl('solarPricePerWatt').value,roofButton:Boolean(roofButton.handlers.click),solarButton:Boolean(solarButton.handlers.click)}; if(roofButton.handlers.click)roofButton.handlers.click(); const afterRoof={roofLow:makeEl('roofRateLow').value,roofHigh:makeEl('roofRateHigh').value,solarPrice:makeEl('solarPricePerWatt').value,roofStatus:makeEl('roofReferenceStatus').textContent}; if(solarButton.handlers.click)solarButton.handlers.click(); const afterSolar={solarPrice:makeEl('solarPricePerWatt').value,solarStatus:makeEl('solarReferenceStatus').textContent}; console.log(JSON.stringify({initial,afterRoof,afterSolar}));"
  with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(code);temp=Path(f.name)
  try:r=subprocess.run(['node',str(temp)],capture_output=True,text=True)
  finally:temp.unlink(missing_ok=True)
- if r.returncode:raise SystemExit(f'FAIL explicit roof-reference opt-in: {r.stderr}')
+ if r.returncode:raise SystemExit(f'FAIL explicit national reference opt-ins: {r.stderr}')
  prefill=json.loads(r.stdout)
- if (prefill['initial']['roofLow'],prefill['initial']['roofHigh'],prefill['initial']['button']) != ('','',True):
-  raise SystemExit(f'FAIL roof reference should not auto-prefill: {prefill}')
- if (prefill['loaded']['roofLow'],prefill['loaded']['roofHigh'],prefill['loaded']['solarPrice']) != ('4','11','2.62'):
-  raise SystemExit(f'FAIL explicit national reference values: {prefill}')
- if 'not city-specific' not in prefill['loaded']['roofStatus'].lower() or 'not city-specific' not in prefill['loaded']['solarStatus'].lower():
+ if (prefill['initial']['roofLow'],prefill['initial']['roofHigh'],prefill['initial']['solarPrice'],prefill['initial']['roofButton'],prefill['initial']['solarButton']) != ('','','',True,True):
+  raise SystemExit(f'FAIL national references must remain blank until separately requested: {prefill}')
+ if (prefill['afterRoof']['roofLow'],prefill['afterRoof']['roofHigh'],prefill['afterRoof']['solarPrice']) != ('4','11',''):
+  raise SystemExit(f'FAIL roof reference must not silently load solar price: {prefill}')
+ if prefill['afterSolar']['solarPrice'] != '2.62':
+  raise SystemExit(f'FAIL explicit solar-price reference button: {prefill}')
+ if 'not city-specific' not in prefill['afterRoof']['roofStatus'].lower() or 'not city-specific' not in prefill['afterSolar']['solarStatus'].lower():
   raise SystemExit(f'FAIL national reference provenance disclosure: {prefill}')
- print('PASS roof-price national reference requires explicit opt-in; solar fallback remains disclosed')
+ print('PASS roof and solar national references require separate explicit opt-ins')
 
  # An approved city-level historical solar record must replace the national reference and retain its provenance.
  city_query='?productionPerKw=1575.0&city=Austin&state=TX&cityModelSource=PVWatts+V8&stateAverageRate=0.1651&stateAverageSource=EIA+Electric+Power+Monthly+Table+5.6.B&stateAverageRelease=2026-10-23&solarPricePerWatt=2.75&solarPriceSource=Berkeley+Lab+Tracking+the+Sun+2026&solarPriceGeography=city&solarPriceP25=2.35&solarPriceP75=3.08&solarPriceSampleN=140&solarPriceYearMin=2024&solarPriceYearMax=2025'

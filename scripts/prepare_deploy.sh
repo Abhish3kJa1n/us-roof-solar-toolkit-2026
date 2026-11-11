@@ -43,6 +43,12 @@ else
     printf '\n  ],\n  "exclude": []\n}\n'
   } > "$OUT/_routes.json"
 fi
+# A no-store identity endpoint lets browser QA verify it is testing this exact Preview commit.
+if [ "${CF_PAGES_BRANCH:-}" != "main" ]; then
+  PREVIEW_COMMIT="${CF_PAGES_COMMIT_SHA:-unknown}"
+  PREVIEW_BRANCH="${CF_PAGES_BRANCH:-unknown}"
+  printf '{"commit":"%s","branch":"%s"}\n' "$PREVIEW_COMMIT" "$PREVIEW_BRANCH" > "$OUT/build-info.json"
+fi
 # Deliberately do not copy scripts, migrations, audit notes, source-status records,
 # owner launch checklists, or example secrets. Production receives the reviewed sitemap.
 

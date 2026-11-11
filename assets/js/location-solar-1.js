@@ -23,6 +23,13 @@
   const savingsLink = $('savingsLink');
   const panelCountLink = $('panelCountLink');
   const combinedLink = $('combinedLink');
+  const returnToCombined = new URLSearchParams(window.location.search).get('return') === 'combined';
+  if (returnToCombined) {
+    const title = $('continueTitle');
+    const description = $('continueDescription');
+    if (title) title.textContent = 'Return to your combined estimate';
+    if (description) description.textContent = 'After the city production model finishes, return to the combined estimator. Your roof and energy entries will be restored in this tab.';
+  }
   const stateBenchmark = $('stateBenchmark');
   const assumptionInputs = ['capacity', 'tilt', 'azimuth', 'losses'].map($);
 
@@ -521,9 +528,14 @@
         combinedHandoff.solarPriceYearMin = String(priceBenchmark.installationYearMin);
         combinedHandoff.solarPriceYearMax = String(priceBenchmark.installationYearMax);
       }
-      combinedLink.href = `../index.html?${params(combinedHandoff).toString()}#calculator`;
+      combinedLink.href = `/?${params(combinedHandoff).toString()}#calculator`;
       combinedLink.textContent = `Return to combined calculator with ${format(kwhPerKw, 0)} kWh/kW prefilled`;
       combinedLink.hidden = false;
+      if (returnToCombined) {
+        combinedLink.classList.remove('btn-outline');
+        savingsLink.classList.add('btn-outline');
+        combinedLink.textContent = `Return to combined estimate · ${format(kwhPerKw, 0)} kWh/kW loaded`;
+      }
     } catch (error) {
       if (seq === requestSequence) {
         resetResult('Model unavailable', error.message || 'PVWatts request failed.');

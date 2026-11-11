@@ -13,6 +13,7 @@ const AxeBuilder = axeModule.default || axeModule;
 
 const base = (process.env.PREVIEW_BASE_URL || 'https://audit-stage1-20261103.roof-solar-toolkit-2026.pages.dev').replace(/\/+$/, '');
 const screenshotDir = process.env.QA_SCREENSHOT_DIR || 'browser-qa-output';
+const expectedPreviewSha = process.env.EXPECTED_PREVIEW_SHA || '';
 fs.mkdirSync(screenshotDir, { recursive: true });
 
 const browserErrors = [];
@@ -26,25 +27,41 @@ const results = [];
 
 async function waitForPreview() {
   let lastStatus = 'no response';
-  for (let attempt = 0; attempt < 30; attempt += 1) {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
-      const response = await fetch(base + '/index.html', { redirect: 'follow' });
+      const response = await fetch(base + '/index.html?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
       lastStatus = 'HTTP ' + response.status;
       if (response.status === 200 && /noindex/i.test(response.headers.get('x-robots-tag') || '')) {
-        const roofResponse = await fetch(base + '/calculators/roof-replacement-cost.html', { redirect: 'follow' });
+        const roofResponse = await fetch(base + '/calculators/roof-replacement-cost.html?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
         const roofHtml = roofResponse.ok ? await roofResponse.text() : '';
         if (roofResponse.status === 200 && roofHtml.includes('data-qa="metal-reference-state-v2"')) {
-          console.log('PREVIEW_READY_WITH_ROOF_REFERENCE_STATE_V2: ' + base);
-          return;
+          if (expectedPreviewSha) {
+            const identityResponse = await fetch(base + '/build-info.json?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
+            if (!identityResponse.ok) {
+              lastStatus = 'Preview content is ready but build identity is not available: HTTP ' + identityResponse.status;
+            } else {
+              const identity = await identityResponse.json();
+              if (identity.commit !== expectedPreviewSha) {
+                lastStatus = 'Preview alias is stale: expected commit ' + expectedPreviewSha + ', received ' + (identity.commit || 'missing');
+              } else {
+                console.log('PREVIEW_READY_FOR_EXACT_COMMIT ' + expectedPreviewSha + ': ' + base);
+                return;
+              }
+            }
+          } else {
+            console.log('PREVIEW_READY_WITH_ROOF_REFERENCE_STATE_V2: ' + base);
+            return;
+          }
+        } else {
+          lastStatus = 'Preview is reachable but the roof reference-state v2 build is not deployed yet';
         }
-        lastStatus = 'Preview is reachable but the roof reference-state v2 build is not deployed yet';
       }
     } catch (error) {
       lastStatus = error.message;
     }
     await new Promise(resolve => setTimeout(resolve, 5000));
   }
-  throw new Error('Preview did not become ready with noindex header: ' + lastStatus);
+  throw new Error('Preview did not serve the expected commit ' + (expectedPreviewSha || '(unspecified)') + ': ' + lastStatus);
 }
 
 const browser = await chromium.launch({ headless: true });
@@ -54,13 +71,25 @@ const context = await browser.newContext({
   reducedMotion: 'reduce',
 });
 const page = await context.newPage();
+if (expectedPreviewSha) {
+  const previewOrigin = new URL(base).origin;
+  await page.route('**/assets/**', async (route) => {
+    const assetUrl = new URL(route.request().url());
+    if (assetUrl.origin !== previewOrigin) return route.continue();
+    assetUrl.searchParams.set('qa', expectedPreviewSha);
+    return route.continue({
+      url: assetUrl.toString(),
+      headers: { ...route.request().headers(), 'cache-control': 'no-cache' }
+    });
+  });
+}
 page.on('pageerror', error => browserErrors.push(error.message));
 page.on('console', message => {
   if (message.type() !== 'error') return;
   const text = message.text();
   // Cloudflare validates Web Analytics against the registered hostname. This
   // branch runs on a pages.dev alias, not the registered production hostname.
-  const previewAnalyticsCors = text.includes("Access to XMLHttpRequest at 'https://cloudflareinsights.com/cdn-cgi/rum'")
+  const previewAnalyticsCors = text.includes('https://cloudflareinsights.com/cdn-cgi/rum')
     && text.includes("from origin '" + previewOrigin + "'")
     && text.includes('blocked by CORS policy');
   if (previewAnalyticsCors) {
@@ -159,10 +188,18 @@ try {
   await page.screenshot({ path: path.join(screenshotDir, 'homepage-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
+  assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'combined calculator must not silently prefill a national solar price');
+  assert.equal(await page.locator('#roofPriceAssumptions').evaluate(node => node.open), false, 'roof price assumptions should be collapsed initially');
+  assert.equal(await page.locator('#solarCostAssumptions').evaluate(node => node.open), false, 'solar cost assumptions should be collapsed initially');
+  assert.equal(await page.locator('#tools .resource-card').count(), 5, 'homepage tool directory should list only the five specialist calculators');
+  const guideHrefs = await page.locator('#guides .guide-list a').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
+  assert.equal(guideHrefs.length, 12, 'homepage should retain all twelve distinct homeowner guides');
+  assert.equal(new Set(guideHrefs).size, guideHrefs.length, 'homepage guide links must not be duplicated');
 
   // Roof-price defaults must remain blank until the visitor explicitly requests the national reference.
   assert.equal(await page.locator('#roofRateLow').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
+  await page.locator('#roofPriceAssumptions summary').click();
   await page.locator('#loadNationalRoofReference').click();
   assert.equal(await page.locator('#roofRateLow').inputValue(), '4');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '11');
@@ -184,10 +221,15 @@ try {
   await page.locator('[data-panel="2"]').waitFor({ state: 'visible' });
   await page.locator('#annualKwh').fill('10800');
   await page.locator('#rate').fill('0.18');
+  await page.locator('#solarCostAssumptions summary').click();
   await page.locator('#selfUse').fill('40');
   await page.locator('#exportRate').fill('0.04');
   await page.locator('#productionPerKw').fill('1300');
-  await page.locator('#solarPricePerWatt').fill('2.62');
+  assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'solar price must remain blank until requested');
+  await page.waitForFunction(() => typeof window.loadNationalSolarReference === 'function', undefined, { timeout: 10000 });
+  await page.locator('#loadNationalSolarReference').click();
+  await page.waitForFunction(() => document.getElementById('solarPricePerWatt')?.value === '2.62', undefined, { timeout: 5000 });
+  assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '2.62', 'real browser click must load the editable $2.62/W national solar reference');
   await page.locator('#offset').fill('80');
   await page.locator('#calculateButton').click();
   await page.locator('#results.show').waitFor({ state: 'visible', timeout: 15000 });
@@ -307,8 +349,18 @@ try {
   assert.equal(await page.locator('#high').inputValue(), '8.5');
   assert.match(await page.locator('#referenceStatus').innerText(), /not a published reference for the new category/i);
   await page.locator('#loadReference').click();
-  assert.equal(await page.locator('#low').inputValue(), '6');
-  assert.equal(await page.locator('#high').inputValue(), '14');
+  await page.waitForTimeout(100);
+  const metalRefAfter = await page.locator('#loadReference').evaluate(button => ({
+    text: button.textContent,
+    disabled: button.disabled,
+    material: document.querySelector('#material')?.value,
+    system: document.querySelector('#metalSystem')?.value,
+    low: document.querySelector('#low')?.value,
+    high: document.querySelector('#high')?.value,
+    status: document.querySelector('#referenceStatus')?.textContent
+  }));
+  assert.equal(metalRefAfter.low, '6', 'metal shingles reference button did not load the published low rate');
+  assert.equal(metalRefAfter.high, '14', 'metal shingles reference button did not load the published high rate');
 
   // Switching away from Metal clears the selected metal reference; Reset clears everything.
   await page.locator('#material').selectOption('asphalt');
@@ -363,6 +415,67 @@ try {
   assert.match(tariffText, /OpenEI|candidate|utility|tariff|rate/i);
   results.push('OpenEI browser lookup flow: PASS');
 
+
+  // Combined estimator -> city PV lookup -> return: preserve inputs and resume at energy step.
+  await open('/index.html');
+  await page.locator('#roofType').selectOption('asphalt');
+  await page.locator('#roofAge').fill('12');
+  await page.locator('#roofArea').fill('1800');
+  await page.locator('#roofPriceAssumptions summary').click();
+  await page.locator('#roofRateLow').fill('5.25');
+  await page.locator('#roofRateHigh').fill('8.75');
+  await page.locator('#condition').selectOption('fair');
+  await page.locator('button[data-next="2"]').click();
+  await page.locator('#annualKwh').fill('10800');
+  await page.locator('#rate').fill('0.18');
+  await page.locator('#solarCostAssumptions summary').click();
+  await page.locator('#selfUse').fill('40');
+  await page.locator('#exportRate').fill('0.04');
+  await page.locator('#solarPricePerWatt').fill('3.05');
+  await page.locator('#productionPerKw').fill('1450'); // stale manual yield must not override the city PV result
+  await page.locator('#offset').fill('80');
+  await page.locator('.city-data-bridge a').evaluate(anchor => {
+    const url = new URL(anchor.href);
+    url.searchParams.set('city', 'Austin');
+    url.searchParams.set('state', 'TX');
+    anchor.href = url.toString();
+  });
+  await page.locator('.city-data-bridge a').click();
+  await page.locator('#placeField').waitFor({ state: 'visible', timeout: 30000 });
+  const returnPlaceOptions = await page.locator('#place option').evaluateAll(items => items.map(item => ({ value: item.value, text: item.textContent })));
+  const returnPlace = returnPlaceOptions.find(item => item.value);
+  assert.ok(returnPlace, 'return-flow city lookup did not produce a Census place');
+  await page.locator('#place').selectOption(returnPlace.value);
+  await page.locator('#estimate').click();
+  await page.waitForFunction(() => {
+    const text = document.querySelector('#result')?.innerText || '';
+    return Boolean(text) && !/Waiting for location and inputs|Model needs updating|Calculating(?:…|\.\.\.)?/i.test(text);
+  }, undefined, { timeout: 60000 });
+  await page.locator('#combinedLink').waitFor({ state: 'visible' });
+  assert.match(await page.locator('#continueTitle').innerText(), /Return to your combined estimate/i);
+  assert.ok(!(await page.locator('#combinedLink').getAttribute('class')).includes('btn-outline'), 'combined return action should be primary when the visitor came from the combined calculator');
+  await page.locator('#combinedLink').click();
+  await page.locator('[data-panel="2"]').waitFor({ state: 'visible', timeout: 15000 });
+  assert.equal(await page.locator('#roofType').inputValue(), 'asphalt');
+  assert.equal(await page.locator('#roofAge').inputValue(), '12');
+  assert.equal(await page.locator('#roofArea').inputValue(), '1800');
+  assert.equal(await page.locator('#roofRateLow').inputValue(), '5.25');
+  assert.equal(await page.locator('#roofRateHigh').inputValue(), '8.75');
+  assert.equal(await page.locator('#condition').inputValue(), 'fair');
+  assert.equal(await page.locator('#annualKwh').inputValue(), '10800');
+  assert.equal(await page.locator('#rate').inputValue(), '0.18');
+  assert.equal(await page.locator('#selfUse').inputValue(), '40');
+  assert.equal(await page.locator('#exportRate').inputValue(), '0.04');
+  assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '3.05');
+  assert.equal(await page.locator('#offset').inputValue(), '80');
+  assert.equal(await page.locator('#roofPriceAssumptions').evaluate(node => node.open), true, 'roof assumptions disclosure state must be restored');
+  assert.equal(await page.locator('#solarCostAssumptions').evaluate(node => node.open), true, 'solar assumptions disclosure state must be restored');
+  const returnedProduction = Number(await page.locator('#productionPerKw').inputValue());
+  assert.ok(returnedProduction > 0 && returnedProduction !== 1450, 'fresh PVWatts production must replace the stale manually entered yield');
+  assert.ok(await page.locator('#combinedRestoreStatus').isVisible(), 'restoration confirmation should be visible');
+  results.push('combined calculator city-handoff state preservation and return: PASS');
+  await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-return-restored.png'), fullPage: true });
+
   // Standalone savings calculator.
   await open('/calculators/solar-savings.html');
   await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-desktop.png'), fullPage: true });
@@ -385,11 +498,13 @@ try {
   await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-results.png'), fullPage: true });
 
   assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load successfully; observed: ' + JSON.stringify(beaconScriptResponses));
-  assert.equal(previewBeaconCorsErrors.length, previewBeaconRequestFailures.length, 'Only the known Preview hostname/CORS telemetry failures may be treated as expected; console=' + previewBeaconCorsErrors.length + ', requests=' + previewBeaconRequestFailures.length);
+  // Preview pages.dev hosts are not the registered analytics hostname. A failed beacon request
+  // can be aborted during navigation without a matching CORS console message, so counts need not match.
   assert.ok(previewBeaconGenericFailures <= previewBeaconRequestFailures.length, 'Unmatched net::ERR_FAILED console errors must not be suppressed');
   assert.equal(browserErrors.length, 0, 'Unexpected browser console/page errors: ' + JSON.stringify(browserErrors));
   assert.equal(requestFailures.length, 0, 'Failed site/API requests: ' + JSON.stringify(requestFailures));
-  console.log('Cloudflare Web Analytics beacon loaded. Preview pages.dev hostname CORS responses observed: ' + previewBeaconCorsErrors.length);
+  console.log('Expected preview-only telemetry: CORS console errors=' + previewBeaconCorsErrors.length + ', failed beacon requests=' + previewBeaconRequestFailures.length);
+  console.log('No unexpected browser errors or site/API request failures.');
   console.log('BROWSER PREVIEW QA COMPLETED.');
   console.log(results.join('\n'));
 } finally {

@@ -55,12 +55,21 @@ def parse_page(path: Path) -> PublicPageParser:
 def main() -> int:
     env = os.environ.copy()
     env["CF_PAGES_BRANCH"] = "preview"
+    env["CF_PAGES_COMMIT_SHA"] = "test-preview-commit"
     env.pop("ADSENSE_MIDDLEWARE_ENABLED", None)
     result = subprocess.run(
         ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
     )
     if result.returncode:
         fail("prepare_deploy.sh failed for Preview")
+    preview_identity_path = DIST / "build-info.json"
+    if not preview_identity_path.is_file():
+        fail("Preview build identity endpoint is missing")
+    preview_identity = json.loads(preview_identity_path.read_text(encoding="utf-8"))
+    if preview_identity != {"commit": "test-preview-commit", "branch": "preview"}:
+        fail(f"Preview build identity is incorrect: {preview_identity}")
+    if "Cache-Control: no-store" not in (DIST / "_headers").read_text(encoding="utf-8"):
+        fail("Preview build identity must be served with Cache-Control: no-store")
 
     preview_routes = json.loads((DIST / "_routes.json").read_text(encoding="utf-8"))
     expected_preview_routes = {"/api/*", "/"}
@@ -87,6 +96,8 @@ def main() -> int:
     production_routes = json.loads((DIST / "_routes.json").read_text(encoding="utf-8"))
     if production_routes.get("include") != ["/api/*"]:
         fail("Production must continue routing only /api/* through Pages Functions")
+    if (DIST / "build-info.json").exists():
+        fail("Production must not publish the Preview build identity endpoint")
 
     # A separate build-time opt-in may route only the approved editorial documents.
     env["ADSENSE_MIDDLEWARE_ENABLED"] = "true"
@@ -167,7 +178,7 @@ def main() -> int:
     if not (DIST / "contact.html").is_file():
         fail("public Contact page is missing from the deployment output")
 
-    allowed_root_files = {"_headers", "_routes.json", "robots.txt", "ads.txt"}
+    allowed_root_files = {"_headers", "_routes.json", "robots.txt", "ads.txt", "build-info.json"}
     root_files = {p.name for p in DIST.iterdir() if p.is_file()}
     root_html = {p.name for p in html_pages if p.parent == DIST}
     if (DIST / "ads.txt").read_text(encoding="utf-8").strip() != "google.com, pub-6193507831935325, DIRECT, f08c47fec0942fa0":
