@@ -183,6 +183,16 @@ try {
   await open('/guides/are-solar-panels-worth-it.html');
   results.push('guide strict CSP and Preview ad gate: PASS');
 
+  // Public methodology copy must describe the same opt-in price behavior tested in the calculators.
+  await open('/methodology.html');
+  const methodologyText = await page.locator('#main-content').innerText();
+  assert.match(methodologyText, /starts with blank low\/high roof-price fields/i);
+  assert.match(methodologyText, /leave installed solar price blank by default/i);
+  assert.match(methodologyText, /visitor must choose to apply it/i);
+  assert.doesNotMatch(methodologyText, /preloads a broad Angi national roof-surface reference/i);
+  assert.doesNotMatch(methodologyText, /standalone solar savings calculator pre-fills an editable/i);
+  results.push('methodology and opt-in price-reference UX consistency: PASS');
+
   // Homepage and combined calculator: real browser rendering and browser-side math.
   await open('/index.html');
   await page.screenshot({ path: path.join(screenshotDir, 'homepage-desktop.png'), fullPage: true });
@@ -304,6 +314,7 @@ try {
 
   // Standalone roof-cost calculator: AHS availability state, material changes and all metal-system references.
   await open('/calculators/roof-replacement-cost.html');
+  assert.match(await page.locator('#main-content').innerText(), /Visitors can deliberately load the broad range as an editable national planning reference/i);
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('roof-cost-desktop');
   await accessibilityScan('roof-cost');
