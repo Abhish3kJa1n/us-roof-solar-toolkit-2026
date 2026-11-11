@@ -23,7 +23,7 @@ global.document={getElementById(id){return elements[id] || (elements[id]={id,val
 
 CASES = [
     ("no_share_no_tariff", {"annualUse": "10800", "offset": "80", "production": "1200", "price": "3"}, ["7.2 kW DC system", "Not modeled — enter an annual direct-use share", "Not calculated — missing annual direct-use share"]),
-    ("no_price_entered", {"annualUse": "10800", "offset": "80", "production": "1200"}, ["Modeled installed cash price:</strong>Not entered", "Simple pre-incentive cash payback:</strong>Not calculated"]),
+    ("no_price_entered", {"annualUse": "10800", "offset": "80", "production": "1200"}, ["Modeled installed cash price:</strong> Not entered", "Simple pre-incentive cash payback:</strong> Not calculated"]),
     ("share_but_export_unknown", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "importRate": "0.20", "price": "3"}, ["4,320 kWh", "avoided import charges", "export value requires both", "Not calculated — missing utility export credit"]),
     ("complete_export_tariff", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "50", "importRate": "0.20", "exportRate": "0.04", "price": "3"}, ["8,640 kWh", "1,037", "20.8 years"]),
     ("all_generation_used_directly", {"annualUse": "10800", "offset": "80", "production": "1200", "selfUse": "100", "importRate": "0.20", "price": "3"}, ["8,640 kWh", "1,728", "12.5 years"]),
