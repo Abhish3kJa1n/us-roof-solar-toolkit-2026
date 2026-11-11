@@ -79,7 +79,7 @@ assert.equal(amount.getAttribute('aria-invalid'), 'false');
 assert.equal(amountMessage.hidden, true, 'correcting a value must clear its inline error without another Calculate click');
 
 contextValue.value = '35'; contextValue.dispatch('input');
-const contextMessage = fieldWrapper.children.filter((node) => node.className === 'field-checker-message').at(-1);
+const contextMessage = fieldWrapper.children.filter((node) => node.className === 'field-checker-message').at(-2);
 assert.equal(contextValue.getAttribute('aria-invalid'), 'false', 'a plausibility warning must not mark a legitimate unusual value invalid');
 assert.equal(contextValue.classList.contains('field-warning'), true);
 assert.match(contextMessage.textContent, /Unusually high/i);
