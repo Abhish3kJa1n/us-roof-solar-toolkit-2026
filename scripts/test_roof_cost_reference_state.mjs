@@ -72,8 +72,14 @@ const document = {
   },
 };
 const pageHtml = fs.readFileSync(new URL('../calculators/roof-replacement-cost.html', import.meta.url), 'utf8');
-assert.match(pageHtml, /<optgroup label="By roof style \/ system">/);
-assert.match(pageHtml, /<optgroup label="By base metal \/ material">/);
+assert.match(pageHtml, /class="roof-cost-step" aria-labelledby="roofDetailsHeading"/, 'roof details must be grouped as the first task');
+assert.match(pageHtml, /class="roof-cost-step" aria-labelledby="roofPriceHeading"/, 'price assumptions must be grouped as the second task');
+assert.match(pageHtml, /id="area"[^>]*placeholder="e\.g\. 2,000"/, 'area field should provide a concrete example');
+assert.match(pageHtml, /<summary>How metal references are grouped<\/summary>/, 'metal methodology should be disclosed on demand');
+assert.match(pageHtml, /<summary>What may not be included in the installed rate\?<\/summary>/, 'scope exclusions should be expandable');
+assert.match(pageHtml, /id="run"[^>]*data-field-validation-scope="\.panel \.calculator"/, 'validation must still cover grouped calculator inputs');
+assert.match(pageHtml, /<optgroup label="Roof style \/ system">/);
+assert.match(pageHtml, /<optgroup label="Base metal \/ material">/);
 for (const value of ['corrugated', 'standing_seam', 'metal_shingles', 'metal_slate', 'stone_coated_steel', 'galvanized_steel', 'galvalume_steel', 'aluminum', 'copper', 'zinc', 'tin_terne', 'stainless_steel', 'corten_steel']) {
   assert.match(pageHtml, new RegExp('value="' + value + '"'), 'missing published metal category option: ' + value);
 }

@@ -205,20 +205,14 @@ try {
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '11');
   assert.match(await page.locator('#roofReferenceStatus').innerText(), /not a local or material-specific price/i);
 
-  // The shared validator must mark each blank required field inline and block the next step.
-  await page.locator('button[data-next="2"]').click();
-  const roofTypeMessage = page.locator('#roofType-checker-message');
-  assert.equal(await page.locator('#roofType').getAttribute('aria-invalid'), 'true', 'blank roof material must be marked invalid');
-  assert.ok((await roofTypeMessage.innerText()).trim().length > 0, 'blank roof material must show an inline field-level error');
-  assert.ok(await roofTypeMessage.isVisible(), 'the inline roof-material error must be visible');
-  assert.equal(await page.locator('[data-panel="2"]').isVisible(), false, 'invalid roof inputs must not advance to energy details');
-
-  await page.locator('#roofType').selectOption('asphalt');
+  // Roof material is descriptive and optional; with the required roof area supplied, it must not block progress.
   await page.locator('#roofArea').fill('1800');
+  // Roof-price assumptions belong to Step 1, so enter them before advancing.
   await page.locator('#roofRateLow').fill('5');
   await page.locator('#roofRateHigh').fill('8');
   await page.locator('button[data-next="2"]').click();
   await page.locator('[data-panel="2"]').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#roofType').inputValue(), '', 'combined calculator must allow the visitor to continue without choosing roof material');
   await page.locator('#annualKwh').fill('10800');
   await page.locator('#rate').fill('0.18');
   await page.locator('#solarCostAssumptions summary').click();
@@ -310,9 +304,26 @@ try {
 
   // Standalone roof-cost calculator: AHS availability state, material changes and all metal-system references.
   await open('/calculators/roof-replacement-cost.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-desktop.png'), fullPage: true });
-  await assertNoHorizontalOverflow('roof-cost');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-desktop.png'), fullPage: true });
+  await assertNoHorizontalOverflow('roof-cost-desktop');
   await accessibilityScan('roof-cost');
+  assert.equal(await page.locator('.roof-cost-step').count(), 2, 'roof calculator must present two clear tasks');
+  assert.match(await page.locator('#roofDetailsHeading').innerText(), /Roof details/);
+  assert.match(await page.locator('#roofPriceHeading').innerText(), /Installed price range/);
+  assert.equal(await page.locator('#metalSystemField').isVisible(), false, 'metal-specific input starts hidden');
+  assert.equal(await page.locator('.roof-field-details').evaluate(node => node.open), false, 'metal methodology starts collapsed');
+  assert.equal(await page.locator('.roof-scope-details').evaluate(node => node.open), false, 'scope caveats start collapsed');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(120);
+  const roofMobileLayout = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth
+  }));
+  assert.ok(Math.max(roofMobileLayout.document, roofMobileLayout.body) <= 391, 'roof-cost mobile horizontal overflow: ' + JSON.stringify(roofMobileLayout));
+  await accessibilityScan('roof-cost-mobile');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-mobile.png'), fullPage: true });
+  await page.setViewportSize({ width: 1365, height: 900 });
   await page.waitForFunction(() => {
     const node = document.querySelector('#roofMetroBenchmarkResult');
     return Boolean(node && /national point estimates reproduce the Census Table C-16/i.test(node.innerText));
@@ -322,8 +333,8 @@ try {
   assert.match(ahsStatus, /No AHS metro roofing distribution is currently approved/i);
   assert.match(ahsStatus, /national point estimates reproduce the Census Table C-16/i);
 
-  const styleValues = await page.locator('#metalSystem optgroup[label="By roof style / system"] option').evaluateAll(options => options.map(option => option.value));
-  const materialValues = await page.locator('#metalSystem optgroup[label="By base metal / material"] option').evaluateAll(options => options.map(option => option.value));
+  const styleValues = await page.locator('#metalSystem optgroup[label="Roof style / system"] option').evaluateAll(options => options.map(option => option.value));
+  const materialValues = await page.locator('#metalSystem optgroup[label="Base metal / material"] option').evaluateAll(options => options.map(option => option.value));
   assert.deepEqual(styleValues, ['corrugated', 'standing_seam', 'metal_shingles'], 'style/system group must contain only HomeGuide style ranges');
   assert.deepEqual(materialValues, ['galvanized_steel', 'galvalume_steel', 'aluminum', 'copper', 'zinc', 'tin_terne', 'stainless_steel', 'corten_steel', 'metal_slate', 'stone_coated_steel'], 'material group must contain HomeGuide metal-type ranges');
 

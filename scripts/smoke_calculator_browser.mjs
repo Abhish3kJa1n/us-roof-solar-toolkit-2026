@@ -166,7 +166,7 @@ try {
   // Main combined homepage calculator: home-area conversion, roof condition,
   // annual-energy value, payback and financing toggle.
   await navigate("/");
-  await page.locator("#roofType").selectOption("asphalt");
+  assert.equal(await page.locator("#roofType").inputValue(), "", "Roof material should start optional, not block a combined estimate");
   await page.locator("#roofAge").fill("12");
   await page.locator("#condition").selectOption("poor");
   await page.locator("#areaHome").check();

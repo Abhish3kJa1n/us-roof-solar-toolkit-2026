@@ -39,7 +39,8 @@ CASES=[
  ('complete_scenario',{'selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh self-used','$0.040/kWh','20.8 years'],['Inputs needed']),
  ('zero_import_rate_explicit',{'selfUse':'50','rate':'0','exportRate':'0.04'},['$173 / yr','0.000/kWh'],['No import rate was entered']),
  ('all_direct_use_export_not_required',{'selfUse':'100'},['$1,728 / yr','12.5 years','8,640 kWh self-used'],['No export credit was entered']),
- ('export_only_without_import_rate',{'selfUse':'0','exportRate':'0.04','rate':''},['$346 / yr','0 kWh self-consumed','no import-rate input is needed'],['Inputs needed'])
+ ('export_only_without_import_rate',{'selfUse':'0','exportRate':'0.04','rate':''},['$346 / yr','0 kWh self-consumed','no import-rate input is needed'],['Inputs needed']),
+ ('material_is_optional',{'roofType':'','selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh self-used'],['Select a roof material'])
 ]
 
 def main():

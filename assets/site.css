@@ -63,3 +63,30 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .method-disclosure{margin:12px 0;background:#f8fafb;border:1px solid #dce4eb;border-radius:10px;padding:12px 14px}
 .method-disclosure summary{cursor:pointer;color:#30465b;font-size:12px;font-weight:800}
 .method-disclosure p{margin:8px 0 0;color:#5d6b7a;font-size:12px;line-height:1.55}
+
+/* Roof replacement calculator: task-first grouping, without changing pricing logic. */
+.roof-cost-panel .roof-intro{margin:0 0 18px}
+.roof-cost-flow{display:grid;gap:14px}
+.roof-cost-step{border:1px solid #dce4eb;border-radius:13px;padding:16px;background:#fff}
+.roof-step-heading{display:flex;align-items:flex-start;gap:11px;margin-bottom:13px}
+.roof-step-number{display:grid;place-items:center;flex:0 0 28px;height:28px;border-radius:50%;background:#eaf0f5;color:#20384f;font-size:13px;font-weight:850}
+.roof-step-heading h3{margin:0;color:#10243b;font-size:16px;letter-spacing:-.02em}
+.roof-step-heading p{margin:2px 0 0;color:#526577;font-size:12px;line-height:1.45}
+.roof-detail-fields,.roof-price-fields{margin:0;gap:12px}
+.roof-cost-panel .field label{font-size:12px}
+.optional-label{display:inline-block;margin-left:5px;padding:1px 6px;border-radius:5px;background:#f0f3f6;color:#526577;font-size:10px;font-weight:700;vertical-align:1px}
+.roof-metal-field{grid-column:1/-1;border-top:1px solid #e7edf2;padding-top:12px}
+.roof-field-details,.roof-scope-details{margin-top:8px;border-top:1px solid #e7edf2;padding-top:8px}
+.roof-field-details summary,.roof-scope-details summary{cursor:pointer;color:#40566b;font-size:12px;font-weight:750}
+.roof-field-details p,.roof-scope-details p{margin:7px 0 0;color:#526577;font-size:12px;line-height:1.55}
+.roof-reference-action{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:13px}
+.roof-reference-action .btn{font-size:12px;padding:10px 13px}
+.roof-reference-hint{color:#526577;font-size:11px}
+.roof-reference-status{margin:10px 0 0;padding:10px 12px;border-left:3px solid #c4d0da;background:#f6f8fa;border-radius:0 8px 8px 0;color:#526577;font-size:12px;line-height:1.5}
+.roof-reference-status[hidden]{display:none}
+.roof-cost-actions{margin-top:16px}
+.roof-cost-actions .btn-outline{background:#f3f6f8;color:#30465b;border:1px solid #d5dfe7}
+.roof-cost-result{margin-top:14px}
+.roof-scope-details{margin-top:13px}
+@media(max-width:600px){.roof-cost-step{padding:13px}.roof-reference-action{align-items:flex-start;flex-direction:column}.roof-reference-action .btn{width:100%}.roof-cost-actions .btn{flex:1}}
+
