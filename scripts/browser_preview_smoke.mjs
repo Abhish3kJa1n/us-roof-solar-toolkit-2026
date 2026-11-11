@@ -274,6 +274,7 @@ try {
 
   await page.locator('#loadNationalPriceReference').click();
   assert.equal(await page.locator('#price').inputValue(), '2.62', 'national solar-only price reference must load only after an explicit click');
+  assert.match(await page.locator('#priceContext').innerText(), /before incentives/);
   await page.locator('#run').click();
   solarText = await page.locator('#result').innerText();
   assert.match(solarText, /14\.0 years/);
