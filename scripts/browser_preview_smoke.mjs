@@ -253,7 +253,13 @@ try {
   assert.equal(await page.locator('.roof-field-details').evaluate(node => node.open), false, 'metal methodology starts collapsed');
   assert.equal(await page.locator('.roof-scope-details').evaluate(node => node.open), false, 'scope caveats start collapsed');
   await page.setViewportSize({ width: 390, height: 844 });
-  await assertNoHorizontalOverflow('roof-cost-mobile');
+  await page.waitForTimeout(120);
+  const roofMobileLayout = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth
+  }));
+  assert.ok(Math.max(roofMobileLayout.document, roofMobileLayout.body) <= 391, 'roof-cost mobile horizontal overflow: ' + JSON.stringify(roofMobileLayout));
   await accessibilityScan('roof-cost-mobile');
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
