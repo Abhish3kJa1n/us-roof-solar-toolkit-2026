@@ -243,7 +243,7 @@ try {
 
   // Standalone solar savings: separate sizing inputs, optional tariff modelling and explicit price reference.
   await open('/calculators/solar-savings.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-desktop.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('solar-savings');
   await accessibilityScan('solar-savings');
   assert.equal(await page.locator('#price').inputValue(), '', 'standalone solar calculator must not silently prefill a national price');
@@ -294,12 +294,12 @@ try {
   solarText = await page.locator('#result').innerText();
   assert.match(solarText, /30% low case: \$1,140 annual energy value/);
   assert.match(solarText, /70% high case: \$1,860 annual energy value/);
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-results.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-results.png'), fullPage: true });
   await page.locator('#selfUseSensitivity summary').click();
   await page.locator('#run').click();
   assert.doesNotMatch(await page.locator('#result').innerText(), /User-selected self-consumption sensitivity/);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-mobile.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
   results.push('standalone solar sizing, tariff value, explicit price reference, sensitivity disclosure and responsive layout: PASS');
 
@@ -540,7 +540,7 @@ try {
 
   // Standalone savings calculator.
   await open('/calculators/solar-savings.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-desktop.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('solar-savings');
   await accessibilityScan('solar-savings');
   await page.locator('#annualUse').fill('10800');
@@ -551,13 +551,16 @@ try {
   await page.locator('#exportRate').fill('0.04');
   await page.locator('#run').click();
   await page.waitForFunction(() => {
-    const node = document.querySelector('#result');
-    return node && !/Enter your details/.test(node.innerText);
+    const text = document.querySelector('#result')?.innerText || '';
+    return /6\.6 kW DC system/.test(text);
   }, undefined, { timeout: 15000 });
   const savings = await page.locator('#result').innerText();
-  assert.match(savings, /kW|kWh|annual|payback/i);
-  results.push('standalone solar savings calculator: PASS');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-results.png'), fullPage: true });
+  assert.match(savings, /6\.6 kW DC system/);
+  assert.match(savings, /\$829/);
+  assert.match(savings, /Modeled installed cash price:\s*Not entered/);
+  assert.match(savings, /Not calculated — requires a complete energy-value model and installed price/);
+  results.push('standalone solar savings calculation and blank-price behavior: PASS');
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-results.png'), fullPage: true });
 
   assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load successfully; observed: ' + JSON.stringify(beaconScriptResponses));
   // Preview pages.dev hosts are not the registered analytics hostname. A failed beacon request
