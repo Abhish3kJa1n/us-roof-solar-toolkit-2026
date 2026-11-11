@@ -274,8 +274,8 @@ try {
   assert.match(solarText, /EnergySage H1 2026 solar-only marketplace median/);
 
   // Closed sensitivity controls are excluded; opening them makes their values part of validation and calculation.
-  await page.locator('#selfUseLow').fill('101');
-  await page.locator('#selfUseHigh').fill('110');
+  await page.locator('#selfUseLow').evaluate(node => { node.value = '101'; node.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.locator('#selfUseHigh').evaluate(node => { node.value = '110'; node.dispatchEvent(new Event('input', { bubbles: true })); });
   await page.locator('#run').click();
   assert.doesNotMatch(await page.locator('#result').innerText(), /User-selected self-consumption sensitivity/);
   await page.locator('#selfUseSensitivity summary').click();
