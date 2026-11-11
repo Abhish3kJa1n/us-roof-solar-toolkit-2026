@@ -243,9 +243,20 @@ try {
 
   // Standalone roof-cost calculator: AHS availability state, material changes and all metal-system references.
   await open('/calculators/roof-replacement-cost.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-desktop.png'), fullPage: true });
-  await assertNoHorizontalOverflow('roof-cost');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-desktop.png'), fullPage: true });
+  await assertNoHorizontalOverflow('roof-cost-desktop');
   await accessibilityScan('roof-cost');
+  assert.equal(await page.locator('.roof-cost-step').count(), 2, 'roof calculator must present two clear tasks');
+  assert.match(await page.locator('#roofDetailsHeading').innerText(), /Roof details/);
+  assert.match(await page.locator('#roofPriceHeading').innerText(), /Installed price range/);
+  assert.equal(await page.locator('#metalSystemField').isVisible(), false, 'metal-specific input starts hidden');
+  assert.equal(await page.locator('.roof-field-details').evaluate(node => node.open), false, 'metal methodology starts collapsed');
+  assert.equal(await page.locator('.roof-scope-details').evaluate(node => node.open), false, 'scope caveats start collapsed');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await assertNoHorizontalOverflow('roof-cost-mobile');
+  await accessibilityScan('roof-cost-mobile');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-mobile.png'), fullPage: true });
+  await page.setViewportSize({ width: 1365, height: 900 });
   await page.waitForFunction(() => {
     const node = document.querySelector('#roofMetroBenchmarkResult');
     return Boolean(node && /national point estimates reproduce the Census Table C-16/i.test(node.innerText));
