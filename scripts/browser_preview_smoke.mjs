@@ -243,7 +243,7 @@ try {
 
   // Standalone solar savings: separate sizing inputs, optional tariff modelling and explicit price reference.
   await open('/calculators/solar-savings.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-desktop.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-progressive-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('solar-savings');
   await accessibilityScan('solar-savings');
   assert.equal(await page.locator('#price').inputValue(), '', 'standalone solar calculator must not silently prefill a national price');
@@ -297,14 +297,14 @@ try {
   assert.match(solarText, /70% high case: \$1,860 annual energy value/);
   assert.match(solarText, /14\.0 years/);
   assert.equal(await page.locator('#price').inputValue(), '2.62', 'the national reference must persist through sensitivity validation');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-results.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-progressive-results.png'), fullPage: true });
   await page.locator('#selfUseSensitivity summary').click();
   await page.locator('#run').click();
   solarText = await page.locator('#result').innerText();
   assert.doesNotMatch(solarText, /User-selected self-consumption sensitivity/);
   assert.match(solarText, /14\.0 years/, 'closing sensitivity must not clear the installed-price assumption');
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-mobile.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-progressive-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
   results.push('standalone solar sizing, tariff value, explicit price reference, sensitivity disclosure and responsive layout: PASS');
 
