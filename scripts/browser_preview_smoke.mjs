@@ -205,15 +205,11 @@ try {
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '11');
   assert.match(await page.locator('#roofReferenceStatus').innerText(), /not a local or material-specific price/i);
 
-  // The shared validator must mark each blank required field inline and block the next step.
+  // Roof material is descriptive and optional; a blank selection must not block a valid estimate.
   await page.locator('button[data-next="2"]').click();
-  const roofTypeMessage = page.locator('#roofType-checker-message');
-  assert.equal(await page.locator('#roofType').getAttribute('aria-invalid'), 'true', 'blank roof material must be marked invalid');
-  assert.ok((await roofTypeMessage.innerText()).trim().length > 0, 'blank roof material must show an inline field-level error');
-  assert.ok(await roofTypeMessage.isVisible(), 'the inline roof-material error must be visible');
-  assert.equal(await page.locator('[data-panel="2"]').isVisible(), false, 'invalid roof inputs must not advance to energy details');
+  await page.locator('[data-panel="2"]').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#roofType').inputValue(), '', 'combined calculator must allow the visitor to continue without choosing roof material');
 
-  await page.locator('#roofType').selectOption('asphalt');
   await page.locator('#roofArea').fill('1800');
   await page.locator('#roofRateLow').fill('5');
   await page.locator('#roofRateHigh').fill('8');
