@@ -288,6 +288,7 @@ try {
   solarText = await page.locator('#result').innerText();
   assert.match(solarText, /30% low case: \$1,140 annual energy value/);
   assert.match(solarText, /70% high case: \$1,860 annual energy value/);
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-results.png'), fullPage: true });
   await page.locator('#selfUseSensitivity summary').click();
   await page.locator('#run').click();
   assert.doesNotMatch(await page.locator('#result').innerText(), /User-selected self-consumption sensitivity/);
