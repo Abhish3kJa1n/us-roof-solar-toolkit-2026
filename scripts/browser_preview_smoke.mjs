@@ -205,12 +205,12 @@ try {
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '11');
   assert.match(await page.locator('#roofReferenceStatus').innerText(), /not a local or material-specific price/i);
 
-  // Roof material is descriptive and optional; a blank selection must not block a valid estimate.
+  // Roof material is descriptive and optional; with the required roof area supplied, it must not block progress.
+  await page.locator('#roofArea').fill('1800');
   await page.locator('button[data-next="2"]').click();
   await page.locator('[data-panel="2"]').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#roofType').inputValue(), '', 'combined calculator must allow the visitor to continue without choosing roof material');
 
-  await page.locator('#roofArea').fill('1800');
   await page.locator('#roofRateLow').fill('5');
   await page.locator('#roofRateHigh').fill('8');
   await page.locator('button[data-next="2"]').click();
