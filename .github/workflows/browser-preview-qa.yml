@@ -83,10 +83,10 @@ jobs:
               --output-path="browser-qa-output/lighthouse/${name}.json"
           }
           run_audit homepage "/"
-          run_audit roof-cost "/calculators/roof-replacement-cost.html"
-          run_audit solar-savings "/calculators/solar-savings.html"
-          run_audit city-production "/calculators/location-solar.html"
-          run_audit solar-cost-guide "/guides/solar-installation-cost.html"
+          run_audit roof-cost "/calculators/roof-replacement-cost"
+          run_audit solar-savings "/calculators/solar-savings"
+          run_audit city-production "/calculators/location-solar"
+          run_audit solar-cost-guide "/guides/solar-installation-cost"
           node <<'NODE'
           const fs = require('node:fs');
           const path = require('node:path');
@@ -115,6 +115,13 @@ jobs:
                 accessibility: score('accessibility'),
                 bestPractices: score('best-practices'),
                 seo: score('seo'),
+              },
+              interpretation: {
+                previewNoindex: audits['is-crawlable']?.score === 0,
+                previewAnalyticsCorsExpected: (audits['errors-in-console']?.details?.items || []).some((item) =>
+                  item.description?.includes('cloudflareinsights.com/cdn-cgi/rum')
+                ),
+                note: 'Preview is intentionally noindex. Cloudflare Web Analytics is registered on the production hostname, so its beacon may CORS-fail on the pages.dev preview alias. Neither should be interpreted as a production SEO or console defect.',
               },
               mobileLabMetrics: {
                 fcpMs: metric('first-contentful-paint'),
