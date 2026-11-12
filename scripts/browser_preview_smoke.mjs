@@ -263,6 +263,8 @@ try {
   const limitationsText = await page.locator('#assumptionDisclosure').innerText();
   assert.match(limitationsText, /not a utility-bill simulator/i);
   assert.match(limitationsText, /unknown, not zero/i);
+  assert.match(limitationsText, /not available for expenditures made after December 31, 2025/i, 'solar calculator must state the current federal Section 25D termination date');
+  assert.equal(await page.locator('#assumptionDisclosure a[href="https://www.irs.gov/credits-deductions/residential-clean-energy-credit"]').count(), 1, 'federal credit timing note must link to the IRS source');
   await page.locator('#assumptionDisclosure summary').click();
   await page.locator('#annualUse').fill('12000');
   await page.locator('#offset').fill('100');
