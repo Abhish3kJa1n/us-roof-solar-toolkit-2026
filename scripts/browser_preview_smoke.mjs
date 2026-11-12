@@ -210,6 +210,8 @@ try {
   assert.equal(await page.locator('#roofRateLow').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
   await page.locator('#roofPriceAssumptions summary').click();
+  assert.match(await page.locator('#roofPriceAssumptions').innerText(), /detach-and-reset, storage and reinstallation are not estimated/i, 'combined calculator must disclose existing solar-array removal/reinstall scope');
+  assert.equal(await page.locator('#roofPriceAssumptions a[href="guides/roof-before-solar"]').count(), 1, 'combined calculator must link the roof-before-solar guide from this scope note');
   await page.locator('#loadNationalRoofReference').click();
   assert.equal(await page.locator('#roofRateLow').inputValue(), '4');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '11');
@@ -324,6 +326,10 @@ try {
   assert.equal(await page.locator('#metalSystemField').isVisible(), false, 'metal-specific input starts hidden');
   assert.equal(await page.locator('.roof-field-details').evaluate(node => node.open), false, 'metal methodology starts collapsed');
   assert.equal(await page.locator('.roof-scope-details').evaluate(node => node.open), false, 'scope caveats start collapsed');
+  await page.locator('.roof-scope-details summary').click();
+  assert.match(await page.locator('.roof-scope-details').innerText(), /does not separately calculate array detach-and-reset, storage or reinstallation/i, 'roof calculator must disclose existing solar-array removal/reinstall scope');
+  assert.equal(await page.locator('.roof-scope-details a[href="../guides/roof-before-solar"]').count(), 1, 'roof calculator must link the roof-before-solar guide from this scope note');
+  await page.locator('.roof-scope-details summary').click();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.waitForTimeout(120);
   const roofMobileLayout = await page.evaluate(() => ({
