@@ -199,6 +199,7 @@ try {
 
   // Homepage and combined calculator: real browser rendering and browser-side math.
   await open('/index.html');
+  assert.equal(await page.locator('link[rel="icon"][href="/assets/favicon.svg"]').count(), 1, 'homepage must declare its SVG favicon explicitly');
   await page.screenshot({ path: path.join(screenshotDir, 'homepage-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
@@ -478,6 +479,7 @@ try {
 
   // City-based solar: real Census autocomplete, exact place lookup, PVWatts and OpenEI.
   await open('/calculators/location-solar.html');
+  assert.equal(await page.locator('link[rel="icon"][href="/assets/favicon.svg"]').count(), 1, 'city estimator must declare its SVG favicon explicitly');
   await page.screenshot({ path: path.join(screenshotDir, 'location-solar-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('location-solar');
   await accessibilityScan('location-solar');
