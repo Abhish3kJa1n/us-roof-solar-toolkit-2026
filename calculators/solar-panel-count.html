@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="robots" content="noindex,follow" />
 <meta name="description" content="Estimate how many solar panels your home may need from annual electricity use, a target energy offset, modeled solar production and panel wattage."/>
-<title>How Many Solar Panels Do I Need? Free Calculator | Roof &amp; Solar Toolkit</title>
+<title>How Many Solar Panels Do I Need? Calculator</title>
 <link href="../assets/site.css" rel="stylesheet"/>
 <meta content="article" property="og:type"/>
-<meta content="How Many Solar Panels Do I Need? Free Calculator" property="og:title"/>
+<meta content="How Many Solar Panels Do I Need? Calculator" property="og:title"/>
 <meta content="Estimate a solar panel count using annual electricity use, a target offset, modeled production and module wattage." property="og:description"/>
 <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg"/>
 <link rel="canonical" href="https://getroofsolarcalculator.online/calculators/solar-panel-count" />
@@ -43,6 +43,8 @@
 <h2>How the panel-count estimate works</h2>
 <p>The usage-based method first multiplies annual household electricity use by the target generation-offset percentage. It divides that target annual generation by the modeled annual kWh produced per DC kW to estimate array capacity. The array capacity is then converted to a whole number of modules using the nameplate wattage of each panel, rounding up so the module count meets or exceeds the requested modeled capacity.</p>
 <p>In formula form: target annual generation = annual electricity use × target offset. Estimated array size (kW DC) = target annual generation ÷ annual production (kWh per kW DC). Panel count = array size × 1,000 ÷ module watts, rounded up to a whole module.</p>
+<h2>A worked example with clearly stated assumptions</h2>
+<p>Suppose a household uses 10,800 kWh per year, chooses an 80% annual generation target, and enters a modeled production value of 1,500 kWh per kW DC per year from its location-specific PVWatts results. With 400-watt modules, the target generation is 8,640 kWh; the estimated array size is 5.76 kW DC; and the arithmetic gives 14.4 modules, rounded up to 15 panels. The 1,500 kWh/kW figure is an illustrative input, not a national average or a claim about any particular city. Replace it with the result for your location and roof assumptions using the <a href="location-solar">city solar production estimator</a>. This example estimates annual generation, not bill savings or roof fit.</p>
 <h2>Get a production assumption that matches the location</h2>
 <p>Solar production varies with location, weather data, array tilt, azimuth, shading, system losses and equipment. The <a href="location-solar">city solar production estimator</a> uses a Census representative place point and the PVWatts model to provide a typical-year production estimate. A city point is not your home address and does not capture trees, roof obstructions, micro-shading or the exact roof plane. A proposal's site-specific production model may be more relevant if its assumptions are documented and credible.</p>
 <h2>A generation offset does not equal the same bill reduction</h2>
