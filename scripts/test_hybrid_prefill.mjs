@@ -7,7 +7,8 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const html = fs.readFileSync(path.join(root, 'calculators/solar-savings.html'), 'utf8');
 const script = fs.readFileSync(path.join(root, 'assets/js/solar-savings-1.js'), 'utf8');
-assert.match(html, /id="price"[^>]*value="2\.62"/);
+assert.doesNotMatch(html, /id="price"[^>]*value="2\.62"/, 'national price must not be silently prefilled');
+assert.match(html, /id="loadNationalPriceReference"/, 'national price must require an explicit action');
 assert.match(html, /id="price"[^>]*step="0\.01"/);
 
 const approvals = {
@@ -28,10 +29,10 @@ const approvedRegistry = {
   }]
 };
 
-async function runScenario({ search = '', registry = approvedRegistry, editDuringFetch = false } = {}) {
-  const ids = ['annualUse','importRate','offset','production','selfUse','exportRate','price','result','priceContext','run'];
+async function runScenario({ search = '', registry = approvedRegistry, editDuringFetch = false, optInDuringFetch = false } = {}) {
+  const ids = ['annualUse','importRate','offset','production','selfUse','exportRate','price','result','priceContext','run','loadNationalPriceReference'];
   const elements = Object.fromEntries(ids.map(id => [id, {
-    id, value: id === 'price' ? '2.62' : '', innerHTML: '', textContent: '', hidden: false,
+    id, value: '', innerHTML: '', textContent: '', hidden: false,
     handlers: {}, addEventListener(type, fn) { this.handlers[type] = fn; },
     closest() { return { append() {} }; },
     append() {}
@@ -53,6 +54,7 @@ async function runScenario({ search = '', registry = approvedRegistry, editDurin
     elements.price.value = '3.87';
     elements.price.handlers.input();
   }
+  if (optInDuringFetch) elements.loadNationalPriceReference.handlers.click();
   releaseFetch({ ok: true, async json() { return registry; } });
   await new Promise(resolve => setTimeout(resolve, 0));
   return { elements, created };
@@ -65,39 +67,49 @@ assert.match(city.elements.priceContext.textContent, /approved Berkeley Lab hist
 assert.match(city.elements.priceContext.textContent, /sample 154/);
 assert.equal(city.elements.production.value, '1550.4');
 
-// If no approved record exists, the editable national planning fallback remains.
+// If no approved record exists, no national price is silently assumed.
 const empty = await runScenario({
   search: '?city=Austin&state=TX&production=1550.4',
   registry: { schema_version: 1, source_status: { solar_installed_price: { status: 'withheld' } }, records: [] }
 });
-assert.equal(empty.elements.price.value, '2.62');
-assert.match(empty.elements.priceContext.textContent, /EnergySage H1 2026/);
+assert.equal(empty.elements.price.value, '');
+assert.match(empty.elements.priceContext.textContent, /No price is assumed/);
 
 // A visitor edit made while the async registry lookup is in flight must never be overwritten.
 const edited = await runScenario({ search: '?city=Austin&state=TX', editDuringFetch: true });
 assert.equal(edited.elements.price.value, '3.87');
-assert.match(edited.elements.priceContext.textContent, /You edited the price/);
+assert.match(edited.elements.priceContext.textContent, /You entered this price/);
 
 
 // A weak sample is withheld even when the source/license metadata looks approved.
 const weakSample = structuredClone(approvedRegistry);
 weakSample.records[0].sample_n = 99;
 const weak = await runScenario({ search: '?city=Austin&state=TX', registry: weakSample });
-assert.equal(weak.elements.price.value, '2.62');
-assert.match(weak.elements.priceContext.textContent, /EnergySage H1 2026/);
+assert.equal(weak.elements.price.value, '');
+assert.match(weak.elements.priceContext.textContent, /No price is assumed/);
 
 // A lookalike domain is not an LBNL source.
 const lookalike = structuredClone(approvedRegistry);
 lookalike.records[0].source_url = 'https://emp.lbl.gov.attacker.example/tracking-the-sun';
 const spoofed = await runScenario({ search: '?city=Austin&state=TX', registry: lookalike });
-assert.equal(spoofed.elements.price.value, '2.62');
-assert.match(spoofed.elements.priceContext.textContent, /EnergySage H1 2026/);
+assert.equal(spoofed.elements.price.value, '');
+assert.match(spoofed.elements.priceContext.textContent, /No price is assumed/);
 
 // Missing license approval must also block the override.
 const unlicensed = structuredClone(approvedRegistry);
 unlicensed.records[0].approval.current_dataset_license_confirmed = false;
 const noLicense = await runScenario({ search: '?city=Austin&state=TX', registry: unlicensed });
-assert.equal(noLicense.elements.price.value, '2.62');
-assert.match(noLicense.elements.priceContext.textContent, /EnergySage H1 2026/);
+assert.equal(noLicense.elements.price.value, '');
+assert.match(noLicense.elements.priceContext.textContent, /No price is assumed/);
 
-console.log('PASS hybrid solar prefill: editable national fallback, approval-gated city override, PV yield handoff, visitor-edit race protection, minimum sample, source-domain and license safeguards.');
+// The national benchmark loads only on explicit request and cannot be overwritten by an in-flight city lookup.
+const optedIn = await runScenario({ search: '?city=Austin&state=TX', optInDuringFetch: true });
+assert.equal(optedIn.elements.price.value, '2.62');
+assert.match(optedIn.elements.priceContext.textContent, /National solar-only benchmark loaded because you requested it/);
+
+const explicitNational = await runScenario();
+explicitNational.elements.loadNationalPriceReference.handlers.click();
+assert.equal(explicitNational.elements.price.value, '2.62');
+assert.match(explicitNational.elements.priceContext.textContent, /National solar-only benchmark loaded because you requested it/);
+
+console.log('PASS hybrid solar prefill: blank national default, explicit national opt-in, approval-gated city override, PV yield handoff, visitor-edit and opt-in race protection, minimum sample, source-domain and license safeguards.');

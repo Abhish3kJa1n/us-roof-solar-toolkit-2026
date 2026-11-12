@@ -182,9 +182,24 @@ try {
   results.push('EIA reference strict CSP and Preview ad gate: PASS');
   await open('/guides/are-solar-panels-worth-it.html');
   results.push('guide strict CSP and Preview ad gate: PASS');
+  await open('/guides/solar-installation-cost');
+  const guideTocTargetHeights = await page.locator('.toc a').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().height));
+  assert.ok(guideTocTargetHeights.length > 0 && guideTocTargetHeights.every(height => height >= 24), 'solar cost guide table-of-contents links must have 24px minimum touch targets');
+  results.push('solar cost guide touch target sizing: PASS');
+
+  // Public methodology copy must describe the same opt-in price behavior tested in the calculators.
+  await open('/methodology.html');
+  const methodologyText = await page.locator('#main-content').innerText();
+  assert.match(methodologyText, /starts with blank low\/high roof-price fields/i);
+  assert.match(methodologyText, /leave installed solar price blank by default/i);
+  assert.match(methodologyText, /visitor must choose to apply it/i);
+  assert.doesNotMatch(methodologyText, /preloads a broad Angi national roof-surface reference/i);
+  assert.doesNotMatch(methodologyText, /standalone solar savings calculator pre-fills an editable/i);
+  results.push('methodology and opt-in price-reference UX consistency: PASS');
 
   // Homepage and combined calculator: real browser rendering and browser-side math.
   await open('/index.html');
+  assert.equal(await page.locator('link[rel="icon"][href="/assets/favicon.svg"]').count(), 1, 'homepage must declare its SVG favicon explicitly');
   await page.screenshot({ path: path.join(screenshotDir, 'homepage-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
@@ -200,25 +215,21 @@ try {
   assert.equal(await page.locator('#roofRateLow').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
   await page.locator('#roofPriceAssumptions summary').click();
+  assert.match(await page.locator('#roofPriceAssumptions').innerText(), /detach-and-reset, storage and reinstallation are not estimated/i, 'combined calculator must disclose existing solar-array removal/reinstall scope');
+  assert.equal(await page.locator('#roofPriceAssumptions a[href="guides/roof-before-solar"]').count(), 1, 'combined calculator must link the roof-before-solar guide from this scope note');
   await page.locator('#loadNationalRoofReference').click();
   assert.equal(await page.locator('#roofRateLow').inputValue(), '4');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '11');
   assert.match(await page.locator('#roofReferenceStatus').innerText(), /not a local or material-specific price/i);
 
-  // The shared validator must mark each blank required field inline and block the next step.
-  await page.locator('button[data-next="2"]').click();
-  const roofTypeMessage = page.locator('#roofType-checker-message');
-  assert.equal(await page.locator('#roofType').getAttribute('aria-invalid'), 'true', 'blank roof material must be marked invalid');
-  assert.ok((await roofTypeMessage.innerText()).trim().length > 0, 'blank roof material must show an inline field-level error');
-  assert.ok(await roofTypeMessage.isVisible(), 'the inline roof-material error must be visible');
-  assert.equal(await page.locator('[data-panel="2"]').isVisible(), false, 'invalid roof inputs must not advance to energy details');
-
-  await page.locator('#roofType').selectOption('asphalt');
+  // Roof material is descriptive and optional; with the required roof area supplied, it must not block progress.
   await page.locator('#roofArea').fill('1800');
+  // Roof-price assumptions belong to Step 1, so enter them before advancing.
   await page.locator('#roofRateLow').fill('5');
   await page.locator('#roofRateHigh').fill('8');
   await page.locator('button[data-next="2"]').click();
   await page.locator('[data-panel="2"]').waitFor({ state: 'visible' });
+  assert.equal(await page.locator('#roofType').inputValue(), '', 'combined calculator must allow the visitor to continue without choosing roof material');
   await page.locator('#annualKwh').fill('10800');
   await page.locator('#rate').fill('0.18');
   await page.locator('#solarCostAssumptions summary').click();
@@ -241,11 +252,102 @@ try {
   results.push('combined calculator: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png'), fullPage: true });
 
+  // Standalone solar savings: separate sizing inputs, optional tariff modelling and explicit price reference.
+  await open('/calculators/solar-savings.html');
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-progressive-desktop.png'), fullPage: true });
+  await assertNoHorizontalOverflow('solar-savings');
+  await accessibilityScan('solar-savings');
+  assert.equal(await page.locator('#price').inputValue(), '', 'standalone solar calculator must not silently prefill a national price');
+  assert.equal(await page.locator('#selfUseSensitivity').evaluate(node => node.open), false, 'self-use sensitivity should be collapsed initially');
+  assert.equal(await page.locator('#assumptionDisclosure').evaluate(node => node.open), false, 'detailed limitations should be collapsed initially');
+  await page.locator('#assumptionDisclosure summary').click();
+  const limitationsText = await page.locator('#assumptionDisclosure').innerText();
+  assert.match(limitationsText, /not a utility-bill simulator/i);
+  assert.match(limitationsText, /unknown, not zero/i);
+  assert.match(limitationsText, /not available for expenditures made after December 31, 2025/i, 'solar calculator must state the current federal Section 25D termination date');
+  assert.equal(await page.locator('#assumptionDisclosure a[href="https://www.irs.gov/credits-deductions/residential-clean-energy-credit"]').count(), 1, 'federal credit timing note must link to the IRS source');
+  await page.locator('#assumptionDisclosure summary').click();
+  await page.locator('#annualUse').fill('12000');
+  await page.locator('#offset').fill('100');
+  await page.locator('#production').fill('1500');
+  await page.locator('#run').click();
+  let solarText = await page.locator('#result').innerText();
+  assert.match(solarText, /8\.0 kW DC system/);
+  assert.match(solarText, /Not modeled — enter an annual direct-use share/);
+  assert.match(solarText, /Not calculated — missing annual direct-use share/);
+
+  await page.locator('#importRate').fill('0.20');
+  await page.locator('#selfUse').fill('50');
+  await page.locator('#exportRate').fill('0.05');
+  await page.locator('#run').click();
+  solarText = await page.locator('#result').innerText();
+  assert.match(solarText, /\$1,500/);
+  assert.match(solarText, /Modeled installed cash price:\s*Not entered/);
+  assert.match(solarText, /Not calculated — requires a complete energy-value model and installed price/);
+
+  await page.locator('#loadNationalPriceReference').click();
+  assert.equal(await page.locator('#price').inputValue(), '2.62', 'national solar-only price reference must load only after an explicit click');
+  assert.match(await page.locator('#priceContext').innerText(), /before incentives/);
+  await page.locator('#run').click();
+  solarText = await page.locator('#result').innerText();
+  assert.match(solarText, /14\.0 years/);
+  assert.match(solarText, /EnergySage H1 2026 solar-only marketplace median/);
+
+  // Closed sensitivity controls are excluded; opening them makes their values part of validation and calculation.
+  await page.locator('#selfUseLow').evaluate(node => { node.value = '101'; node.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.locator('#selfUseHigh').evaluate(node => { node.value = '110'; node.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.locator('#run').click();
+  assert.doesNotMatch(await page.locator('#result').innerText(), /User-selected self-consumption sensitivity/);
+  await page.locator('#selfUseSensitivity summary').click();
+  await page.locator('#run').click();
+  assert.equal(await page.locator('#selfUseLow').getAttribute('aria-invalid'), 'true');
+  assert.ok(await page.locator('#selfUseLow-checker-message').isVisible(), 'opened sensitivity inputs must show inline range errors');
+  await page.locator('#selfUseLow').fill('30');
+  await page.locator('#selfUseHigh').fill('70');
+  await page.locator('#run').click();
+  solarText = await page.locator('#result').innerText();
+  assert.match(solarText, /30% low case: \$1,140 annual energy value/);
+  assert.match(solarText, /70% high case: \$1,860 annual energy value/);
+  assert.match(solarText, /14\.0 years/);
+  assert.equal(await page.locator('#price').inputValue(), '2.62', 'the national reference must persist through sensitivity validation');
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-progressive-results.png'), fullPage: true });
+  await page.locator('#selfUseSensitivity summary').click();
+  await page.locator('#run').click();
+  solarText = await page.locator('#result').innerText();
+  assert.doesNotMatch(solarText, /User-selected self-consumption sensitivity/);
+  assert.match(solarText, /14\.0 years/, 'closing sensitivity must not clear the installed-price assumption');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-progressive-mobile.png'), fullPage: true });
+  await page.setViewportSize({ width: 1365, height: 900 });
+  results.push('standalone solar sizing, tariff value, explicit price reference, sensitivity disclosure and responsive layout: PASS');
+
   // Standalone roof-cost calculator: AHS availability state, material changes and all metal-system references.
   await open('/calculators/roof-replacement-cost.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-desktop.png'), fullPage: true });
-  await assertNoHorizontalOverflow('roof-cost');
+  assert.match(await page.locator('#main-content').innerText(), /Visitors can deliberately load the broad range as an editable national planning reference/i);
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-desktop.png'), fullPage: true });
+  await assertNoHorizontalOverflow('roof-cost-desktop');
   await accessibilityScan('roof-cost');
+  assert.equal(await page.locator('.roof-cost-step').count(), 2, 'roof calculator must present two clear tasks');
+  assert.match(await page.locator('#roofDetailsHeading').innerText(), /Roof details/);
+  assert.match(await page.locator('#roofPriceHeading').innerText(), /Installed price range/);
+  assert.equal(await page.locator('#metalSystemField').isVisible(), false, 'metal-specific input starts hidden');
+  assert.equal(await page.locator('.roof-field-details').evaluate(node => node.open), false, 'metal methodology starts collapsed');
+  assert.equal(await page.locator('.roof-scope-details').evaluate(node => node.open), false, 'scope caveats start collapsed');
+  await page.locator('.roof-scope-details summary').click();
+  assert.match(await page.locator('.roof-scope-details').innerText(), /does not separately calculate array detach-and-reset, storage or reinstallation/i, 'roof calculator must disclose existing solar-array removal/reinstall scope');
+  assert.equal(await page.locator('.roof-scope-details a[href="../guides/roof-before-solar"]').count(), 1, 'roof calculator must link the roof-before-solar guide from this scope note');
+  await page.locator('.roof-scope-details summary').click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForTimeout(120);
+  const roofMobileLayout = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth
+  }));
+  assert.ok(Math.max(roofMobileLayout.document, roofMobileLayout.body) <= 391, 'roof-cost mobile horizontal overflow: ' + JSON.stringify(roofMobileLayout));
+  await accessibilityScan('roof-cost-mobile');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-mobile.png'), fullPage: true });
+  await page.setViewportSize({ width: 1365, height: 900 });
   await page.waitForFunction(() => {
     const node = document.querySelector('#roofMetroBenchmarkResult');
     return Boolean(node && /national point estimates reproduce the Census Table C-16/i.test(node.innerText));
@@ -255,8 +357,8 @@ try {
   assert.match(ahsStatus, /No AHS metro roofing distribution is currently approved/i);
   assert.match(ahsStatus, /national point estimates reproduce the Census Table C-16/i);
 
-  const styleValues = await page.locator('#metalSystem optgroup[label="By roof style / system"] option').evaluateAll(options => options.map(option => option.value));
-  const materialValues = await page.locator('#metalSystem optgroup[label="By base metal / material"] option').evaluateAll(options => options.map(option => option.value));
+  const styleValues = await page.locator('#metalSystem optgroup[label="Roof style / system"] option').evaluateAll(options => options.map(option => option.value));
+  const materialValues = await page.locator('#metalSystem optgroup[label="Base metal / material"] option').evaluateAll(options => options.map(option => option.value));
   assert.deepEqual(styleValues, ['corrugated', 'standing_seam', 'metal_shingles'], 'style/system group must contain only HomeGuide style ranges');
   assert.deepEqual(materialValues, ['galvanized_steel', 'galvalume_steel', 'aluminum', 'copper', 'zinc', 'tin_terne', 'stainless_steel', 'corten_steel', 'metal_slate', 'stone_coated_steel'], 'material group must contain HomeGuide metal-type ranges');
 
@@ -377,6 +479,7 @@ try {
 
   // City-based solar: real Census autocomplete, exact place lookup, PVWatts and OpenEI.
   await open('/calculators/location-solar.html');
+  assert.equal(await page.locator('link[rel="icon"][href="/assets/favicon.svg"]').count(), 1, 'city estimator must declare its SVG favicon explicitly');
   await page.screenshot({ path: path.join(screenshotDir, 'location-solar-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('location-solar');
   await accessibilityScan('location-solar');
@@ -478,7 +581,7 @@ try {
 
   // Standalone savings calculator.
   await open('/calculators/solar-savings.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-desktop.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('solar-savings');
   await accessibilityScan('solar-savings');
   await page.locator('#annualUse').fill('10800');
@@ -489,13 +592,16 @@ try {
   await page.locator('#exportRate').fill('0.04');
   await page.locator('#run').click();
   await page.waitForFunction(() => {
-    const node = document.querySelector('#result');
-    return node && !/Enter your details/.test(node.innerText);
+    const text = document.querySelector('#result')?.innerText || '';
+    return /6\.6 kW DC system/.test(text);
   }, undefined, { timeout: 15000 });
   const savings = await page.locator('#result').innerText();
-  assert.match(savings, /kW|kWh|annual|payback/i);
-  results.push('standalone solar savings calculator: PASS');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-results.png'), fullPage: true });
+  assert.match(savings, /6\.6 kW DC system/);
+  assert.match(savings, /\$829/);
+  assert.match(savings, /Modeled installed cash price:\s*Not entered/);
+  assert.match(savings, /Not calculated — requires a complete energy-value model and installed price/);
+  results.push('standalone solar savings calculation and blank-price behavior: PASS');
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-results.png'), fullPage: true });
 
   assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load successfully; observed: ' + JSON.stringify(beaconScriptResponses));
   // Preview pages.dev hosts are not the registered analytics hostname. A failed beacon request

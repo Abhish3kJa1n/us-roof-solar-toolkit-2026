@@ -73,6 +73,7 @@
     if (!element || element.disabled) return false;
     for (let node = element; node && node.nodeType === 1; node = node.parentElement) {
       if (node.hidden || node.getAttribute('aria-hidden') === 'true') return false;
+      if (node.tagName === 'DETAILS' && !node.open) return false;
     }
     return true;
   }
