@@ -14,7 +14,10 @@ class Tags(HTMLParser):
     def handle_starttag(self, tag, attrs):
         a = dict(attrs)
         if tag == "form": self.forms += 1
-        if tag == "script": self.scripts.append(a.get("src"))
+        if tag == "script":
+            # JSON-LD is a non-executable structured-data block; audit_site.py validates its JSON.
+            if (a.get("type") or "").strip().lower() != "application/ld+json":
+                self.scripts.append(a.get("src"))
         if tag == "input" and a.get("id"): self.inputs[a["id"]] = a
         if tag == "input" and a.get("type", "text").lower() == "number": self.numeric_inputs.append((a.get("id"), a))
         if tag == "select" and a.get("id"):
