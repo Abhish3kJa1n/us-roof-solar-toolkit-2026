@@ -182,6 +182,10 @@ try {
   results.push('EIA reference strict CSP and Preview ad gate: PASS');
   await open('/guides/are-solar-panels-worth-it.html');
   results.push('guide strict CSP and Preview ad gate: PASS');
+  await open('/guides/solar-installation-cost');
+  const guideTocTargetHeights = await page.locator('.toc a').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().height));
+  assert.ok(guideTocTargetHeights.length > 0 && guideTocTargetHeights.every(height => height >= 24), 'solar cost guide table-of-contents links must have 24px minimum touch targets');
+  results.push('solar cost guide touch target sizing: PASS');
 
   // Public methodology copy must describe the same opt-in price behavior tested in the calculators.
   await open('/methodology.html');
