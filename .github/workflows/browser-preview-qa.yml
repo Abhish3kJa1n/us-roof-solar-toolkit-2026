@@ -78,6 +78,7 @@ jobs:
               --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
               --form-factor=mobile \
               --throttling-method=simulate \
+              --blocked-url-patterns="https://cloudflareinsights.com/cdn-cgi/rum" \
               --only-categories=performance,accessibility,best-practices,seo \
               --output=json \
               --output-path="browser-qa-output/lighthouse/${name}.json"
@@ -118,10 +119,8 @@ jobs:
               },
               interpretation: {
                 previewNoindex: audits['is-crawlable']?.score === 0,
-                previewAnalyticsCorsExpected: (audits['errors-in-console']?.details?.items || []).some((item) =>
-                  item.description?.includes('cloudflareinsights.com/cdn-cgi/rum')
-                ),
-                note: 'Preview is intentionally noindex. Cloudflare Web Analytics is registered on the production hostname, so its beacon may CORS-fail on the pages.dev preview alias. Neither should be interpreted as a production SEO or console defect.',
+                previewAnalyticsBeaconBlockedForLabRun: true,
+                note: 'Preview is intentionally noindex. The Lighthouse lab run blocks the Cloudflare Web Analytics beacon because it is registered on the production hostname, not the pages.dev Preview alias. Browser smoke separately checks and explicitly classifies this Preview-only CORS behavior.',
               },
               mobileLabMetrics: {
                 fcpMs: metric('first-contentful-paint'),
