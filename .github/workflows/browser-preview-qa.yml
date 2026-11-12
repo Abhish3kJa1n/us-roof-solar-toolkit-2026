@@ -57,11 +57,83 @@ jobs:
           PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
           AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
           QA_SCREENSHOT_DIR: browser-qa-output
-      - name: Retain browser screenshots
+      - name: Install pinned Lighthouse CLI
+        run: npm install --prefix /tmp/roofsolar-lighthouse --no-save lighthouse@13.6.0
+      - name: Run mobile Lighthouse audits (diagnostic; no score gate)
+        shell: bash
+        env:
+          PREVIEW_BASE_URL: ${{ steps.preview.outputs.base_url }}
+          PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
+        run: |
+          set -euo pipefail
+          mkdir -p browser-qa-output/lighthouse
+          export CHROME_PATH="$(node -e "process.stdout.write(require(process.env.PLAYWRIGHT_PACKAGE).chromium.executablePath())")"
+          lighthouse_bin="/tmp/roofsolar-lighthouse/node_modules/.bin/lighthouse"
+          run_audit() {
+            local name="$1"
+            local path="$2"
+            echo "LIGHTHOUSE_START ${name} ${PREVIEW_BASE_URL}${path}"
+            "$lighthouse_bin" "${PREVIEW_BASE_URL}${path}" \
+              --quiet \
+              --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" \
+              --form-factor=mobile \
+              --throttling-method=simulate \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json \
+              --output-path="browser-qa-output/lighthouse/${name}.json"
+          }
+          run_audit homepage "/"
+          run_audit roof-cost "/calculators/roof-replacement-cost.html"
+          run_audit solar-savings "/calculators/solar-savings.html"
+          run_audit city-production "/calculators/location-solar.html"
+          run_audit solar-cost-guide "/guides/solar-installation-cost.html"
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const dir = 'browser-qa-output/lighthouse';
+          const files = fs.readdirSync(dir).filter((name) => name.endsWith('.json')).sort();
+          for (const file of files) {
+            const report = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
+            const audits = report.audits || {};
+            const score = (category) => {
+              const value = report.categories?.[category]?.score;
+              return value == null ? null : Math.round(value * 100);
+            };
+            const metric = (id) => {
+              const value = audits[id]?.numericValue;
+              return value == null ? null : Math.round(value);
+            };
+            const opportunities = Object.values(audits)
+              .filter((audit) => audit.details?.type === 'opportunity' && Number(audit.details.overallSavingsMs) > 0)
+              .sort((a, b) => b.details.overallSavingsMs - a.details.overallSavingsMs)
+              .slice(0, 3)
+              .map((audit) => ({ title: audit.title, savingsMs: Math.round(audit.details.overallSavingsMs) }));
+            console.log('LIGHTHOUSE_SUMMARY ' + JSON.stringify({
+              page: file.replace(/\.json$/, ''),
+              scores: {
+                performance: score('performance'),
+                accessibility: score('accessibility'),
+                bestPractices: score('best-practices'),
+                seo: score('seo'),
+              },
+              mobileLabMetrics: {
+                fcpMs: metric('first-contentful-paint'),
+                lcpMs: metric('largest-contentful-paint'),
+                totalBlockingTimeMs: metric('total-blocking-time'),
+                clsTimes1000: metric('cumulative-layout-shift') == null ? null : Number((audits['cumulative-layout-shift'].numericValue * 1000).toFixed(2)),
+                speedIndexMs: metric('speed-index'),
+                serverResponseTimeMs: metric('server-response-time'),
+              },
+              topOpportunities: opportunities,
+            }));
+          }
+          if (files.length !== 5) throw new Error('Expected 5 Lighthouse JSON reports; found ' + files.length);
+          NODE
+      - name: Retain browser QA artifacts and Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: roof-solar-preview-browser-screenshots
-          path: browser-qa-output/*.png
+          name: roof-solar-preview-browser-artifacts
+          path: browser-qa-output/*
           if-no-files-found: warn
           retention-days: 3
