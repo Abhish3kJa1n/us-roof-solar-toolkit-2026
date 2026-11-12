@@ -69,8 +69,17 @@ for (const file of htmlFiles) {
   const rel = relative(root, file);
   const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
   for (const [, attributes, body] of scripts) {
+    const type = (attributes.match(/\btype\s*=\s*["']([^"']+)["']/i)?.[1] || "").toLowerCase();
+    if (type === "application/ld+json") {
+      try {
+        JSON.parse(body);
+      } catch (error) {
+        throw new Error(`${rel}: invalid JSON-LD data block: ${error.message}`);
+      }
+      continue;
+    }
     if (!/\bsrc\s*=/i.test(attributes) && body.trim()) {
-      throw new Error(`${rel}: inline script must be reviewed before nonce policy enforcement`);
+      throw new Error(`${rel}: inline executable script must be reviewed before nonce policy enforcement`);
     }
   }
   if (/\son[a-z]+\s*=/i.test(html)) {
