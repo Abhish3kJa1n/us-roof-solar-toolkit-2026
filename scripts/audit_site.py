@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections import Counter
+import json
 from html.parser import HTMLParser
 from pathlib import Path
 import re
@@ -26,6 +27,8 @@ class PageParser(HTMLParser):
         self.current_script = False
         self.script_buffer = []
         self.scripts_completed = []
+        self.jsonld_completed = []
+        self.current_script_type = None
         self.images_missing_alt = 0
         self.form_controls = []
         self.labels_for = set()
@@ -66,6 +69,7 @@ class PageParser(HTMLParser):
             if src: self.refs.append(("src", src))
             else:
                 self.current_script = True
+                self.current_script_type = (attrs.get("type") or "").strip().lower()
                 self.script_buffer = []
         if tag == "main" and attrs.get("id"): self.main_ids.append(attrs["id"])
         if tag == "meta":
@@ -99,8 +103,13 @@ class PageParser(HTMLParser):
     def handle_endtag(self, tag):
         if tag == "title": self.title_depth = False
         if tag == "script" and self.current_script:
-            self.scripts_completed.append("".join(self.script_buffer))
+            content = "".join(self.script_buffer)
+            if self.current_script_type == "application/ld+json":
+                self.jsonld_completed.append(content)
+            elif self.current_script_type in ("", "text/javascript", "application/javascript", "module"):
+                self.scripts_completed.append(content)
             self.current_script = False
+            self.current_script_type = None
         if tag == "label":
             if self.current_label_for: self.labels_for.add(self.current_label_for)
             self.current_label_for = None
@@ -133,6 +142,23 @@ def main() -> int:
         if re.search(r"<table\b[^>]*<thead\b", source, re.I | re.S):
             issues.append(f"{rel}: malformed <table> opening; missing > before <thead>")
         parser.feed(source)
+        for block in parser.jsonld_completed:
+            try:
+                structured_data = json.loads(block)
+                if not isinstance(structured_data, dict):
+                    issues.append(f"{rel}: JSON-LD block must contain an object")
+                elif structured_data.get("@type") == "BreadcrumbList":
+                    items = structured_data.get("itemListElement")
+                    if not isinstance(items, list) or len(items) < 2:
+                        issues.append(f"{rel}: BreadcrumbList must contain at least two items")
+                    else:
+                        for position, item in enumerate(items, start=1):
+                            if not isinstance(item, dict) or item.get("@type") != "ListItem" or item.get("position") != position or not item.get("name") or not item.get("item"):
+                                issues.append(f"{rel}: invalid BreadcrumbList item at position {position}")
+                        if parser.canonicals and items[-1].get("item") != parser.canonicals[0]:
+                            issues.append(f"{rel}: BreadcrumbList final URL does not match canonical")
+            except json.JSONDecodeError as error:
+                issues.append(f"{rel}: invalid JSON-LD: {error}")
         title_match = re.search(r"<title[^>]*>(.*?)</title>", source, re.I | re.S)
         title = re.sub(r"\s+", " ", title_match.group(1)).strip() if title_match else ""
         titles.append(title)
@@ -232,7 +258,7 @@ def main() -> int:
         source = page.read_text(encoding="utf-8")
         if re.search(r"<form\b", source, re.I):
             issues.append(f"{page.relative_to(ROOT)}: HTML form present; verify a genuine endpoint and privacy disclosure before allowing submission")
-        if re.search(r"<script\b(?![^>]*\bsrc\s*=)[^>]*>\s*[^<]", source, re.I):
+        if re.search(r"<script\b(?![^>]*\bsrc\s*=)(?![^>]*\btype\s*=\s*['\"]application/ld\+json['\"])[^>]*>\s*[^<]", source, re.I):
             issues.append(f"{page.relative_to(ROOT)}: inline script found; deployment CSP requires external first-party JS")
     duplicate_titles = [k for k,v in Counter(titles).items() if k and v > 1]
     if duplicate_titles: issues.append(f"duplicate page titles: {duplicate_titles}")
