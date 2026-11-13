@@ -62,6 +62,8 @@ def normalize_nav_body(body, rel):
         if href in ("#how", "/#how"):
             return ""
         canonical = aliases.get(href)
+        if not canonical and re.search(r"(?:^|/)calculators?/", href, re.I):
+            canonical = ("Calculator", "/#calculator")
         if not canonical:
             return tag
         label, target = canonical
