@@ -30,6 +30,7 @@ CHECKS = [
     "test_price_benchmark_event.mjs",
     "validate_price_benchmarks.py",
     "test_configure_site.py",
+    "test_navigation_ui_contract.py",
 ]
 
 

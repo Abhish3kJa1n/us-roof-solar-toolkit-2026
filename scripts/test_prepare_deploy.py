@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from html.parser import HTMLParser
 import json
+import re
 import os
 from pathlib import Path
 import subprocess
@@ -203,6 +204,16 @@ def main() -> int:
         page_data[rel] = parser
         if rel != "404.html" and "/sitemap" not in parser.refs:
             fail(f"public page footer is missing the HTML sitemap link: {rel}")
+        if rel == "index.html":
+            footer_links = re.search(r'<div class="footer-links">([\s\S]*?)</div>', page.read_text(encoding="utf-8"))
+            if not footer_links or 'href="/sitemap"' not in footer_links.group(1):
+                fail("homepage sitemap link must be inside the footer navigation row")
+        elif rel != "404.html":
+            footer_html = page.read_text(encoding="utf-8").split("<footer", 1)[-1]
+            in_nav_with_disclaimer = '<a href="/sitemap">Site map</a></div></div><div class="wrap disclaimer">' in footer_html
+            in_nav_at_footer_end = '<a href="/sitemap">Site map</a></div></div></footer>' in footer_html
+            if not (in_nav_with_disclaimer or in_nav_at_footer_end):
+                fail(f"footer sitemap link must be inside the footer navigation row: {rel}")
         if not any("noindex" in value.lower() for value in parser.robots):
             fail(f"prelaunch noindex missing from {rel}")
 

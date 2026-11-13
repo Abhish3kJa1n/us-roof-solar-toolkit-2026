@@ -46,7 +46,9 @@
     .brand-mark { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; color: var(--navy); background: var(--gold-soft); }
     .nav-links { display: flex; align-items: center; gap: 27px; color: #536477; font-size: 13px; font-weight: 650; }
     .nav-links a { text-decoration: none; }
-    .nav-links a:hover { color: var(--navy); }
+    .nav-links a:not(.btn):hover { color: var(--navy); }
+    .nav-links a.btn-dark:hover { color: #fff; background: #193b5c; }
+    .nav-links a.btn-primary:hover { color: #172b40; }
     .btn { border: 0; display: inline-flex; align-items: center; justify-content: center; gap: 9px; padding: 13px 19px; border-radius: 10px; font-weight: 750; font-size: 13px; text-decoration: none; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
     .btn:hover { transform: translateY(-1px); }
     .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 3px solid rgba(230,168,61,.55); outline-offset: 2px; }
@@ -381,7 +383,7 @@
 <span>Roof &amp; Solar Toolkit</span>
 </a>
 <nav aria-label="Main navigation" class="nav-links">
-<a href="#tools">Tools</a><a href="#guides">Guides</a><a href="#how">How it works</a><a href="#about">About</a>
+<a href="#tools">Tools</a><a href="#guides">Guides</a><a href="#how">How it works</a><a href="/about">About</a>
 <a class="btn btn-dark btn-small" href="#calculator">Free calculator <span aria-hidden="true">→</span></a>
 </nav>
 </div>
@@ -576,7 +578,7 @@
 
 </main>
 <footer><div class="container">
-<div class="footer-main"><div><a class="brand" href="#home"><span class="brand-mark"><svg fill="none" height="21" viewbox="0 0 24 24" width="21"><path d="M3 11.3 12 4l9 7.3M5.8 10.1V20h12.4v-9.9M9 20v-5.8h6V20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg></span><span>Roof &amp; Solar Toolkit</span></a><p class="footer-copy">A U.S.-focused homeowner toolkit for comparing roof and solar scenarios. Location tools use public datasets for representative-place modeling; check local quotes and utility terms before committing.</p></div><div class="footer-links"><a href="#calculator">Main calculator</a><a href="#tools">All tools</a><a href="#guides">Guides</a><a href="#faq">FAQs</a><a href="#about">About</a><a href="privacy">Privacy</a><a href="terms">Terms</a><a href="editorial-policy">Editorial policy</a><a href="editorial-policy#corrections">Corrections &amp; feedback</a><a href="contact">Contact</a><a href="methodology">Calculation methodology</a></div></div>
+<div class="footer-main"><div><a class="brand" href="#home"><span class="brand-mark"><svg fill="none" height="21" viewbox="0 0 24 24" width="21"><path d="M3 11.3 12 4l9 7.3M5.8 10.1V20h12.4v-9.9M9 20v-5.8h6V20" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path></svg></span><span>Roof &amp; Solar Toolkit</span></a><p class="footer-copy">A U.S.-focused homeowner toolkit for comparing roof and solar scenarios. Location tools use public datasets for representative-place modeling; check local quotes and utility terms before committing.</p></div><div class="footer-links"><a href="#calculator">Main calculator</a><a href="#tools">All tools</a><a href="#guides">Guides</a><a href="#faq">FAQs</a><a href="/about">About</a><a href="privacy">Privacy</a><a href="terms">Terms</a><a href="editorial-policy">Editorial policy</a><a href="editorial-policy#corrections">Corrections &amp; feedback</a><a href="contact">Contact</a><a href="methodology">Calculation methodology</a><a href="/sitemap">Site map</a></div></div>
 <div class="disclaimer"><strong>Planning estimates:</strong> Results use your inputs and stated assumptions. They are not quotes, inspections or professional advice. Confirm measurements, costs and utility rules locally.</div>
 <div class="copyright"><span>© <span id="year"></span> Roof &amp; Solar Toolkit · Homeowner planning tools</span><span>Free tools and guides for homeowners</span></div>
 </div></footer>
