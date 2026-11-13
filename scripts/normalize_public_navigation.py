@@ -3,6 +3,7 @@
 from __future__ import annotations
 from html.parser import HTMLParser
 from pathlib import Path
+from urllib.parse import urljoin, urlsplit
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,9 +62,22 @@ def normalize_nav_body(body, rel):
         href = href_match.group(1)
         if href in ("#how", "/#how"):
             return ""
+        resolved = urlsplit(urljoin("https://roofsolar.invalid/" + rel, href))
+        path = resolved.path.rstrip("/") or "/"
         canonical = aliases.get(href)
-        if not canonical and re.search(r"(?:^|/)calculators?/", href, re.I):
-            canonical = ("Calculator", "/#calculator")
+        if not canonical:
+            if path == "/methodology":
+                canonical = ("Methodology", "/methodology")
+            elif path == "/about":
+                canonical = ("About", "/about")
+            elif path == "/contact":
+                canonical = ("Contact", "/contact")
+            elif path == "/#tools":
+                canonical = ("Tools", "/#tools")
+            elif path == "/#guides":
+                canonical = ("Guides", "/#guides")
+            elif re.search(r"/calculators?/", path, re.I):
+                canonical = ("Calculator", "/#calculator")
         if not canonical:
             return tag
         label, target = canonical
