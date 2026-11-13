@@ -68,17 +68,23 @@ def normalize_nav_body(body, rel):
         if label in seen:
             return ""
         seen.add(label)
-        # Preserve CTA styling and arrow decoration, but standardize its label.
-        suffix = ' <span aria-hidden="true">→</span>' if re.search(r'<span[^>]*>\s*→\s*</span>', tag) else ""
+        # Only the single Calculator destination receives CTA styling.
+        # Page-specific active-tool links must remain ordinary compact nav links.
         opening = re.match(r"<a\b[^>]*>", tag, re.I).group(0)
         opening = re.sub(r'\bhref=(["\'])[^"\']+\1', f'href="{target}"', opening, flags=re.I)
+        opening = re.sub(r'\sclass=(["\'])[^"\']*\1', '', opening, flags=re.I)
+        if label == "Calculator":
+            opening = opening[:-1] + ' class="btn btn-dark btn-small">'
+            suffix = '<span aria-hidden="true"> →</span>'
+        else:
+            suffix = ""
         return opening + label + suffix + "</a>"
     body = re.sub(r"<a\b[^>]*>[\s\S]*?</a>", replace_anchor, body, flags=re.I)
     for label, href in NAV:
         if label not in seen:
             body += f'<a href="{href}">{label}</a>'
     if "Calculator" not in seen:
-        body += '<a class="btn btn-dark btn-small" href="/#calculator">Calculator <span aria-hidden="true">→</span></a>'
+        body += '<a class="btn btn-dark btn-small" href="/#calculator">Calculator <span aria-hidden="true"> →</span></a>'
     return body
 
 def header_nav(doc, rel):
