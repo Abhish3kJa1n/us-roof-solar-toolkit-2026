@@ -62,7 +62,7 @@ def main() -> int:
         if required not in homepage:
             raise AssertionError(f"Homepage UI contract missing: {required}")
 
-    pages = sorted(ROOT.rglob("*.html"))
+    pages = sorted(page for page in ROOT.rglob("*.html") if "dist" not in page.relative_to(ROOT).parts)
     checked = 0
     for page in pages:
         if page.name in {"404.html", "about.html"}:
