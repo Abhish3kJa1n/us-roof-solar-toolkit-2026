@@ -278,10 +278,14 @@ try {
   // Recalculate at the newly supported 12:12 and 4:12 pitches.
   await page.locator("#editInputs").click();
   await page.locator("#pitch").selectOption("verySteep");
+  await page.locator('[data-next="2"]').click();
+  assert.equal(await page.locator('[data-panel="2"]').isVisible(), true);
   await page.locator("#calculateButton").click();
   assert.match(await page.locator("#roofAreaResult").innerText(), /2,262 sq ft/);
   await page.locator("#editInputs").click();
   await page.locator("#pitch").selectOption("moderateLow");
+  await page.locator('[data-next="2"]').click();
+  assert.equal(await page.locator('[data-panel="2"]').isVisible(), true);
   await page.locator("#calculateButton").click();
   assert.match(await page.locator("#roofAreaResult").innerText(), /1,686 sq ft/);
 
