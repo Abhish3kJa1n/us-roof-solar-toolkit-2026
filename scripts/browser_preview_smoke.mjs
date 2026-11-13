@@ -139,7 +139,7 @@ async function open(pathname) {
   }
   assert.equal(await page.locator('script[src*="adsbygoogle.js"]').count(), 0, pathname + ' Preview must never load AdSense');
   const robots = await page.locator('meta[name="robots"]').getAttribute('content');
-  assert.match((robots || '').toLowerCase(), /noindex/, pathname + ' meta robots must remain noindex');
+  assert.doesNotMatch((robots || '').toLowerCase(), /noindex/, pathname + ' public HTML must remain indexable; Preview exclusion is enforced by the response header');
   await page.locator('body').waitFor({ state: 'visible' });
 }
 
