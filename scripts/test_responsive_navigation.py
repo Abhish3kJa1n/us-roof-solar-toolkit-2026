@@ -17,7 +17,7 @@ class Links(HTMLParser):
         if self.anchor: self.current+=data
     def handle_endtag(self,tag):
         if tag=="a" and self.anchor:
-            label=" ".join(self.current.split()).lower()
+            label=" ".join(self.current.split()).lower().replace("→","").strip()
             if self.nav:self.nav_labels.append(label)
             if self.footer:self.footer_labels.append(label)
             self.anchor=False
@@ -32,10 +32,13 @@ def main():
     if len(pages)!=27: fail(f"Expected 27 HTML pages, found {len(pages)}")
     for page in pages:
         p=Links(); p.feed(page.read_text(encoding="utf-8"))
-        missing={"tools","guides","about","methodology","contact"}-set(p.nav_labels)
-        if missing: fail(f"{page.relative_to(DIST)} missing nav links: {sorted(missing)}")
+        expected_nav=["tools","guides","about","methodology","contact","calculator"]
+        if p.nav_labels != expected_nav: fail(f"{page.relative_to(DIST)} nav order/content mismatch: {p.nav_labels}")
         missing={"contact","calculation methodology"}-set(p.footer_labels)
         if missing: fail(f"{page.relative_to(DIST)} missing footer links: {sorted(missing)}")
+    home=(DIST/"index.html").read_text(encoding="utf-8")
+    if ".nav-links a:nth-child(2), .nav-links a:nth-child(3) { display: none; }" in home:
+        fail("Homepage still hides primary navigation links at tablet widths")
     css=(DIST/"assets/site.css").read_text(encoding="utf-8")
     if ".article > .eyebrow{color:#8b5c0f}" not in css: fail("Contrast-safe article eyebrow rule missing")
     if "@media(max-width:600px)" not in css: fail("Mobile breakpoint missing")
