@@ -203,6 +203,17 @@ def main() -> int:
         page_data[rel] = parser
         if rel != "404.html" and "/sitemap" not in parser.refs:
             fail(f"public page footer is missing the HTML sitemap link: {rel}")
+        if rel == "index.html":
+            footer_links = re.search(r'<div class="footer-links">([\\s\\S]*?)</div>', page.read_text(encoding="utf-8"))
+            if not footer_links or 'href="/sitemap"' not in footer_links.group(1):
+                fail("homepage sitemap link must be inside the footer navigation row")
+        elif rel != "404.html":
+            footer_html = page.read_text(encoding="utf-8").split("<footer", 1)[-1]
+            sitemap_position = footer_html.find('<a href="/sitemap">Site map</a>')
+            strong_position = footer_html.find("</strong>")
+            nav_close = footer_html.find("</div>", strong_position)
+            if sitemap_position < 0 or strong_position < 0 or nav_close < 0 or sitemap_position > nav_close:
+                fail(f"footer sitemap link must be inside the footer navigation row: {rel}")
         if not any("noindex" in value.lower() for value in parser.robots):
             fail(f"prelaunch noindex missing from {rel}")
 
