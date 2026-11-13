@@ -233,6 +233,9 @@ try {
   // Solar value assumptions are intentionally collapsed in the combined calculator.
   await page.locator("#solarCostAssumptions > summary").click();
   assert.equal(await page.locator("#solarCostAssumptions").evaluate((element) => element.open), true);
+  // Loan illustrations require an installed price; load the national reference explicitly.
+  await page.locator("#loadNationalSolarReference").click();
+  assert.equal(await page.locator("#solarPricePerWatt").inputValue(), "2.62");
   await page.locator("#selfUse").fill("50");
   await page.locator("#exportRate").fill("0.05");
   await page.locator("#productionPerKw").fill("1500");
