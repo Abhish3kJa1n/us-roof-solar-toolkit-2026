@@ -31,6 +31,7 @@ CHECKS = [
     "validate_price_benchmarks.py",
     "test_configure_site.py",
     "test_navigation_ui_contract.py",
+    "test_responsive_navigation.py",
 ]
 
 
