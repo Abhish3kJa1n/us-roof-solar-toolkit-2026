@@ -74,6 +74,17 @@ def main():
  if r.returncode or '1,118' not in r.stdout:
   raise SystemExit(f'FAIL explicit two-story conversion: {r.stderr} {r.stdout}')
  print('PASS explicit_two_story_footprint_conversion')
+ # Home-area mode must offer and correctly apply the same 4:12 and 12:12
+ # geometric pitch multipliers supported by the dedicated roof-area tool.
+ for pitch, expected in [('moderateLow','1,054'),('verySteep','1,414')]:
+  values={**DEFAULTS,'roofArea':'','homeArea':'2000','pitch':pitch,'stories':'2'}
+  code=HARNESS+JS+'\\n'+f"for(const [k,v] of Object.entries({json.dumps(values)})) makeEl(k).value=v; global.testAreaMode='home'; makeEl('calculateButton').handlers.click(); console.log(makeEl('roofAreaResult').textContent);"
+  with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(code);temp=Path(f.name)
+  try:r=subprocess.run(['node',str(temp)],capture_output=True,text=True)
+  finally:temp.unlink(missing_ok=True)
+  if r.returncode or expected not in r.stdout:
+   raise SystemExit(f'FAIL home-mode {pitch} pitch factor: {r.stderr} {r.stdout}')
+  print('PASS home_mode_'+pitch+'_pitch_factor')
  # Target generation is now a deliberate visitor input, not a prefilled 80% default.
  values={**DEFAULTS,'offset':''}
  code=HARNESS+JS+'\n'+f"for(const [k,v] of Object.entries({json.dumps(values)})) makeEl(k).value=v; makeEl('calculateButton').handlers.click(); console.log(makeEl('error2').textContent);"
