@@ -55,9 +55,9 @@ for marker in ('not facts inferred from your city','reference configuration','Re
         fail('city estimator reference assumptions are not adequately disclosed')
 
 for visitor_notice in (
-    'This optional lookup searches for residential utility-rate records',
-    'Results are candidate matches only',
-    'Availability and coverage vary by location',
+    'This optional lookup searches the OpenEI Utility Rate Database',
+    'A nearby match does not confirm that the utility serves your home',
+    'Compare the utility name, customer charge, import rate, time-of-use rules and export credit',
 ):
     if visitor_notice not in loc:
         fail(f'OpenEI page is missing visitor-facing limitation: {visitor_notice}')
