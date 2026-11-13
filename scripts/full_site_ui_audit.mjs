@@ -192,6 +192,7 @@ try {
   console.log('BROWSER_ERRORS ' + JSON.stringify(browserErrors));
   console.log('SAME_ORIGIN_REQUEST_FAILURES ' + JSON.stringify(failedSameOriginRequests));
 
+  assert.deepEqual(mobileNavFindings, [], 'Every public route must expose usable primary navigation on mobile');
   assert.deepEqual(browserErrors, [], 'No uncaught browser JavaScript errors should occur on public pages');
   assert.deepEqual(failedSameOriginRequests, [], 'No same-origin requests should fail on public pages');
   assert.deepEqual(severeAxe, [], 'No critical or serious axe violations should remain');
