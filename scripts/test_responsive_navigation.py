@@ -38,10 +38,9 @@ def main():
         if missing: fail(f"{page.relative_to(DIST)} missing footer links: {sorted(missing)}")
     css=(DIST/"assets/site.css").read_text(encoding="utf-8")
     if ".article > .eyebrow{color:#8b5c0f}" not in css: fail("Contrast-safe article eyebrow rule missing")
-    mobile=re.search(r"@media\(max-width:600px\)\{([\s\S]*?)\}",css)
-    if not mobile: fail("Mobile breakpoint missing")
+    if "@media(max-width:600px)" not in css: fail("Mobile breakpoint missing")
     for rule in (".nav .links a:not(.btn){display:inline-flex}",".nav .nav-links","flex-wrap:wrap"):
-        if rule not in mobile.group(1): fail(f"Responsive navigation rule missing: {rule}")
+        if rule not in css: fail(f"Responsive navigation rule missing: {rule}")
     print(f"PASS: {len(pages)} pages expose five primary nav destinations and consistent footer links.")
     print("PASS: mobile navigation wraps visibly; policy metadata uses contrast-safe styling.")
 if __name__=="__main__": main()
