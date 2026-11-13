@@ -255,11 +255,11 @@
       .container { width: min(100% - 28px, 520px); }
       .topbar .container { justify-content: center; text-align: center; }
       .topbar .container span:last-child { display: none; }
-      .nav { height: 65px; }
+      .nav { height: auto; min-height: 65px; flex-direction: column; align-items: stretch; justify-content: center; gap: 7px; padding-block: 10px; }
       .brand { font-size: 18px; }
-      .nav-links { gap: 9px; }
-      .nav-links a { display: none; }
-      .nav-links .btn { display: inline-flex; padding: 10px 12px; font-size: 11px; }
+      .nav-links { display: flex; width: 100%; flex-wrap: wrap; justify-content: flex-start; gap: 6px 14px; font-size: 12px; }
+      .nav-links a { display: inline-flex; align-items: center; }
+      .nav-links .btn { display: inline-flex; padding: 7px 10px; font-size: 11px; }
       .hero { padding: 50px 0 53px; }
       h1 { font-size: 41px; }
       .hero-copy { font-size: 14px; }
