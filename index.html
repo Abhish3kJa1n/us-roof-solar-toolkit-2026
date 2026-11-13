@@ -248,8 +248,8 @@
       .hero { padding: 59px 0 64px; }
       .hero-art { max-width: 580px; }
       .about-grid { gap: 25px; }
-      .nav-links { gap: 15px; }
-      .nav-links a:nth-child(2), .nav-links a:nth-child(3) { display: none; }
+      .nav { height: auto; flex-wrap: wrap; justify-content: flex-start; gap: 8px 14px; padding-block: 10px; }\n      .nav-links { width: 100%; flex-wrap: wrap; justify-content: flex-start; gap: 6px 14px; }
+      /* Keep all primary destinations visible; the nav wraps below the brand. */
     }
     @media (max-width: 640px) {
       .container { width: min(100% - 28px, 520px); }
