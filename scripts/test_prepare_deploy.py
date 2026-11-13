@@ -204,7 +204,7 @@ def main() -> int:
         if rel != "404.html" and "/sitemap" not in parser.refs:
             fail(f"public page footer is missing the HTML sitemap link: {rel}")
         if rel == "index.html":
-            footer_links = re.search(r'<div class="footer-links">([\\s\\S]*?)</div>', page.read_text(encoding="utf-8"))
+            footer_links = re.search(r'<div class="footer-links">([\s\S]*?)</div>', page.read_text(encoding="utf-8"))
             if not footer_links or 'href="/sitemap"' not in footer_links.group(1):
                 fail("homepage sitemap link must be inside the footer navigation row")
         elif rel != "404.html":
