@@ -64,7 +64,7 @@ jobs:
 
   browser-calculator-smoke:
     name: Browser calculator and interaction regression smoke
-    if: github.event_name == 'pull_request' && github.head_ref == 'test/browser-calculator-smoke-20261108'
+    if: github.event_name == 'pull_request' && (github.head_ref == 'test/browser-calculator-smoke-20261108' || github.head_ref == 'fix/combined-roof-pitch-range-2026-11-13')
     needs: qa
     runs-on: ubuntu-latest
     steps:
@@ -86,7 +86,7 @@ jobs:
       - name: Test all public pages and calculator interactions
         run: node scripts/smoke_calculator_browser.mjs
         env:
-          PREVIEW_BASE_URL: https://test-browser-calculator-smok.roof-solar-toolkit-2026.pages.dev
+          PREVIEW_BASE_URL: https://fix-combined-roof-pitch-rang.roof-solar-toolkit-2026.pages.dev
 
   preview-csp-smoke:
     name: Live Preview CSP nonce and API routing smoke test
