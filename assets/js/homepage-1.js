@@ -1,6 +1,6 @@
 // Explicit scenario assumptions only. Nothing here is a live local lookup or market benchmark.
     const CONFIG = {
-      pitchFactors: { low: 1.014, moderate: 1.118, steep: 1.250 } // 2:12, 6:12, 9:12 geometric slope multipliers
+      pitchFactors: { low: 1.014, moderateLow: 1.054, moderate: 1.118, steep: 1.250, verySteep: 1.414 } // 2:12, 4:12, 6:12, 9:12, 12:12 geometric slope multipliers
     };
     document.getElementById('year').textContent = new Date().getFullYear();
 
