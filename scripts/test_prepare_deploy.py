@@ -209,10 +209,9 @@ def main() -> int:
                 fail("homepage sitemap link must be inside the footer navigation row")
         elif rel != "404.html":
             footer_html = page.read_text(encoding="utf-8").split("<footer", 1)[-1]
-            sitemap_position = footer_html.find('<a href="/sitemap">Site map</a>')
-            strong_position = footer_html.find("</strong>")
-            nav_close = footer_html.find("</div>", strong_position)
-            if sitemap_position < 0 or strong_position < 0 or nav_close < 0 or sitemap_position > nav_close:
+            in_nav_with_disclaimer = '<a href="/sitemap">Site map</a></div></div><div class="wrap disclaimer">' in footer_html
+            in_nav_at_footer_end = '<a href="/sitemap">Site map</a></div></div></footer>' in footer_html
+            if not (in_nav_with_disclaimer or in_nav_at_footer_end):
                 fail(f"footer sitemap link must be inside the footer navigation row: {rel}")
         if not any("noindex" in value.lower() for value in parser.robots):
             fail(f"prelaunch noindex missing from {rel}")
