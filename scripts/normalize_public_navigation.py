@@ -55,7 +55,7 @@ def normalize_nav_body(body, rel):
     seen = set()
     def replace_anchor(match):
         tag = match.group(0)
-        href_match = re.search(r'\\bhref=["\\']([^"\\']+)["\\']', tag, re.I)
+        href_match = re.search(r'\bhref=["\']([^"\']+)["\']', tag, re.I)
         if not href_match:
             return tag
         href = href_match.group(1)
@@ -69,11 +69,11 @@ def normalize_nav_body(body, rel):
             return ""
         seen.add(label)
         # Preserve CTA styling and arrow decoration, but standardize its label.
-        suffix = ' <span aria-hidden="true">→</span>' if re.search(r'<span[^>]*>\\s*→\\s*</span>', tag) else ""
-        opening = re.match(r"<a\\b[^>]*>", tag, re.I).group(0)
-        opening = re.sub(r'\\bhref=(["\\'])[^"\\']+\\1', f'href="{target}"', opening, flags=re.I)
+        suffix = ' <span aria-hidden="true">→</span>' if re.search(r'<span[^>]*>\s*→\s*</span>', tag) else ""
+        opening = re.match(r"<a\b[^>]*>", tag, re.I).group(0)
+        opening = re.sub(r'\bhref=(["\'])[^"\']+\1', f'href="{target}"', opening, flags=re.I)
         return opening + label + suffix + "</a>"
-    body = re.sub(r"<a\\b[^>]*>[\\s\\S]*?</a>", replace_anchor, body, flags=re.I)
+    body = re.sub(r"<a\b[^>]*>[\s\S]*?</a>", replace_anchor, body, flags=re.I)
     for label, href in NAV:
         if label not in seen:
             body += f'<a href="{href}">{label}</a>'
@@ -82,14 +82,14 @@ def normalize_nav_body(body, rel):
     return body
 
 def header_nav(doc, rel):
-    h = re.search(r"<header\\b[\\s\\S]*?</header>", doc, re.I)
+    h = re.search(r"<header\b[\s\S]*?</header>", doc, re.I)
     if not h:
         raise SystemExit(f"Missing header: {rel}")
-    n = re.search(r"<nav\\b([^>]*)>([\\s\\S]*?)</nav>", h.group(), re.I)
+    n = re.search(r"<nav\b([^>]*)>([\s\S]*?)</nav>", h.group(), re.I)
     if not n:
         raise SystemExit(f"Missing nav: {rel}")
     attrs, body = n.group(1), n.group(2)
-    if not re.search(r"\\baria-label\\s*=", attrs, re.I):
+    if not re.search(r"\baria-label\s*=", attrs, re.I):
         attrs += ' aria-label="Main navigation"'
     body = normalize_nav_body(body, rel)
     replacement = f"<nav{attrs}>{body}</nav>"
@@ -97,7 +97,7 @@ def header_nav(doc, rel):
     return doc[:h.start()] + new_header + doc[h.end():]
 
 def footer_links(doc, rel):
-    f = re.search(r"<footer\\b[\\s\\S]*?</footer>", doc, re.I)
+    f = re.search(r"<footer\b[\s\S]*?</footer>", doc, re.I)
     if not f:
         raise SystemExit(f"Missing footer: {rel}")
     body = f.group()
@@ -105,11 +105,11 @@ def footer_links(doc, rel):
     add = "".join(f'<a href="{url}">{name}</a>' for name, url in FOOT if name.lower() not in found)
     if not add:
         return doc
-    g = re.search(r'<div\\b[^>]*class=["\\'][^"\\']*footer-links[^"\\']*["\\'][^>]*>([\\s\\S]*?)</div>', body, re.I)
+    g = re.search(r'<div\b[^>]*class=["\'][^"\']*footer-links[^"\']*["\'][^>]*>([\s\S]*?)</div>', body, re.I)
     if g:
         at = g.end(1)
     else:
-        g = re.search(r"<div\\b[^>]*>\\s*(?=<a\\b)", body, re.I)
+        g = re.search(r"<div\b[^>]*>\s*(?=<a\b)", body, re.I)
         if not g:
             raise SystemExit(f"Cannot identify footer link group: {rel}")
         at = body.find("</div>", g.start())
