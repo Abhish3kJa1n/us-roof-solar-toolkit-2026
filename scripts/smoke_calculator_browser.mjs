@@ -305,7 +305,8 @@ try {
   await page.locator("#exportRate").fill("0.05");
   await page.locator("#calculateButton").click();
   assert.match(await page.locator("#annualSavings").innerText(), /Inputs needed/);
-  assert.match(await page.locator("#savingsDesc").innerText(), /import rate is unknown/i);
+  assert.match(await page.locator("#resultWarning").innerText(), /No import rate was entered/i);
+  assert.match(await page.locator("#assumptionList").innerText(), /Import rate: not entered/i);
   assert.doesNotMatch(await page.locator("#savingsDesc").innerText(), /0\.000\/kWh/);
 
   // Check the key calculator screens at a narrow viewport for horizontal overflow.
