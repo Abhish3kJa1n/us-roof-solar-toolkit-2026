@@ -101,7 +101,7 @@ const sitemap = await getText(PAGES_ORIGIN + "/sitemap.xml", "application/xml,te
 assert.equal(sitemap.response.status, 200, "Production /sitemap.xml must be published");
 assert.match(sitemap.body, /<urlset\b/i);
 const urls = [...sitemap.body.matchAll(/<loc>(https:\/\/[^<]+)<\/loc>/gi)].map((match) => match[1].trim());
-assert.equal(urls.length, 25, "Sitemap must contain the 25 intended content URLs");
+assert.equal(urls.length, 26, "Sitemap must contain the 25 existing public URLs plus the HTML sitemap");
 assert.ok(urls.every((url) => url.startsWith(APEX + "/")), "Sitemap URLs must use the canonical apex domain");
 assert.ok(!urls.some((url) => /404\.html?$/i.test(url)));
 
@@ -115,6 +115,21 @@ for (const url of urls) {
   const html = await response.text();
   assert.match(html, /<meta\s+name=["']robots["']\s+content=["']index,follow["']/i, url + ": page must be indexable");
   assert.doesNotMatch(html, /<meta\s+name=["']robots["'][^>]*noindex/i, url + ": page has noindex meta");
+}
+
+const htmlSitemap = await getText(PAGES_ORIGIN + "/sitemap", "text/html");
+assert.equal(htmlSitemap.response.status, 200, "Visitor-facing /sitemap must resolve");
+const htmlSitemapLinks = new Set(
+  [...htmlSitemap.body.matchAll(/href=["']([^"'#]+)["']/gi)].map((match) => {
+    const href = match[1];
+    return href.startsWith("https://") ? new URL(href).pathname : href;
+  })
+);
+for (const url of urls) {
+  const path = new URL(url).pathname;
+  if (path !== "/sitemap") {
+    assert.ok(htmlSitemapLinks.has(path), "HTML sitemap must link to every other XML sitemap URL: " + path);
+  }
 }
 
 const privacy = await getText(PAGES_ORIGIN + "/privacy.html", "text/html");
