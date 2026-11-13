@@ -80,22 +80,22 @@
 <p class="note">PVWatts V8 models typical-year production from the selected city point and your system inputs. Roof-level shading, orientation, equipment and actual weather can change production.</p>
 </section>
 <section class="toolbox" style="margin-top:20px">
-<div class="kicker">Step 3 · Utility tariff (optional)</div><h2 style="color:#10243b;margin:6px 0 8px">Look for nearby residential tariff records</h2>
-<p>This optional lookup searches for residential utility-rate records near the selected Census place. Availability and coverage vary by location. Results are candidate matches only; they do not confirm your utility or current plan. Check the utility name and rate details against your bill before using a rate.</p>
-<div class="btnrow"><button class="btn" id="tariffs" type="button" disabled>Find nearby tariff records</button><span id="tariffStatus" class="byline" role="status" aria-live="polite"></span></div>
+<div class="kicker">Step 3 · Utility rate plan (optional)</div><h2 style="color:#10243b;margin:6px 0 8px">Find nearby residential rate-plan records</h2>
+<p>This optional lookup searches the OpenEI Utility Rate Database for residential rate plans associated with utilities near the selected Census place. A nearby match does not confirm that the utility serves your home and may not reflect its current plan. Compare the utility name, customer charge, import rate, time-of-use rules and export credit with your bill and the utility's current published rate plan before using any rate.</p>
+<div class="btnrow"><button class="btn" id="tariffs" type="button" disabled>Find nearby rate plans</button><span id="tariffStatus" class="byline" role="status" aria-live="polite"></span></div>
 <div id="tariffResults" aria-live="polite"></div>
 
 </section>
 <section class="toolbox" style="margin-top:20px">
 <div class="kicker">Continue your estimate</div><h2 id="continueTitle" style="color:#10243b;margin:6px 0 8px">Use modeled production in the savings calculator</h2>
-<p id="continueDescription">After a production result is generated, you can transfer its annual kWh per DC kW into the separate savings calculator. You will still need your own annual usage, self-consumption assumptions, tariff and installer quote.</p>
+<p id="continueDescription">After a production result is generated, you can transfer its annual kWh per DC kW into the separate savings calculator. You will still need your own annual usage, an estimate of how much solar electricity your home uses directly, the utility's import rate and export credit, and an installer quote.</p>
 <div class="btnrow"><a class="btn" id="savingsLink" href="solar-savings" hidden>Use modeled production in savings calculator</a><a class="btn btn-outline" id="panelCountLink" href="solar-panel-count" hidden>Use modeled production in panel-count calculator</a><a class="btn btn-outline" id="combinedLink" href="/#calculator" hidden>Return to combined calculator with city data</a></div>
 </section>
 <article class="article">
 <h2>How to read the estimate</h2>
 <p>The city lookup supplies a representative Census place point. PVWatts models production from that point and the array assumptions you enter; it does not assess an individual roof, nearby shade or a home's electrical system.</p>
 <h2>Production is not bill savings</h2>
-<p>The value of solar electricity depends on when it is used, the utility's import rate, export compensation and other tariff rules. This tool estimates production only. Use your own bill and current utility tariff for a savings calculation.</p>
+<p>The value of solar electricity depends on when it is used, the utility's price for electricity you buy, any export credit for surplus power and other rate-plan rules (often called the tariff). This tool estimates production only. Use your own bill and the utility's current published rate plan for a savings calculation.</p>
 <details class="source-details">
 <summary>Data sources and methodology</summary>
 <p><strong>Location:</strong> US Census Bureau TIGERweb place geography. The selected point represents a Census place, not a home or utility service boundary. <a href="https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_main.html" target="_blank" rel="noopener">Census TIGERweb</a>.</p>
