@@ -36,6 +36,8 @@ DEFAULTS={
 CASES=[
  ('unknown_use_share',{},['Inputs needed','No annual self-consumption share was entered','not split between self-use and exports'],['Rate needed','50%']),
  ('unknown_export_rate',{'selfUse':'50'},['Inputs needed','No export credit was entered','not assumed to be worth $0','export credit is unknown','Total annual energy value and payback are withheld'],['Rate needed','0.000/kWh']),
+ ('unknown_import_rate',{'selfUse':'50','rate':'','exportRate':'0.04'},['import rate is unknown','4,320 kWh exported','Total annual energy value and payback are withheld'],['0.000/kWh']),
+ ('both_tariff_rates_unknown',{'selfUse':'50','rate':'','exportRate':''},['import rate is unknown','export credit is unknown','Total annual energy value and payback are withheld'],['0.000/kWh']),
  ('complete_scenario',{'selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh self-used','$0.040/kWh','20.8 years'],['Inputs needed']),
  ('zero_import_rate_explicit',{'selfUse':'50','rate':'0','exportRate':'0.04'},['$173 / yr','0.000/kWh'],['No import rate was entered']),
  ('all_direct_use_export_not_required',{'selfUse':'100'},['$1,728 / yr','12.5 years','8,640 kWh self-used'],['No export credit was entered']),
