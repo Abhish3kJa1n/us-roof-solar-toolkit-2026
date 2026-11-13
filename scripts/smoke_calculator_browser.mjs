@@ -183,6 +183,9 @@ try {
   assert.equal(await page.locator('[data-panel="1"]').isVisible(), true);
   assert.equal(await page.locator('[data-panel="2"]').isVisible(), false);
 
+  const combinedPitchOptions = await page.locator("#pitch option").evaluateAll((options) => options.map((option) => option.value));
+  assert.ok(combinedPitchOptions.includes("moderateLow"), "Combined estimator must offer 4:12 pitch");
+  assert.ok(combinedPitchOptions.includes("verySteep"), "Combined estimator must offer 12:12 pitch");
   await page.locator("#pitch").selectOption("moderate");
   await page.locator("#loadNationalRoofReference").click();
   await page.locator('[data-next="2"]').click();
@@ -227,6 +230,16 @@ try {
   assert.match(assumptions, /1\.118/);
   assert.match(await page.locator("#roofStatusDesc").innerText(), /leaks or visible damage/i);
 
+  // Recalculate at the newly supported 12:12 and 4:12 pitches.
+  await page.locator("#editInputs").click();
+  await page.locator("#pitch").selectOption("verySteep");
+  await page.locator("#calculateButton").click();
+  assert.match(await page.locator("#roofAreaResult").innerText(), /2,262 sq ft/);
+  await page.locator("#editInputs").click();
+  await page.locator("#pitch").selectOption("moderateLow");
+  await page.locator("#calculateButton").click();
+  assert.match(await page.locator("#roofAreaResult").innerText(), /1,686 sq ft/);
+
   // Unknown export credit must withhold total value and payback, never silently assume $0.
   await page.locator("#editInputs").click();
   await page.locator('[data-next="2"]').click();
@@ -235,6 +248,16 @@ try {
   assert.match(await page.locator("#annualSavings").innerText(), /Inputs needed/);
   assert.match(await page.locator("#payback").innerText(), /Not modeled/);
   assert.match(await page.locator("#resultWarning").innerText(), /No export credit was entered/i);
+
+  // Missing import price must also remain unknown, not appear as $0.000/kWh.
+  await page.locator("#editInputs").click();
+  await page.locator('[data-next="2"]').click();
+  await page.locator("#rate").fill("");
+  await page.locator("#exportRate").fill("0.05");
+  await page.locator("#calculateButton").click();
+  assert.match(await page.locator("#annualSavings").innerText(), /Inputs needed/);
+  assert.match(await page.locator("#savingsDesc").innerText(), /import rate is unknown/i);
+  assert.doesNotMatch(await page.locator("#savingsDesc").innerText(), /0\.000\/kWh/);
 
   // Check the key calculator screens at a narrow viewport for horizontal overflow.
   await page.setViewportSize({ width: 390, height: 844 });
