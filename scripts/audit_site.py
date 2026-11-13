@@ -168,7 +168,11 @@ def main() -> int:
         if parser.html_lang != "en": issues.append(f"{rel}: root html lang must be en")
         if parser.viewport_count != 1: issues.append(f"{rel}: expected exactly one viewport meta tag")
         if parser.h1 != 1: issues.append(f"{rel}: expected 1 H1, found {parser.h1}")
-        if "noindex" not in " ".join(parser.meta_robots).lower(): issues.append(f"{rel}: noindex missing (prelaunch mode expected)")
+        robots_directives = " ".join(parser.meta_robots).lower()
+        if rel.as_posix() == "404.html":
+            if "noindex" not in robots_directives: issues.append("404.html: error page must remain noindex")
+        elif "noindex" in robots_directives:
+            issues.append(f"{rel}: public page must not contain a noindex directive")
         if rel.as_posix() == "404.html" and parser.canonicals:
             issues.append("404.html: error page must not declare a canonical URL")
         if parser.skip_links != 1 or parser.main_ids.count("main-content") != 1: issues.append(f"{rel}: skip link/main landmark mismatch")
@@ -271,7 +275,6 @@ def main() -> int:
     else:
         headers = headers_path.read_text(encoding="utf-8")
         required_headers = [
-            (r"(?im)^\s*X-Robots-Tag:\s*noindex,\s*follow\s*$", "prelaunch X-Robots-Tag noindex, follow"),
             (r"(?im)^\s*X-Content-Type-Options:\s*nosniff\s*$", "X-Content-Type-Options nosniff"),
             (r"(?im)^\s*Referrer-Policy:\s*strict-origin-when-cross-origin\s*$", "strict Referrer-Policy"),
             (r"(?im)^\s*X-Frame-Options:\s*DENY\s*$", "X-Frame-Options DENY"),
@@ -281,6 +284,8 @@ def main() -> int:
         ]
         for pattern, label in required_headers:
             if not re.search(pattern, headers): issues.append(f"_headers: missing {label}")
+        if re.search(r"(?im)^\s*X-Robots-Tag:\s*noindex\b", headers):
+            issues.append("_headers: global noindex must not block production pages")
         csp_lines = [line for line in headers.splitlines() if line.lower().lstrip().startswith("content-security-policy:")]
         if any("script-src 'self' 'unsafe-inline'" in line for line in csp_lines):
             issues.append("_headers: script-src must not allow unsafe-inline")
@@ -301,9 +306,11 @@ def main() -> int:
         issues.append("missing custom 404.html error page")
     robots_path = ROOT / "robots.txt"
     if not robots_path.exists() or "Allow: /" not in robots_path.read_text(encoding="utf-8"):
-        issues.append("robots.txt must exist and leave prelaunch pages crawlable for noindex discovery")
-    if robots_path.exists() and "Sitemap:" in robots_path.read_text(encoding="utf-8"):
-        issues.append("prelaunch robots.txt must not advertise a production sitemap")
+        issues.append("robots.txt must exist and allow public pages to be crawled")
+    if robots_path.exists() and "Sitemap: https://getroofsolarcalculator.online/sitemap.xml" not in robots_path.read_text(encoding="utf-8"):
+        issues.append("robots.txt must advertise the canonical production sitemap")
+    if not (ROOT / "sitemap.xml").exists():
+        issues.append("missing production sitemap.xml")
 
     print(f"HTML pages: {len(pages)}")
     print(f"Unique page titles: {len(set(titles))}/{len(titles)}")
