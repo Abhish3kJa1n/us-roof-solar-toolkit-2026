@@ -39,69 +39,17 @@ def parse_anchors(fragment):
     return parser.items
 
 def normalize_nav_body(body, rel):
-    # Keep one canonical link per destination. The homepage's "How it works"
-    # link is intentionally removed from primary navigation; its section remains
-    # available in the page content.
-    aliases = {
-        "#tools": ("Tools", "/#tools"),
-        "/#tools": ("Tools", "/#tools"),
-        "#guides": ("Guides", "/#guides"),
-        "/#guides": ("Guides", "/#guides"),
-        "/about": ("About", "/about"),
-        "/methodology": ("Methodology", "/methodology"),
-        "/contact": ("Contact", "/contact"),
-        "#calculator": ("Calculator", "#calculator"),
-        "/#calculator": ("Calculator", "/#calculator"),
-    }
-    seen = set()
-    def replace_anchor(match):
-        tag = match.group(0)
-        href_match = re.search(r'\bhref=["\']([^"\']+)["\']', tag, re.I)
-        if not href_match:
-            return tag
-        href = href_match.group(1)
-        if href in ("#how", "/#how"):
-            return ""
-        resolved = urlsplit(urljoin("https://roofsolar.invalid/" + rel, href))
-        path = resolved.path.rstrip("/") or "/"
-        canonical = aliases.get(href)
-        if not canonical:
-            if path == "/methodology":
-                canonical = ("Methodology", "/methodology")
-            elif path == "/about":
-                canonical = ("About", "/about")
-            elif path == "/contact":
-                canonical = ("Contact", "/contact")
-            elif path == "/#tools":
-                canonical = ("Tools", "/#tools")
-            elif path == "/#guides":
-                canonical = ("Guides", "/#guides")
-            elif re.search(r"/calculators?/", path, re.I):
-                canonical = ("Calculator", "/#calculator")
-        if not canonical:
-            return tag
-        label, target = canonical
-        if label in seen:
-            return ""
-        seen.add(label)
-        # Only the single Calculator destination receives CTA styling.
-        # Page-specific active-tool links must remain ordinary compact nav links.
-        opening = re.match(r"<a\b[^>]*>", tag, re.I).group(0)
-        opening = re.sub(r'\bhref=(["\'])[^"\']+\1', f'href="{target}"', opening, flags=re.I)
-        opening = re.sub(r'\sclass=(["\'])[^"\']*\1', '', opening, flags=re.I)
-        if label == "Calculator":
-            opening = opening[:-1] + ' class="btn btn-dark btn-small">'
-            suffix = '<span aria-hidden="true"> →</span>'
-        else:
-            suffix = ""
-        return opening + label + suffix + "</a>"
-    body = re.sub(r"<a\b[^>]*>[\s\S]*?</a>", replace_anchor, body, flags=re.I)
-    for label, href in NAV:
-        if label not in seen:
-            body += f'<a href="{href}">{label}</a>'
-    if "Calculator" not in seen:
-        body += '<a class="btn btn-dark btn-small" href="/#calculator">Calculator <span aria-hidden="true"> →</span></a>'
-    return body
+    # Emit one deterministic navigation order on every page. Do not infer
+    # destinations from page-specific relative links or append links after
+    # arbitrary existing items; that caused inconsistent ordering and wrapping.
+    return (
+        '<a href="/#tools">Tools</a>'
+        '<a href="/#guides">Guides</a>'
+        '<a href="/about">About</a>'
+        '<a href="/methodology">Methodology</a>'
+        '<a href="/contact">Contact</a>'
+        '<a class="btn btn-dark btn-small" href="/#calculator">Calculator <span aria-hidden="true"> →</span></a>'
+    )
 
 def header_nav(doc, rel):
     h = re.search(r"<header\b[\s\S]*?</header>", doc, re.I)
