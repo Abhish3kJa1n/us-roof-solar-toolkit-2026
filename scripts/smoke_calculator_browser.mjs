@@ -187,6 +187,9 @@ try {
   assert.ok(combinedPitchOptions.includes("moderateLow"), "Combined estimator must offer 4:12 pitch");
   assert.ok(combinedPitchOptions.includes("verySteep"), "Combined estimator must offer 12:12 pitch");
   await page.locator("#pitch").selectOption("moderate");
+  // Roof-price assumptions are intentionally collapsed by default; expand them before interacting.
+  await page.locator("#roofPriceAssumptions > summary").click();
+  assert.equal(await page.locator("#loadNationalRoofReference").isVisible(), true);
   await page.locator("#loadNationalRoofReference").click();
   await page.locator('[data-next="2"]').click();
   assert.equal(await page.locator('[data-panel="2"]').isVisible(), true);
