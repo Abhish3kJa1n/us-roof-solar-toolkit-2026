@@ -50,7 +50,11 @@ async function navigate(path) {
   let lastStatus = "no response";
   for (let attempt = 1; attempt <= 18; attempt += 1) {
     try {
-      const response = await page.goto(new URL(path, base).href, {
+      const target = new URL(path, base);
+      // Cloudflare branch aliases can be served through edge caches. Give every
+      // navigation a unique query key so this run tests the current preview build.
+      target.searchParams.set("__qa_cache_bust", String(Date.now()) + "-" + attempt);
+      const response = await page.goto(target.href, {
         waitUntil: "domcontentloaded",
         timeout: 20000,
       });
@@ -151,6 +155,36 @@ try {
   // Annual solar value: 6,000 kWh direct × $0.20 + 6,000 kWh export × $0.05 = $1,500.
   // $20,960 installed cost ÷ $1,500/year = 13.97 years, displayed as 14.0.
   await navigate("/calculators/solar-savings.html");
+  const selfUseField = page.locator("#selfUse");
+  const selfUsePlaceholder = await selfUseField.getAttribute("placeholder");
+  assert.equal(
+    selfUsePlaceholder,
+    "Enter a modeled annual share",
+    "Solar Savings Preview must serve the current source revision, not stale cached HTML",
+  );
+  const selfUseVisibility = await selfUseField.evaluate((element) => {
+    const chain = [];
+    for (let node = element; node && node instanceof HTMLElement; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      chain.push({
+        tag: node.tagName,
+        id: node.id,
+        className: node.className,
+        display: style.display,
+        visibility: style.visibility,
+        opacity: style.opacity,
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      });
+    }
+    return chain;
+  });
+  assert.equal(
+    await selfUseField.isVisible(),
+    true,
+    "Self-use field must be visible; ancestor visibility diagnostics: " + JSON.stringify(selfUseVisibility),
+  );
   await page.locator("#annualUse").fill("12000");
   await page.locator("#importRate").fill("0.20");
   await page.locator("#offset").fill("100");
@@ -183,13 +217,25 @@ try {
   assert.equal(await page.locator('[data-panel="1"]').isVisible(), true);
   assert.equal(await page.locator('[data-panel="2"]').isVisible(), false);
 
+  const combinedPitchOptions = await page.locator("#pitch option").evaluateAll((options) => options.map((option) => option.value));
+  assert.ok(combinedPitchOptions.includes("moderateLow"), "Combined estimator must offer 4:12 pitch");
+  assert.ok(combinedPitchOptions.includes("verySteep"), "Combined estimator must offer 12:12 pitch");
   await page.locator("#pitch").selectOption("moderate");
+  // Roof-price assumptions are intentionally collapsed by default; expand them before interacting.
+  await page.locator("#roofPriceAssumptions > summary").click();
+  assert.equal(await page.locator("#loadNationalRoofReference").isVisible(), true);
   await page.locator("#loadNationalRoofReference").click();
   await page.locator('[data-next="2"]').click();
   assert.equal(await page.locator('[data-panel="2"]').isVisible(), true);
 
   await page.locator("#annualKwh").fill("12000");
   await page.locator("#rate").fill("0.20");
+  // Solar value assumptions are intentionally collapsed in the combined calculator.
+  await page.locator("#solarCostAssumptions > summary").click();
+  assert.equal(await page.locator("#solarCostAssumptions").evaluate((element) => element.open), true);
+  // Loan illustrations require an installed price; load the national reference explicitly.
+  await page.locator("#loadNationalSolarReference").click();
+  assert.equal(await page.locator("#solarPricePerWatt").inputValue(), "2.62");
   await page.locator("#selfUse").fill("50");
   await page.locator("#exportRate").fill("0.05");
   await page.locator("#productionPerKw").fill("1500");
@@ -222,10 +268,26 @@ try {
   })();
   const actualLoanPayment = Number((await page.locator("#loanPayment").innerText()).replace(/[^0-9.]/g, ""));
   assert.ok(Math.abs(actualLoanPayment - expectedLoanPayment) < 0.51, "Combined calculator loan payment should match amortization formula");
+  // The detailed assumptions list is intentionally disclosed in a collapsed section.
+  await page.locator(".assumption-details > summary").click();
   const assumptions = await page.locator("#assumptionList").innerText();
   assert.match(assumptions, /floor area ÷ 2 stories/);
   assert.match(assumptions, /1\.118/);
   assert.match(await page.locator("#roofStatusDesc").innerText(), /leaks or visible damage/i);
+
+  // Recalculate at the newly supported 12:12 and 4:12 pitches.
+  await page.locator("#editInputs").click();
+  await page.locator("#pitch").selectOption("verySteep");
+  await page.locator('[data-next="2"]').click();
+  assert.equal(await page.locator('[data-panel="2"]').isVisible(), true);
+  await page.locator("#calculateButton").click();
+  assert.match(await page.locator("#roofAreaResult").innerText(), /2,262 sq ft/);
+  await page.locator("#editInputs").click();
+  await page.locator("#pitch").selectOption("moderateLow");
+  await page.locator('[data-next="2"]').click();
+  assert.equal(await page.locator('[data-panel="2"]').isVisible(), true);
+  await page.locator("#calculateButton").click();
+  assert.match(await page.locator("#roofAreaResult").innerText(), /1,686 sq ft/);
 
   // Unknown export credit must withhold total value and payback, never silently assume $0.
   await page.locator("#editInputs").click();
@@ -235,6 +297,17 @@ try {
   assert.match(await page.locator("#annualSavings").innerText(), /Inputs needed/);
   assert.match(await page.locator("#payback").innerText(), /Not modeled/);
   assert.match(await page.locator("#resultWarning").innerText(), /No export credit was entered/i);
+
+  // Missing import price must also remain unknown, not appear as $0.000/kWh.
+  await page.locator("#editInputs").click();
+  await page.locator('[data-next="2"]').click();
+  await page.locator("#rate").fill("");
+  await page.locator("#exportRate").fill("0.05");
+  await page.locator("#calculateButton").click();
+  assert.match(await page.locator("#annualSavings").innerText(), /Inputs needed/);
+  assert.match(await page.locator("#resultWarning").innerText(), /No import rate was entered/i);
+  assert.match(await page.locator("#assumptionList").innerText(), /Import rate: not entered/i);
+  assert.doesNotMatch(await page.locator("#savingsDesc").innerText(), /0\.000\/kWh/);
 
   // Check the key calculator screens at a narrow viewport for horizontal overflow.
   await page.setViewportSize({ width: 390, height: 844 });
