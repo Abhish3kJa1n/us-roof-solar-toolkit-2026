@@ -268,6 +268,8 @@ try {
   })();
   const actualLoanPayment = Number((await page.locator("#loanPayment").innerText()).replace(/[^0-9.]/g, ""));
   assert.ok(Math.abs(actualLoanPayment - expectedLoanPayment) < 0.51, "Combined calculator loan payment should match amortization formula");
+  // The detailed assumptions list is intentionally disclosed in a collapsed section.
+  await page.locator(".assumption-details > summary").click();
   const assumptions = await page.locator("#assumptionList").innerText();
   assert.match(assumptions, /floor area ÷ 2 stories/);
   assert.match(assumptions, /1\.118/);
