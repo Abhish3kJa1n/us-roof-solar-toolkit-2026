@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from html.parser import HTMLParser
 import json
+import re
 import os
 from pathlib import Path
 import subprocess
