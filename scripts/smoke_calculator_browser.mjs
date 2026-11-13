@@ -230,6 +230,9 @@ try {
 
   await page.locator("#annualKwh").fill("12000");
   await page.locator("#rate").fill("0.20");
+  // Solar value assumptions are intentionally collapsed in the combined calculator.
+  await page.locator("#solarCostAssumptions > summary").click();
+  assert.equal(await page.locator("#solarCostAssumptions").evaluate((element) => element.open), true);
   await page.locator("#selfUse").fill("50");
   await page.locator("#exportRate").fill("0.05");
   await page.locator("#productionPerKw").fill("1500");
