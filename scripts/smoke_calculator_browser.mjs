@@ -50,7 +50,11 @@ async function navigate(path) {
   let lastStatus = "no response";
   for (let attempt = 1; attempt <= 18; attempt += 1) {
     try {
-      const response = await page.goto(new URL(path, base).href, {
+      const target = new URL(path, base);
+      // Cloudflare branch aliases can be served through edge caches. Give every
+      // navigation a unique query key so this run tests the current preview build.
+      target.searchParams.set("__qa_cache_bust", String(Date.now()) + "-" + attempt);
+      const response = await page.goto(target.href, {
         waitUntil: "domcontentloaded",
         timeout: 20000,
       });
@@ -151,6 +155,36 @@ try {
   // Annual solar value: 6,000 kWh direct × $0.20 + 6,000 kWh export × $0.05 = $1,500.
   // $20,960 installed cost ÷ $1,500/year = 13.97 years, displayed as 14.0.
   await navigate("/calculators/solar-savings.html");
+  const selfUseField = page.locator("#selfUse");
+  const selfUsePlaceholder = await selfUseField.getAttribute("placeholder");
+  assert.equal(
+    selfUsePlaceholder,
+    "Enter a modeled annual share",
+    "Solar Savings Preview must serve the current source revision, not stale cached HTML",
+  );
+  const selfUseVisibility = await selfUseField.evaluate((element) => {
+    const chain = [];
+    for (let node = element; node && node instanceof HTMLElement; node = node.parentElement) {
+      const style = getComputedStyle(node);
+      const rect = node.getBoundingClientRect();
+      chain.push({
+        tag: node.tagName,
+        id: node.id,
+        className: node.className,
+        display: style.display,
+        visibility: style.visibility,
+        opacity: style.opacity,
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+      });
+    }
+    return chain;
+  });
+  assert.equal(
+    await selfUseField.isVisible(),
+    true,
+    "Self-use field must be visible; ancestor visibility diagnostics: " + JSON.stringify(selfUseVisibility),
+  );
   await page.locator("#annualUse").fill("12000");
   await page.locator("#importRate").fill("0.20");
   await page.locator("#offset").fill("100");
