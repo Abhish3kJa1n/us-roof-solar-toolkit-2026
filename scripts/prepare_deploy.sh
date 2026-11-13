@@ -9,7 +9,9 @@ cp "$ROOT"/*.html "$OUT/"
 cp -R "$ROOT/assets" "$ROOT/calculators" "$ROOT/guides" "$ROOT/data" "$OUT/"
 cp "$ROOT/robots.txt" "$ROOT/_headers" "$OUT/"
 # Give visitors a consistent path to the HTML sitemap from every public page footer.
-find "$OUT" -type f -name '*.html' ! -name '404.html' ! -name 'index.html' -exec sed -i 's#</div></div></footer>#<a href="/sitemap">Site map</a></div></div></footer>#g' {} +
+find "$OUT" -type f -name '*.html' ! -name '404.html' ! -name 'index.html' -exec sed -i \
+  -e 's#</div></div><div class="wrap disclaimer">#<a href="/sitemap">Site map</a></div></div><div class="wrap disclaimer">#g' \
+  -e 's#</div></div></footer>#<a href="/sitemap">Site map</a></div></div></footer>#g' {} +
 if [ -f "$ROOT/ads.txt" ]; then cp "$ROOT/ads.txt" "$OUT/"; fi
 # Keep every Preview noindex. The public sitemap and indexing are enabled only
 # for the main-branch Production build after the owner requested launch indexing.
