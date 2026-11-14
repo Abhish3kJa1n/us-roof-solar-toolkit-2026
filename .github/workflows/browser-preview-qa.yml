@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   browser:
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[browser-qa]')) || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'audit/') || github.head_ref == 'fix/combined-roof-pitch-range-2026-11-13' || github.head_ref == 'fix/sitemap-copy-footer-layout'))
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[browser-qa]')) || (github.event_name == 'pull_request' && (startsWith(github.head_ref, 'audit/') || startsWith(github.head_ref, 'content/') || github.head_ref == 'fix/combined-roof-pitch-range-2026-11-13' || github.head_ref == 'fix/sitemap-copy-footer-layout'))
     name: Playwright desktop/mobile and accessibility smoke
     runs-on: ubuntu-latest
     timeout-minutes: 25
