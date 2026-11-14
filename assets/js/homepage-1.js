@@ -119,6 +119,14 @@
       return r === 0 ? principal/n : principal * r / (1 - Math.pow(1+r, -n));
     }
 
+    function renderNextSteps(items) {
+      const container = document.getElementById('nextStepLinks');
+      // Recommendation copy and destinations are authored constants; visitor inputs are never interpolated into HTML.
+      container.innerHTML = items.slice(0, 3).map(item =>
+        `<a class="next-step-card" href="${item.href}"><strong>${item.title}</strong><span>${item.description}</span><em>${item.action} <span aria-hidden="true">→</span></em></a>`
+      ).join('');
+    }
+
     // Source-labelled, editable handoffs. Property-specific facts are never guessed.
     const roofLowInput = document.getElementById('roofRateLow');
     const roofHighInput = document.getElementById('roofRateHigh');
@@ -384,6 +392,39 @@
       if (solarPricePerWatt === null) warnings.push('No installed solar price was entered; cost and payback are not calculated.');
       warnings.push('The target annual generation percentage is visitor-entered; it is not a recommendation or a promise of the same reduction in the total utility bill. No self-consumption or export-credit defaults are supplied. Local incentives, utility tariff rules, shading, orientation, structural condition, professional measurements and local prices can change results.');
       document.getElementById('resultWarning').textContent = warnings.join(' ');
+
+      const nextSteps = [];
+      const addNextStep = (href, title, description, action) => nextSteps.push({ href, title, description, action });
+      if (condition === 'poor') {
+        addNextStep('guides/roof-before-solar', 'Check the reported roof problem before solar installation',
+          'You reported leaks or visible damage. Arrange a qualified inspection before treating the roof as ready for panels; this calculator is not a diagnosis.',
+          'Review roof-before-solar planning');
+      } else if (condition === 'fair') {
+        addNextStep('guides/roof-before-solar', 'Check roof timing before committing to panels',
+          'You reported aging or minor wear. Confirm the roof condition and likely remaining service life before deciding the order of roof and solar work.',
+          'Review roof-before-solar planning');
+      }
+      if (!importedCityLabel) {
+        addNextStep('calculators/location-solar', 'Check production for a representative U.S. city',
+          'Use the city-based PVWatts model as a stronger starting assumption. It still cannot inspect your roof plane, shading or property-specific conditions.',
+          'Estimate production by city');
+      }
+      if (finance === 'loan') {
+        addNextStep('guides/solar-loan-vs-lease-vs-ppa', 'Compare the full financing obligation',
+          'Review dealer fees, APR, term, payment changes and total payments. A monthly payment alone is not a like-for-like comparison.',
+          'Compare solar financing options');
+      } else if (annualSavings === null) {
+        addNextStep('guides/understanding-solar-bill-savings', 'Understand what changes the value of solar electricity',
+          'Direct use, the import rate and the utility export credit affect the estimate. Unknown inputs should stay unknown, not be guessed.',
+          'Understand solar bill savings');
+      }
+      if (nextSteps.length < 3) {
+        addNextStep('guides/solar-installation-cost#checker', 'Have a written proposal? Check its PV-only price per watt',
+          'Enter the itemized PV-only cash price and DC nameplate capacity. This normalizes price for comparison; it does not rate the installer or equipment.',
+          'Check quote price per watt');
+      }
+      renderNextSteps(nextSteps);
+
       document.getElementById('results').classList.add('show');
       setStep(3);
       document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
