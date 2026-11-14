@@ -8,6 +8,7 @@ mkdir -p "$OUT"
 cp "$ROOT"/*.html "$OUT/"
 cp -R "$ROOT/assets" "$ROOT/calculators" "$ROOT/guides" "$ROOT/data" "$OUT/"
 cp "$ROOT/robots.txt" "$ROOT/_headers" "$OUT/"
+python3 "$ROOT/scripts/normalize_public_navigation.py"
 # Give visitors a consistent path to the HTML sitemap from every public page footer.
 find "$OUT" -type f -name '*.html' ! -name '404.html' ! -name 'index.html' -exec sed -i \
   -e 's#</div></div><div class="wrap disclaimer">#<a href="/sitemap">Site map</a></div></div><div class="wrap disclaimer">#g' \

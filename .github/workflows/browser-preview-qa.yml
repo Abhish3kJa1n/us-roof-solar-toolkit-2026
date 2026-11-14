@@ -49,6 +49,14 @@ jobs:
             exit 1
           fi
           echo "base_url=https://${slug}.roof-solar-toolkit-2026.pages.dev" >> "$GITHUB_OUTPUT"
+      - name: Audit every public page at desktop and mobile
+        run: node scripts/full_site_ui_audit.mjs
+        env:
+          PREVIEW_BASE_URL: ${{ steps.preview.outputs.base_url }}
+          EXPECTED_PREVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
+          AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
+          QA_SCREENSHOT_DIR: browser-qa-output
       - name: Run real-browser Preview checks
         run: node scripts/browser_preview_smoke.mjs
         env:
