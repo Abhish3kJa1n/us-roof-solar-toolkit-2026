@@ -45,6 +45,23 @@ try {
       await page.waitForTimeout(100);
       const dimensions=await page.evaluate(()=>({viewport:innerWidth,doc:document.documentElement.scrollWidth,body:document.body.scrollWidth}));
       assert.ok(Math.max(dimensions.doc,dimensions.body)<=width+1,route+' horizontal overflow at '+width+': '+JSON.stringify(dimensions));
+      if (width===390) {
+        const tables=await page.locator('.table-scroll').evaluateAll(nodes=>nodes.map(node=>{
+          const maxScroll=node.scrollWidth-node.clientWidth;
+          const before=node.scrollLeft;
+          node.scrollLeft=maxScroll;
+          const moved=node.scrollLeft>0;
+          node.scrollLeft=before;
+          return {label:node.getAttribute('aria-label'),role:node.getAttribute('role'),tabIndex:node.tabIndex,maxScroll,moved};
+        }));
+        for (const table of tables) {
+          assert.ok(table.label,route+' table scroll region missing accessible name: '+JSON.stringify(table));
+          assert.equal(table.role,'region',route+' table scroll wrapper must be a named region: '+JSON.stringify(table));
+          assert.equal(table.tabIndex,0,route+' table scroll wrapper must be keyboard focusable: '+JSON.stringify(table));
+          assert.ok(table.maxScroll>0&&table.moved,route+' table is not horizontally scrollable at 390px: '+JSON.stringify(table));
+        }
+        console.log('MOBILE_TABLE_SCROLL_PASS '+route+' | '+tables.length+' tables');
+      }
       const report=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21a','wcag21aa']).analyze();
       const serious=report.violations.filter(v=>v.impact==='critical'||v.impact==='serious');
       assert.equal(serious.length,0,route+' serious/critical accessibility findings at '+width+': '+JSON.stringify(serious.map(v=>({id:v.id,help:v.help,nodes:v.nodes.length}))));
