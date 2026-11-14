@@ -201,6 +201,8 @@ try {
   await open('/index.html');
   assert.equal(await page.locator('link[rel="icon"][href="/assets/favicon.svg"]').count(), 1, 'homepage must declare its SVG favicon explicitly');
   await page.screenshot({ path: path.join(screenshotDir, 'homepage-desktop.png'), fullPage: true });
+  assert.equal(await page.locator('.journey-grid .journey-card').count(), 4, 'homepage must offer four independent starting paths');
+  assert.equal(await page.locator('.journey-quote a[href="guides/solar-installation-cost#checker"]').count(), 1, 'quote-review path must use the existing price-per-watt checker');
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'combined calculator must not silently prefill a national solar price');
@@ -250,7 +252,24 @@ try {
   assert.match(await page.locator('#roofCost').innerText(), /\$/, 'combined calculator must output a roof-cost scenario');
   assert.match(combinedResults, /kWh|solar/i);
   results.push('combined calculator: PASS');
+  const firstNextSteps = await page.locator('#nextStepLinks .next-step-card').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
+  assert.deepEqual(firstNextSteps, ['calculators/location-solar', 'guides/solar-installation-cost#checker'], 'complete unknown-roof/cash scenario should offer city production and the existing quote checker, not a replacement diagnosis');
+  const resultsTop = await page.locator('#results').evaluate(node => node.getBoundingClientRect().top);
+  assert.ok(resultsTop >= 90, 'results should scroll below the sticky navigation: top=' + resultsTop);
   await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png'), fullPage: true });
+
+  // Exercise conditional guidance for a homeowner reporting a roof problem and choosing loan financing.
+  await page.locator('#editInputs').click();
+  await page.locator('#condition').selectOption('poor');
+  await page.locator('button[data-next="2"]').click();
+  await page.locator('#loan').check();
+  await page.locator('#apr').fill('7');
+  await page.locator('#term').fill('20');
+  await page.locator('#calculateButton').click();
+  await page.locator('#results.show').waitFor({ state: 'visible', timeout: 15000 });
+  const poorRoofLoanSteps = await page.locator('#nextStepLinks .next-step-card').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
+  assert.deepEqual(poorRoofLoanSteps, ['guides/roof-before-solar', 'calculators/location-solar', 'guides/solar-loan-vs-lease-vs-ppa'], 'poor-roof/loan scenario must prioritize roof sequencing, city production and financing');
+  await page.screenshot({ path: path.join(screenshotDir, 'combined-next-steps-poor-roof-loan.png'), fullPage: true });
 
   // Standalone solar savings: separate sizing inputs, optional tariff modelling and explicit price reference.
   await open('/calculators/solar-savings.html');
