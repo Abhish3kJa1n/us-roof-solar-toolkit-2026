@@ -19,7 +19,7 @@ const guides = [
 assert.ok(base, 'PREVIEW_BASE_URL is required');
 fs.mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({headless:true});
-const page=await browser.newPage({viewport:{width:1365,height:900},deviceScaleFactor:1,reducedMotion:'reduce'});
+const context=await browser.newContext({viewport:{width:1365,height:900},deviceScaleFactor:1,reducedMotion:'reduce'});\nconst page=await context.newPage();
 const pageErrors=[];
 page.on('pageerror',e=>pageErrors.push(e.message));
 try {
