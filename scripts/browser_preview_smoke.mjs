@@ -267,7 +267,7 @@ try {
   }, undefined, { timeout: 8000 });
   const resultsTop = await page.locator('#results').evaluate(node => node.getBoundingClientRect().top);
   assert.ok(resultsTop >= 90 && resultsTop <= 115, 'results should settle below the 76px sticky navigation: top=' + resultsTop);
-  await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png'), fullPage: false });
+  await page.locator('#results').screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png') });
 
   // Exercise conditional guidance for a homeowner reporting a roof problem and choosing loan financing.
   await page.locator('#editInputs').click();
@@ -286,7 +286,7 @@ try {
     const top = node.getBoundingClientRect().top;
     return top >= 90 && top <= 115;
   }, undefined, { timeout: 8000 });
-  await page.screenshot({ path: path.join(screenshotDir, 'combined-next-steps-poor-roof-loan.png'), fullPage: false });
+  await page.locator('#results').screenshot({ path: path.join(screenshotDir, 'combined-next-steps-poor-roof-loan.png') });
 
   // Standalone solar savings: separate sizing inputs, optional tariff modelling and explicit price reference.
   await open('/calculators/solar-savings.html');
