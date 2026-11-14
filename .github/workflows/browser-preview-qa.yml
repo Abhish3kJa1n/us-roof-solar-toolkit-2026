@@ -57,6 +57,14 @@ jobs:
           PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
           AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
           QA_SCREENSHOT_DIR: browser-qa-output
+      - name: Capture and audit all 12 rewritten guide pages at desktop, tablet and mobile
+        run: node scripts/guide_visual_qa.mjs
+        env:
+          PREVIEW_BASE_URL: ${{ steps.preview.outputs.base_url }}
+          EXPECTED_PREVIEW_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
+          AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
+          QA_GUIDE_SCREENSHOT_DIR: browser-qa-output/guide-pages
       - name: Install pinned Lighthouse CLI
         run: npm install --prefix /tmp/roofsolar-lighthouse --no-save lighthouse@13.6.0
       - name: Run mobile Lighthouse audits (diagnostic; no score gate)
