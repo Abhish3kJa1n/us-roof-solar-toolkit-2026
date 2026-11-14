@@ -254,8 +254,14 @@ try {
   results.push('combined calculator: PASS');
   const firstNextSteps = await page.locator('#nextStepLinks .next-step-card').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
   assert.deepEqual(firstNextSteps, ['calculators/location-solar', 'guides/solar-installation-cost#checker'], 'complete unknown-roof/cash scenario should offer city production and the existing quote checker, not a replacement diagnosis');
+  await page.waitForFunction(() => {
+    const node = document.getElementById('results');
+    if (!node) return false;
+    const top = node.getBoundingClientRect().top;
+    return top >= 90 && top <= 115;
+  }, undefined, { timeout: 8000 });
   const resultsTop = await page.locator('#results').evaluate(node => node.getBoundingClientRect().top);
-  assert.ok(resultsTop >= 90, 'results should scroll below the sticky navigation: top=' + resultsTop);
+  assert.ok(resultsTop >= 90 && resultsTop <= 115, 'results should settle below the 76px sticky navigation: top=' + resultsTop);
   await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png'), fullPage: true });
 
   // Exercise conditional guidance for a homeowner reporting a roof problem and choosing loan financing.
