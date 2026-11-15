@@ -165,7 +165,7 @@ def main() -> int:
     if not html_sitemap_path.is_file():
         fail("visitor-facing HTML sitemap is missing from the deployment output")
     html_sitemap = html_sitemap_path.read_text(encoding="utf-8")
-    html_sitemap_hrefs = set(re.findall(r'href=["\\']([^"\\']+)["\\']', html_sitemap))
+    html_sitemap_hrefs = set(re.findall(r"""href=["']([^"']+)["']""", html_sitemap))
     for url in sitemap_urls:
         path = urlsplit(url).path
         if path != "/sitemap" and path not in html_sitemap_hrefs and url not in html_sitemap_hrefs:
