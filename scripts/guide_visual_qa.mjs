@@ -14,7 +14,8 @@ const out = process.env.QA_GUIDE_SCREENSHOT_DIR || 'browser-qa-output/guide-page
 const guides = [
   'are-solar-panels-worth-it','metal-roof-cost','metal-roof-vs-asphalt-shingles','roof-before-solar',
   'roof-life-by-material','roof-repair-cost','roof-repair-vs-replacement','roof-replacement-cost-factors',
-  'roof-replacement-cost','solar-installation-cost','solar-loan-vs-lease-vs-ppa','understanding-solar-bill-savings'
+  'roof-replacement-cost','solar-installation-cost','solar-loan-vs-lease-vs-ppa','understanding-solar-bill-savings',
+  'solar-panels-power-outage'
 ];
 assert.ok(base, 'PREVIEW_BASE_URL is required');
 fs.mkdirSync(out,{recursive:true});
@@ -71,5 +72,5 @@ try {
     console.log('GUIDE_VISUAL_QA_PASS '+route+' | '+h1);
   }
   assert.equal(pageErrors.length,0,'Uncaught page errors: '+JSON.stringify(pageErrors));
-  console.log('ALL 12 GUIDE PAGES PASSED at desktop, 768px tablet and 390px mobile. 36 full-page screenshots captured.');
+  console.log('ALL 13 GUIDE PAGES PASSED at desktop, 768px tablet and 390px mobile. 39 full-page screenshots captured.');
 } finally { await browser.close(); }
