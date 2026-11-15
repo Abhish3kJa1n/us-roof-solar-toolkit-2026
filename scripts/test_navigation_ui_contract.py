@@ -48,8 +48,8 @@ def main() -> int:
     shared_css = (ROOT / "assets/site.css").read_text(encoding="utf-8")
     if ".links a:not(.btn):hover" not in shared_css:
         raise AssertionError("Shared nav hover must exclude CTA buttons")
-    if ".links a.btn:hover{color:#172b40}" not in shared_css:
-        raise AssertionError("Shared CTA hover must preserve readable navy text")
+    if not re.search(r"\\.links a\\.btn:hover\\s*\\{\\s*color:\\s*(?:#172b40|var\\(--h-color-172b40\\))\\s*;\\s*\\}", shared_css):
+        raise AssertionError("Shared CTA hover must preserve readable navy text through its colour token")
     if re.search(r"\.links a:hover\s*\{", shared_css):
         raise AssertionError("Generic shared nav hover still overrides CTA text")
 
