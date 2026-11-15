@@ -90,3 +90,12 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .roof-scope-details{margin-top:13px}
 @media(max-width:600px){.roof-cost-step{padding:13px}.roof-reference-action{align-items:flex-start;flex-direction:column}.roof-reference-action .btn{width:100%}.roof-cost-actions .btn{flex:1}}
 
+/* Verified accessibility fixes from the isolated Hallmark audit. */
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{
+  outline:2px solid #10243b;
+  outline-offset:3px;
+  box-shadow:0 0 0 2px #fff;
+}
+.field input,.field select,.field textarea{
+  border-color:#7f91a2;
+}
