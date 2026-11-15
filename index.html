@@ -70,7 +70,7 @@
     .hero:before { content: ""; position: absolute; width: 620px; height: 620px; border: 1px solid rgba(255,255,255,.07); border-radius: 50%; right: -210px; top: -310px; box-shadow: 0 0 0 54px rgba(255,255,255,.025), 0 0 0 108px rgba(255,255,255,.018); }
     .hero:after { content: ""; position: absolute; inset: auto 0 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(230,168,61,.7), transparent); }
     .hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: 1.04fr .96fr; align-items: center; gap: 55px; }
-    .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: #f1c36e; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; font-weight: 800; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: #f1c36e; font-size: 12px; letter-spacing: 0; font-weight: 700; }
     .eyebrow .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 5px rgba(230,168,61,.14); }
     h1 { font-size: clamp(38px, 5.2vw, 61px); line-height: 1.04; letter-spacing: -.055em; margin: 19px 0 19px; max-width: 650px; }
     .hero-copy { color: #c3d0dc; font-size: 16px; max-width: 555px; line-height: 1.75; }
@@ -78,8 +78,8 @@
     .hero-note { display: flex; align-items: flex-start; gap: 9px; color: #b8c6d3; font-size: 11px; margin-top: 21px; max-width: 510px; }
     .hero-note svg { flex: 0 0 auto; margin-top: 2px; color: #f2c16b; }
     .hero-art { position: relative; min-height: 350px; border: 1px solid rgba(255,255,255,.14); background: linear-gradient(145deg, rgba(255,255,255,.1), rgba(255,255,255,.025)); border-radius: 24px; padding: 18px; box-shadow: 0 25px 65px rgba(0,0,0,.19); }
-    .art-top { display: flex; align-items: center; justify-content: space-between; color: #c2d0dc; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; font-weight: 750; }
-    .art-chip { border: 1px solid rgba(255,255,255,.18); color: #f5d28e; padding: 6px 9px; border-radius: 20px; letter-spacing: .04em; }
+    .art-top { display: flex; align-items: center; justify-content: space-between; color: #c2d0dc; font-size: 12px; letter-spacing: 0; font-weight: 700; }
+    .art-chip { border: 1px solid rgba(255,255,255,.18); color: #f5d28e; padding: 6px 9px; border-radius: 20px; letter-spacing: 0; }
     .house-art { width: 100%; height: 250px; display: block; margin-top: 15px; }
     .art-footer { display: flex; justify-content: space-between; gap: 12px; color: #bdcbd7; font-size: 10px; }
     .art-footer b { color: #fff; font-size: 12px; }
@@ -91,7 +91,7 @@
     section { scroll-margin-top: 90px; }
     .section { padding: 82px 0; }
     .section-head { max-width: 690px; margin: 0 auto 35px; text-align: center; }
-    .section-kicker { color: #744700; text-transform: uppercase; font-weight: 850; letter-spacing: .15em; font-size: 10px; }
+    
     h2 { color: var(--navy); font-size: clamp(29px, 3.5vw, 42px); letter-spacing: -.045em; line-height: 1.13; margin: 11px 0 12px; }
     .section-head p { color: var(--muted); margin: 0; font-size: 14px; }
     .calculator-section { background: #f0f4f7; }
@@ -153,7 +153,7 @@
     .result-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
     .result-card { background: #fff; border: 1px solid var(--line); border-radius: 15px; padding: 19px; min-width: 0; }
     .result-card.featured { background: var(--navy); border-color: var(--navy); color: #fff; }
-    .result-label { text-transform: uppercase; letter-spacing: .11em; font-size: 10px; font-weight: 850; color: #526577; }
+    .result-label { font-size: 12px; font-weight: 700; color: #526577; }
     .featured .result-label { color: #b6c9d8; }
     .result-value { color: var(--navy); font-size: 27px; line-height: 1.12; font-weight: 850; letter-spacing: -.05em; margin: 10px 0 6px; }
     .featured .result-value { color: #fff; }
@@ -173,7 +173,7 @@
     .results-bottom p { font-size: 11px; color: #586b7d; margin: 0; }
     .how-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; }
     .how-card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
-    .how-no { width: 36px; height: 36px; background: var(--gold-soft); color: #744700; border-radius: 11px; display: grid; place-items: center; font-size: 13px; font-weight: 850; }
+    
     .how-card h3 { color: var(--navy); font-size: 16px; margin: 17px 0 7px; }
     .how-card p { color: var(--muted); font-size: 12px; margin: 0; line-height: 1.7; }
     .split-cta { background: #eaf0f4; padding: 61px 0; }
@@ -199,7 +199,7 @@
     .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: center; }
     .about-visual { background: var(--navy); border-radius: 20px; min-height: 260px; padding: 28px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; position: relative; }
     .about-visual:after { content: ""; position: absolute; width: 270px; height: 270px; border-radius: 50%; border: 1px solid rgba(255,255,255,.12); right: -80px; bottom: -120px; box-shadow: 0 0 0 30px rgba(255,255,255,.035), 0 0 0 60px rgba(255,255,255,.025); }
-    .about-mark { color: #f0bd60; font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .about-mark { color: #f0bd60; font-size: 12px; font-weight: 700; letter-spacing: 0; }
     .about-visual strong { max-width: 320px; font-size: 27px; letter-spacing: -.04em; line-height: 1.15; position: relative; z-index: 1; }
     .about-copy h2 { margin-top: 8px; }
     .about-copy p { color: var(--muted); font-size: 12px; line-height: 1.8; }
@@ -324,8 +324,6 @@
     .journey-roof{--journey-accent:#744700}
     .journey-solar{--journey-accent:#386b8c}
     .journey-combined{--journey-accent:#183650;background:#f6f8fa}
-    .journey-meta{display:flex;align-items:center;gap:9px;color:var(--journey-accent);font-size:10px;font-weight:850;letter-spacing:.09em}
-    .journey-meta span{color:#617285;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
     .journey-card h3{margin:14px 0 7px;color:var(--navy);font-size:18px;line-height:1.25;letter-spacing:-.025em}
     .journey-card p{min-height:64px;margin:0 0 15px;color:var(--muted);font-size:12px;line-height:1.65}
     .journey-card>a:not(.journey-secondary){margin-top:auto;color:var(--navy);font-size:12px;font-weight:850;text-decoration:none}
@@ -443,7 +441,7 @@
 <div class="container">
 <div class="section-head"><h2>Estimate your roof and solar potential.</h2><p>The combined calculator uses measurements and electricity details you enter. A separate city solar estimator can look up a Census representative place and request modeled PV production; it does not identify your roof, utility account or exact tariff.</p></div>
 <div class="calculator-shell">
-<div class="calc-header"><div><div class="calc-title">Roof &amp; solar estimator <span class="calc-subtitle">Three steps to a roof and energy planning snapshot.</span></div></div><div class="step-count" id="stepCount">STEP 1 OF 3</div></div>
+<div class="calc-header"><div><div class="calc-title">Roof &amp; solar estimator <span class="calc-subtitle">Three steps to a roof and energy planning snapshot.</span></div></div><div class="step-count" id="stepCount">Step 1 of 3</div></div>
 <div aria-label="Calculator progress" aria-valuemax="3" aria-valuemin="1" aria-valuenow="1" class="progress-track" id="stepProgress" role="progressbar"><div class="progress-value" id="progressValue"></div></div>
 <div aria-label="Calculator progress" class="steps">
 <div aria-current="step" class="step-label active" data-step-label="1"><span class="step-number">1</span><span>Property &amp; roof</span></div>
