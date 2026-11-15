@@ -1,4 +1,5 @@
 name: Real-browser Preview QA
+# [browser-qa] Isolated visual verification for Hallmark remediation
 
 on:
   push:
