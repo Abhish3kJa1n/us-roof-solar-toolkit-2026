@@ -42,13 +42,16 @@ CASES=[
  ('zero_import_rate_explicit',{'selfUse':'50','rate':'0','exportRate':'0.04'},['$173 / yr','0.000/kWh'],['No import rate was entered']),
  ('all_direct_use_export_not_required',{'selfUse':'100'},['$1,728 / yr','12.5 years','8,640 kWh self-used'],['No export credit was entered']),
  ('export_only_without_import_rate',{'selfUse':'0','exportRate':'0.04','rate':''},['$346 / yr','0 kWh self-consumed','no import-rate input is needed'],['Inputs needed']),
- ('material_is_optional',{'roofType':'','selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh self-used'],['Select a roof material'])
+ ('material_is_optional',{'roofType':'','selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh self-used'],['Select a roof material']),
+ ('poor_roof_prompts_sequencing',{'condition':'poor'},['guides/roof-before-solar','calculators/location-solar','guides/understanding-solar-bill-savings'],[]),
+ ('fair_roof_prompts_sequencing',{'condition':'fair'},['guides/roof-before-solar'],[]),
+ ('unknown_roof_is_not_a_replacement_diagnosis',{'condition':'unknown'},['calculators/location-solar','guides/understanding-solar-bill-savings'],['guides/roof-before-solar'])
 ]
 
 def main():
  for name,overrides,yes,no in CASES:
   values={**DEFAULTS,**overrides}
-  code=HARNESS+JS+'\n'+f"for(const [k,v] of Object.entries({json.dumps(values)})) makeEl(k).value=v; makeEl('calculateButton').handlers.click(); console.log(JSON.stringify({{annual:makeEl('annualSavings').textContent,desc:makeEl('savingsDesc').textContent,payback:makeEl('payback').textContent,warning:makeEl('resultWarning').textContent,assumptions:makeEl('assumptionList').innerHTML,error:makeEl('error1').textContent}}));"
+  code=HARNESS+JS+'\n'+f"for(const [k,v] of Object.entries({json.dumps(values)})) makeEl(k).value=v; makeEl('calculateButton').handlers.click(); console.log(JSON.stringify({{annual:makeEl('annualSavings').textContent,desc:makeEl('savingsDesc').textContent,payback:makeEl('payback').textContent,warning:makeEl('resultWarning').textContent,assumptions:makeEl('assumptionList').innerHTML,error:makeEl('error1').textContent,nextSteps:makeEl('nextStepLinks').innerHTML}}));"
   with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(code);temp=Path(f.name)
   try:r=subprocess.run(['node',str(temp)],capture_output=True,text=True)
   finally:temp.unlink(missing_ok=True)
