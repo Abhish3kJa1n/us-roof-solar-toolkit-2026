@@ -15,7 +15,7 @@ const guides = [
   'are-solar-panels-worth-it','metal-roof-cost','metal-roof-vs-asphalt-shingles','roof-before-solar',
   'roof-life-by-material','roof-repair-cost','roof-repair-vs-replacement','roof-replacement-cost-factors',
   'roof-replacement-cost','solar-installation-cost','solar-loan-vs-lease-vs-ppa','understanding-solar-bill-savings',
-  'solar-panels-power-outage','solar-panel-warranties','solar-installation-timeline'
+  'solar-panels-power-outage','solar-panel-warranties','solar-installation-timeline','solar-battery-cost'
 ];
 assert.ok(base, 'PREVIEW_BASE_URL is required');
 fs.mkdirSync(out,{recursive:true});
@@ -79,5 +79,5 @@ try {
     console.log('GUIDE_VISUAL_QA_PASS '+route+' | '+h1);
   }
   assert.equal(pageErrors.length,0,'Uncaught page errors: '+JSON.stringify(pageErrors));
-  console.log('ALL 15 GUIDE PAGES PASSED at desktop, 768px tablet and 390px mobile. 45 full-page screenshots captured.');
+  console.log('ALL 16 GUIDE PAGES PASSED at desktop, 768px tablet and 390px mobile. 48 full-page screenshots captured.');
 } finally { await browser.close(); }
