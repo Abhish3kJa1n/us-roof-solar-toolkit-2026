@@ -18,15 +18,14 @@
 <a class="skip-link" href="#main-content">Skip to main content</a>
 <div class="top"><div class="wrap"><span><strong>Roof &amp; Solar Toolkit</strong> · Homeowner planning resource</span><span>Location-aware solar model · Educational estimate</span></div></div>
 <header><div class="wrap nav"><a class="brand" href="/"><span class="brand-mark">⌂</span>Roof &amp; Solar Toolkit</a><nav class="links"><a href="/#tools">Tools</a><a href="/#guides">Guides</a><a class="btn" href="solar-savings">Savings calculator</a><a href="/about">About</a></nav></div></header>
-<section class="page-hero"><div class="wrap"><div class="eyebrow">Location-aware solar planning</div><h1>Solar production estimator by city</h1><p>Enter a US city, select the matching city/state suggestion, then model annual and monthly solar output with NLR PVWatts V8 using a US Census Bureau representative place point. The city point does not pinpoint a home or determine its roof characteristics.</p></div></section>
+<section class="page-hero"><div class="wrap"><h1>Solar production estimator by city</h1><p>Enter a US city, select the matching city/state suggestion, then model annual and monthly solar output with NLR PVWatts V8 using a US Census Bureau representative place point. The city point does not pinpoint a home or determine its roof characteristics.</p></div></section>
 <div class="wrap" aria-label="Calculation documentation"><p style="margin:10px 0 14px;font-size:13px;color:#586779;">Review the <a href="/methodology">calculation methodology and source register</a> for formulas, reference data and limitations.</p></div>
 <div class="wrap crumbs"><a href="/">Home</a> / <a href="/#tools">Tools</a> / City Solar Production Estimator</div>
 
 <div class="wrap layout layout-single">
 <main class="maincol" id="main-content">
 <section class="panel">
-<div class="kicker">Step 1 · Approximate location</div>
-<h2>Select a US city</h2>
+<h2>Step 1: Select a US city</h2>
 <p>Start typing a city name. The state or territory is filled automatically when you select the correct Census place match. If a city name exists in multiple states, choose the right state from the suggestions.</p>
 <div class="calculator" id="locationFields">
   <div class="field full">
@@ -66,7 +65,6 @@
 <div class="btnrow"><button class="btn" id="lookup" data-field-validation-scope="#locationFields" type="button" disabled>Verify selected city</button><span id="locationStatus" class="byline" role="status" aria-live="polite"></span></div>
 <p class="note">The city point is a Census representative location, not a property address.</p>
 <hr style="border:0;border-top:1px solid #e3e9ee;margin:24px 0"/>
-<div class="kicker">Step 2 · PV system assumptions</div>
 <h2>Describe the solar array</h2>
 <p>These are editable model assumptions, not facts inferred from your city. The starting scenario uses a 1 kW DC reference system, 20° tilt, south-facing azimuth and 14% losses so the result can be read as kWh per kW DC. Replace these values with a proposal or roof-plane assumptions when known.</p>
 <div class="calculator" id="arrayFields">
@@ -76,18 +74,14 @@
   <div class="field"><label for="losses">Total system losses (%)</label><input id="losses" data-validation-unit="%" required value="14" type="number" min="0" max="99" step="0.5" placeholder="e.g. 14"/><small>Use a proposal/model value if supplied. Losses can include soiling, shading, wiring, mismatch, availability and other factors. They are not inspected here.</small></div>
 </div>
 <div class="btnrow"><button class="btn" id="estimate" data-field-validation-scope="#arrayFields" type="button" disabled>Model solar production</button><span id="modelStatus" class="byline" role="status" aria-live="polite"></span></div>
-<div class="output" id="result" aria-live="polite" aria-atomic="true"><div class="kicker">PV production estimate</div><div class="big">Waiting for location and inputs</div><p>Find a city, choose a returned Census place, and enter the array assumptions to request a typical-year model.</p></div>
-<p class="note">PVWatts V8 models typical-year production from the selected city point and your system inputs. Roof-level shading, orientation, equipment and actual weather can change production.</p>
-</section>
-<section class="toolbox" style="margin-top:20px">
-<div class="kicker">Step 3 · Utility rate plan (optional)</div><h2 style="color:#10243b;margin:6px 0 8px">Find nearby residential rate-plan records</h2>
+<div class="output" id="result" aria-live="polite" aria-atomic="true"><h2 style="color:#10243b;margin:6px 0 8px">Step 3: Find nearby residential rate-plan records (optional)</h2>
 <p>This optional lookup searches the OpenEI Utility Rate Database for residential rate plans associated with utilities near the selected Census place. A nearby match does not confirm that the utility serves your home and may not reflect its current plan. Compare the utility name, customer charge, import rate, time-of-use rules and export credit with your bill and the utility's current published rate plan before using any rate.</p>
 <div class="btnrow"><button class="btn" id="tariffs" type="button" disabled>Find nearby rate plans</button><span id="tariffStatus" class="byline" role="status" aria-live="polite"></span></div>
 <div id="tariffResults" aria-live="polite"></div>
 
 </section>
 <section class="toolbox" style="margin-top:20px">
-<div class="kicker">Continue your estimate</div><h2 id="continueTitle" style="color:#10243b;margin:6px 0 8px">Use modeled production in the savings calculator</h2>
+<h2 id="continueTitle" style="color:#10243b;margin:6px 0 8px">Use modeled production in the savings calculator</h2>
 <p id="continueDescription">After a production result is generated, you can transfer its annual kWh per DC kW into the separate savings calculator. You will still need your own annual usage, an estimate of how much solar electricity your home uses directly, the utility's import rate and export credit, and an installer quote.</p>
 <div class="btnrow"><a class="btn" id="savingsLink" href="solar-savings" hidden>Use modeled production in savings calculator</a><a class="btn btn-outline" id="panelCountLink" href="solar-panel-count" hidden>Use modeled production in panel-count calculator</a><a class="btn btn-outline" id="combinedLink" href="/#calculator" hidden>Return to combined calculator with city data</a></div>
 </section>
