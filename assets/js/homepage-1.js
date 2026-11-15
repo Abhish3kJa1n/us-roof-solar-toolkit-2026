@@ -20,7 +20,7 @@
       progress.style.width = `${step / 3 * 100}%`;
       document.getElementById("stepProgress").setAttribute("aria-valuenow", String(step));
       document.querySelectorAll("[data-step-label]").forEach(el => { if (Number(el.dataset.stepLabel) === step) el.setAttribute("aria-current", "step"); else el.removeAttribute("aria-current"); });
-      stepCount.textContent = `STEP ${step} OF 3`;
+      stepCount.textContent = `Step ${step} of 3`;
       if (step < 3) document.getElementById('calculator').scrollIntoView({behavior:'smooth', block:'start'});
     }
     function showError(step, message) { const box = document.getElementById(`error${step}`); box.textContent = message; box.classList.add('show'); }
