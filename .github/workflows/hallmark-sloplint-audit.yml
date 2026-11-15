@@ -1,0 +1,69 @@
+name: Hallmark Sloplint audit
+
+on:
+  push:
+    branches:
+      - "audit/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sloplint:
+    name: Official Hallmark static and rendered audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out audited source
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          package-manager-cache: false
+
+      - name: Fetch pinned official Hallmark skill
+        run: |
+          git clone --quiet --depth 1 https://github.com/Nutlope/hallmark.git /tmp/hallmark
+          cd /tmp/hallmark
+          git checkout --quiet 04977e15f3dfd6ee4b74c887dac3eb52665d6c92
+
+      - name: Install isolated render dependencies
+        run: |
+          npm install --prefix /tmp/hallmark-tools --no-save puppeteer-core playwright
+          /tmp/hallmark-tools/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Run official Sloplint across source HTML and CSS
+        shell: bash
+        run: |
+          set -euo pipefail
+          export HALLMARK_PUPPETEER=/tmp/hallmark-tools/node_modules
+          export HALLMARK_CHROME_REAL="$(node -e "process.stdout.write(require('/tmp/hallmark-tools/node_modules/playwright').chromium.executablePath())")"
+          cat > /tmp/chrome-no-sandbox <<'SH'
+          #!/usr/bin/env bash
+          exec "$HALLMARK_CHROME_REAL" --no-sandbox --disable-setuid-sandbox "$@"
+          SH
+          chmod +x /tmp/chrome-no-sandbox
+          export CHROME_PATH=/tmp/chrome-no-sandbox
+          set +e
+          node /tmp/hallmark/skills/hallmark/scripts/sloplint.mjs . --genre editorial --render --json > hallmark-sloplint-report.json
+          lint_status=$?
+          set -e
+          node -e "const r=require('./hallmark-sloplint-report.json'); console.log('HALLMARK_SUMMARY '+JSON.stringify(r.summary)); console.log('HALLMARK_BY_GATE '+JSON.stringify(r.findings.reduce((a,f)=>{const k=f.gate+':'+f.grade;a[k]=(a[k]||0)+1;return a;},{})));"
+          echo "SLoplint process exit: $lint_status (non-zero is expected while findings remain; report retained for remediation)"
+          test -s hallmark-sloplint-report.json
+
+      - name: Retain Sloplint report and rendered screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hallmark-sloplint-audit-current-branch
+          path: |
+            hallmark-sloplint-report.json
+            .hallmark/shots/**
+          if-no-files-found: error
+          retention-days: 7
