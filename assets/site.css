@@ -116,3 +116,6 @@ footer :is(a,button,input,select,textarea,summary):focus-visible,
 .field input,.field select,.field textarea{
   border-color:var(--color-field-border);
 }
+main.wrap > .article > .eyebrow{
+  color:var(--h-color-526577);
+}
