@@ -1,0 +1,97 @@
+name: Hallmark live production audit
+
+on:
+  push:
+    branches:
+      - audit/hallmark-sloplint-live-2026-11-15
+    paths:
+      - .github/workflows/hallmark-live-audit.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hallmark-live-audit
+  cancel-in-progress: false
+
+jobs:
+  sloplint:
+    name: Hallmark sloplint against live production
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out the exact production snapshot
+        uses: actions/checkout@v4
+        with:
+          ref: 9341290193bbedeebd48dd8522bd2337c2814f78
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Chromium and Puppeteer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/hallmark-runner
+          PUPPETEER_CACHE_DIR=/tmp/puppeteer-cache npm install --prefix /tmp/hallmark-runner puppeteer
+          PUPPETEER_CACHE_DIR=/tmp/puppeteer-cache npx --yes --prefix /tmp/hallmark-runner puppeteer browsers install chrome
+          echo "CHROME_PATH=$(PUPPETEER_CACHE_DIR=/tmp/puppeteer-cache node -e "const p=require('/tmp/hallmark-runner/node_modules/puppeteer'); process.stdout.write(p.executablePath())")" >> "$GITHUB_ENV"
+          echo "HALLMARK_PUPPETEER=/tmp/hallmark-runner" >> "$GITHUB_ENV"
+
+      - name: Fetch the official Hallmark skill
+        run: git clone --depth 1 https://github.com/nutlope/hallmark.git /tmp/hallmark
+
+      - name: Run official static and rendered sloplint
+        shell: bash
+        run: |
+          set +e
+          node /tmp/hallmark/skills/hallmark/scripts/sloplint.mjs \
+            index.html about.html contact.html editorial-policy.html electricity-prices-by-state.html methodology.html privacy.html sitemap.html terms.html 404.html \
+            calculators/location-solar.html calculators/roof-area.html calculators/roof-replacement-cost.html calculators/solar-panel-count.html calculators/solar-savings.html \
+            guides/are-solar-panels-worth-it.html guides/metal-roof-cost.html guides/metal-roof-vs-asphalt-shingles.html guides/roof-before-solar.html guides/roof-life-by-material.html guides/roof-repair-cost.html guides/roof-repair-vs-replacement.html guides/roof-replacement-cost-factors.html guides/roof-replacement-cost.html guides/solar-installation-cost.html guides/solar-loan-vs-lease-vs-ppa.html guides/understanding-solar-bill-savings.html \
+            assets/site.css --genre editorial --render --json \
+            --url https://getroofsolarcalculator.online/ \
+            --url https://getroofsolarcalculator.online/about.html \
+            --url https://getroofsolarcalculator.online/contact.html \
+            --url https://getroofsolarcalculator.online/editorial-policy.html \
+            --url https://getroofsolarcalculator.online/electricity-prices-by-state.html \
+            --url https://getroofsolarcalculator.online/methodology.html \
+            --url https://getroofsolarcalculator.online/privacy.html \
+            --url https://getroofsolarcalculator.online/sitemap.html \
+            --url https://getroofsolarcalculator.online/terms.html \
+            --url https://getroofsolarcalculator.online/404.html \
+            --url https://getroofsolarcalculator.online/calculators/location-solar.html \
+            --url https://getroofsolarcalculator.online/calculators/roof-area.html \
+            --url https://getroofsolarcalculator.online/calculators/roof-replacement-cost.html \
+            --url https://getroofsolarcalculator.online/calculators/solar-panel-count.html \
+            --url https://getroofsolarcalculator.online/calculators/solar-savings.html \
+            --url https://getroofsolarcalculator.online/guides/are-solar-panels-worth-it.html \
+            --url https://getroofsolarcalculator.online/guides/metal-roof-cost.html \
+            --url https://getroofsolarcalculator.online/guides/metal-roof-vs-asphalt-shingles.html \
+            --url https://getroofsolarcalculator.online/guides/roof-before-solar.html \
+            --url https://getroofsolarcalculator.online/guides/roof-life-by-material.html \
+            --url https://getroofsolarcalculator.online/guides/roof-repair-cost.html \
+            --url https://getroofsolarcalculator.online/guides/roof-repair-vs-replacement.html \
+            --url https://getroofsolarcalculator.online/guides/roof-replacement-cost-factors.html \
+            --url https://getroofsolarcalculator.online/guides/roof-replacement-cost.html \
+            --url https://getroofsolarcalculator.online/guides/solar-installation-cost.html \
+            --url https://getroofsolarcalculator.online/guides/solar-loan-vs-lease-vs-ppa.html \
+            --url https://getroofsolarcalculator.online/guides/understanding-solar-bill-savings.html \
+            > hallmark-sloplint-report.json
+          status=$?
+          echo "$status" > hallmark-sloplint-exit-code.txt
+          exit 0
+
+      - name: Upload report and rendered screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hallmark-live-sloplint-production-9341290
+          path: |
+            hallmark-sloplint-report.json
+            hallmark-sloplint-exit-code.txt
+            .hallmark/shots/
+          if-no-files-found: warn
+          retention-days: 14
