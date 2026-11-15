@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "audit/**"
+      - "content/**"
   pull_request:
     branches:
       - main
