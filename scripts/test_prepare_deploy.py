@@ -184,8 +184,8 @@ def main() -> int:
         fail("prepare_deploy.sh failed while restoring Preview test fixture")
 
     html_pages = sorted(DIST.rglob("*.html"))
-    if len(html_pages) != 30:
-        fail(f"expected 30 public HTML pages, found {len(html_pages)}")
+    if len(html_pages) != 31:
+        fail(f"expected 31 public HTML pages, found {len(html_pages)}")
     if not (DIST / "sitemap.html").is_file():
         fail("visitor-facing HTML sitemap is missing from the deployment output")
     if not (DIST / "contact.html").is_file():
