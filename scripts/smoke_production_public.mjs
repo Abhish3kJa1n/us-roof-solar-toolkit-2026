@@ -101,7 +101,8 @@ const sitemap = await getText(PAGES_ORIGIN + "/sitemap.xml", "application/xml,te
 assert.equal(sitemap.response.status, 200, "Production /sitemap.xml must be published");
 assert.match(sitemap.body, /<urlset\b/i);
 const urls = [...sitemap.body.matchAll(/<loc>(https:\/\/[^<]+)<\/loc>/gi)].map((match) => match[1].trim());
-assert.equal(urls.length, 27, "Sitemap must contain the 26 existing public URLs plus the HTML sitemap");
+assert.ok(urls.length >= 28, "Sitemap must contain at least 28 public URLs including the HTML sitemap");
+assert.equal(new Set(urls).size, urls.length, "Sitemap URLs must be unique");
 assert.ok(urls.every((url) => url.startsWith(APEX + "/")), "Sitemap URLs must use the canonical apex domain");
 assert.ok(!urls.some((url) => /404\.html?$/i.test(url)));
 
