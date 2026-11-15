@@ -1,5 +1,5 @@
 name: Real-browser Preview QA
-# [browser-qa] Verify Hallmark dark-surface focus-ring remediation in isolated preview
+# [browser-qa] Verify Hallmark field-border and legal-metadata contrast remediation in isolated preview
 # [browser-qa] Isolated visual verification for Hallmark remediation
 
 on:
