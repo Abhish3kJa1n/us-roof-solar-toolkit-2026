@@ -142,8 +142,8 @@ def main() -> int:
         for node in sitemap_root.findall("sm:url/sm:loc", namespace)
         if node.text and node.text.strip()
     ]
-    if len(sitemap_urls) != 26 or len(set(sitemap_urls)) != 26:
-        fail(f"Production sitemap must contain 26 unique URLs; found {len(sitemap_urls)}")
+    if len(sitemap_urls) != 27 or len(set(sitemap_urls)) != 27:
+        fail(f"Production sitemap must contain 27 unique URLs; found {len(sitemap_urls)}")
     for url in sitemap_urls:
         parsed = urlsplit(url)
         if parsed.scheme != "https" or parsed.netloc != "getroofsolarcalculator.online" or parsed.query or parsed.fragment:
@@ -174,8 +174,8 @@ def main() -> int:
         fail("prepare_deploy.sh failed while restoring Preview test fixture")
 
     html_pages = sorted(DIST.rglob("*.html"))
-    if len(html_pages) != 27:
-        fail(f"expected 27 public HTML pages, found {len(html_pages)}")
+    if len(html_pages) != 28:
+        fail(f"expected 28 public HTML pages, found {len(html_pages)}")
     if not (DIST / "sitemap.html").is_file():
         fail("visitor-facing HTML sitemap is missing from the deployment output")
     if not (DIST / "contact.html").is_file():
