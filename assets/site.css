@@ -98,11 +98,20 @@ button:disabled{opacity:.55;cursor:not-allowed}
   --color-focus:var(--h-color-10243b);
   --color-focus-gap:var(--h-color-fff);
   --color-field-border:var(--h-color-7f91a2);
+  --color-focus-on-dark:var(--h-color-f3f6f8);
+  --color-focus-on-dark-gap:var(--h-color-10243b);
 }
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{
   outline:2px solid var(--color-focus);
   outline-offset:3px;
   box-shadow:0 0 0 2px var(--color-focus-gap);
+}
+.footer :is(a,button,input,select,textarea,summary):focus-visible,
+footer :is(a,button,input,select,textarea,summary):focus-visible,
+.hero :is(a,button,input,select,textarea,summary):focus-visible,
+.page-hero :is(a,button,input,select,textarea,summary):focus-visible{
+  outline-color:var(--color-focus-on-dark);
+  box-shadow:0 0 0 2px var(--color-focus-on-dark-gap);
 }
 .field input,.field select,.field textarea{
   border-color:var(--color-field-border);
