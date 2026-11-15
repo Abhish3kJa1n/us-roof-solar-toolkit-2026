@@ -91,11 +91,16 @@ button:disabled{opacity:.55;cursor:not-allowed}
 @media(max-width:600px){.roof-cost-step{padding:13px}.roof-reference-action{align-items:flex-start;flex-direction:column}.roof-reference-action .btn{width:100%}.roof-cost-actions .btn{flex:1}}
 
 /* Verified accessibility fixes from the isolated Hallmark audit. */
+:root{
+  --color-focus:#10243b;
+  --color-focus-gap:#fff;
+  --color-field-border:#7f91a2;
+}
 a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible{
-  outline:2px solid #10243b;
+  outline:2px solid var(--color-focus);
   outline-offset:3px;
-  box-shadow:0 0 0 2px #fff;
+  box-shadow:0 0 0 2px var(--color-focus-gap);
 }
 .field input,.field select,.field textarea{
-  border-color:#7f91a2;
+  border-color:var(--color-field-border);
 }
