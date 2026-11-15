@@ -40,8 +40,8 @@ def main() -> int:
         base = Path(tmp)
         project = clone(base / "site")
         html_files = sorted(project.rglob("*.html"))
-        if len(html_files) != 27:
-            raise AssertionError(f"Expected 27 HTML pages including 404, found {len(html_files)}")
+        if len(html_files) != 28:
+            raise AssertionError(f"Expected 28 HTML pages including 404, found {len(html_files)}")
 
         # Initial safe setup: canonical tags are written, index is blocked, no sitemap.
         run(project, "--domain", "https://www.example.com")
