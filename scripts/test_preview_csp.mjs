@@ -63,7 +63,7 @@ assert.ok(middleware.includes('!slug.includes("/")'), "guide eligibility must no
 assert.ok(middleware.includes("return isGuideDocumentPath(pathname) || isEiaReferencePath(pathname);"), "only guide and EIA reference pages may be ad eligible");
 
 const htmlFiles = walk(root);
-assert.equal(htmlFiles.length, 28, "expected all 28 public HTML documents");
+assert.equal(htmlFiles.length, 29, "expected all 29 public HTML documents");
 for (const file of htmlFiles) {
   const html = readFileSync(file, "utf8");
   const rel = relative(root, file);

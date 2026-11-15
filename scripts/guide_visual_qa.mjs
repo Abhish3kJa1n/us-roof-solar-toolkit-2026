@@ -15,7 +15,7 @@ const guides = [
   'are-solar-panels-worth-it','metal-roof-cost','metal-roof-vs-asphalt-shingles','roof-before-solar',
   'roof-life-by-material','roof-repair-cost','roof-repair-vs-replacement','roof-replacement-cost-factors',
   'roof-replacement-cost','solar-installation-cost','solar-loan-vs-lease-vs-ppa','understanding-solar-bill-savings',
-  'solar-panels-power-outage'
+  'solar-panels-power-outage','solar-panel-warranties'
 ];
 assert.ok(base, 'PREVIEW_BASE_URL is required');
 fs.mkdirSync(out,{recursive:true});
@@ -41,6 +41,13 @@ try {
     const bodyText=await page.locator('body').innerText();
     assert.match(bodyText,/Here is the real-world catch:/,route+' missing required Pro Tip lead-in');
     assert.match(bodyText,/My take:/,route+' missing editorial takeaway');
+    if (['solar-panels-power-outage','solar-panel-warranties'].includes(slug)) {
+      assert.equal(await page.locator('article p').filter({hasText:'Related reading:'}).count(),0,route+' must not repeat links already shown in the related-guides cards');
+      assert.equal(await page.locator('section.toolbox .kicker').filter({hasText:'Related homeowner guides'}).count(),1,route+' must have exactly one related-guides section');
+      const relatedHrefs=await page.locator('section.toolbox .related a').evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href')));
+      assert.ok(relatedHrefs.length>0,route+' related-guides cards are missing');
+      assert.ok(relatedHrefs.every(href=>href && !href.includes(slug)),route+' related-guides cards must not link to the current guide');
+    }
     for (const width of [1365,768,390]) {
       await page.setViewportSize({width,height:900});
       await page.waitForTimeout(100);
@@ -72,5 +79,5 @@ try {
     console.log('GUIDE_VISUAL_QA_PASS '+route+' | '+h1);
   }
   assert.equal(pageErrors.length,0,'Uncaught page errors: '+JSON.stringify(pageErrors));
-  console.log('ALL 13 GUIDE PAGES PASSED at desktop, 768px tablet and 390px mobile. 39 full-page screenshots captured.');
+  console.log('ALL 14 GUIDE PAGES PASSED at desktop, 768px tablet and 390px mobile. 42 full-page screenshots captured.');
 } finally { await browser.close(); }

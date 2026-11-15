@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "audit/**"
+      - "content/**"
   pull_request:
     branches:
       - main
@@ -40,15 +41,20 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
         run: |
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            slug="audit-guarded-adsense-bootst"
+            preview_host="audit-guarded-adsense-bootst.roof-solar-toolkit-2026.pages.dev"
+          elif [ "$REF_NAME" = "content/solar-panel-warranties-clean-2026-11-15" ]; then
+            # Cloudflare assigned a collision-safe alias; the unsuffixed branch alias
+            # still points at an older deployment and must not be used for this PR.
+            preview_host="content-solar-panel-warranti-auwy.roof-solar-toolkit-2026.pages.dev"
           else
             slug="$(printf '%s' "$REF_NAME" | tr '[:upper:]' '[:lower:]' | sed 's#[^a-z0-9-]#-#g' | cut -c1-28 | sed 's/-*$//')"
+            if [ -z "$slug" ]; then
+              echo "Could not derive a Cloudflare Pages Preview alias from branch: $REF_NAME" >&2
+              exit 1
+            fi
+            preview_host="$slug.roof-solar-toolkit-2026.pages.dev"
           fi
-          if [ -z "$slug" ]; then
-            echo "Could not derive a Cloudflare Pages Preview alias from branch: $REF_NAME" >&2
-            exit 1
-          fi
-          echo "base_url=https://${slug}.roof-solar-toolkit-2026.pages.dev" >> "$GITHUB_OUTPUT"
+          echo "base_url=https://$preview_host" >> "$GITHUB_OUTPUT"
       - name: Run real-browser Preview checks
         run: node scripts/browser_preview_smoke.mjs
         env:
@@ -57,7 +63,7 @@ jobs:
           PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
           AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
           QA_SCREENSHOT_DIR: browser-qa-output
-      - name: Capture and audit all 13 homeowner guide pages at desktop, tablet and mobile
+      - name: Capture and audit all 14 homeowner guide pages at desktop, tablet and mobile
         run: node scripts/guide_visual_qa.mjs
         env:
           PREVIEW_BASE_URL: ${{ steps.preview.outputs.base_url }}
