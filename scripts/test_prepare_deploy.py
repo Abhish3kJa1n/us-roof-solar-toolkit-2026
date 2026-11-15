@@ -161,6 +161,16 @@ def main() -> int:
             fail(f"Sitemap URL must match exactly one page canonical: {url}")
         if page_parser.og_urls and page_parser.og_urls != [url]:
             fail(f"Sitemap URL must match the page's Open Graph URL when present: {url}")
+    html_sitemap_path = DIST / "sitemap.html"
+    if not html_sitemap_path.is_file():
+        fail("visitor-facing HTML sitemap is missing from the deployment output")
+    html_sitemap = html_sitemap_path.read_text(encoding="utf-8")
+    html_sitemap_hrefs = set(re.findall(r'href=["\\']([^"\\']+)["\\']', html_sitemap))
+    for url in sitemap_urls:
+        path = urlsplit(url).path
+        if path != "/sitemap" and path not in html_sitemap_hrefs and url not in html_sitemap_hrefs:
+            fail(f"visitor-facing HTML sitemap must link to every XML sitemap URL: {path}")
+
     worker_source = (ROOT / "workers" / "seo-sitemap" / "worker.js").read_text(encoding="utf-8")
     if "const PAGES" in worker_source or 'ORIGIN + "/sitemap.xml"' not in worker_source:
         fail("SEO Worker must consume the repository-built sitemap instead of maintaining a duplicate URL inventory")
