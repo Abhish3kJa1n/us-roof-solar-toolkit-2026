@@ -208,7 +208,7 @@ try {
   assert.equal(await page.locator('#solarCostAssumptions').evaluate(node => node.open), false, 'solar cost assumptions should be collapsed initially');
   assert.equal(await page.locator('#tools .resource-card').count(), 5, 'homepage tool directory should list only the five specialist calculators');
   const guideHrefs = await page.locator('#guides .guide-list a').evaluateAll(nodes => nodes.map(node => node.getAttribute('href')));
-  assert.equal(guideHrefs.length, 14, 'homepage should retain all fourteen distinct homeowner guides');
+  assert.equal(guideHrefs.length, 15, 'homepage should retain all fifteen distinct homeowner guides');
   assert.equal(new Set(guideHrefs).size, guideHrefs.length, 'homepage guide links must not be duplicated');
 
   // Roof-price defaults must remain blank until the visitor explicitly requests the national reference.

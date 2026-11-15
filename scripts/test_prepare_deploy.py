@@ -142,8 +142,8 @@ def main() -> int:
         for node in sitemap_root.findall("sm:url/sm:loc", namespace)
         if node.text and node.text.strip()
     ]
-    if len(sitemap_urls) != 28 or len(set(sitemap_urls)) != 28:
-        fail(f"Production sitemap must contain 28 unique URLs; found {len(sitemap_urls)}")
+    if len(sitemap_urls) != 29 or len(set(sitemap_urls)) != 29:
+        fail(f"Production sitemap must contain 29 unique URLs; found {len(sitemap_urls)}")
     for url in sitemap_urls:
         parsed = urlsplit(url)
         if parsed.scheme != "https" or parsed.netloc != "getroofsolarcalculator.online" or parsed.query or parsed.fragment:
@@ -161,6 +161,16 @@ def main() -> int:
             fail(f"Sitemap URL must match exactly one page canonical: {url}")
         if page_parser.og_urls and page_parser.og_urls != [url]:
             fail(f"Sitemap URL must match the page's Open Graph URL when present: {url}")
+    html_sitemap_path = DIST / "sitemap.html"
+    if not html_sitemap_path.is_file():
+        fail("visitor-facing HTML sitemap is missing from the deployment output")
+    html_sitemap = html_sitemap_path.read_text(encoding="utf-8")
+    html_sitemap_hrefs = set(re.findall(r"""href=["']([^"']+)["']""", html_sitemap))
+    for url in sitemap_urls:
+        path = urlsplit(url).path
+        if path != "/sitemap" and path not in html_sitemap_hrefs and url not in html_sitemap_hrefs:
+            fail(f"visitor-facing HTML sitemap must link to every XML sitemap URL: {path}")
+
     worker_source = (ROOT / "workers" / "seo-sitemap" / "worker.js").read_text(encoding="utf-8")
     if "const PAGES" in worker_source or 'ORIGIN + "/sitemap.xml"' not in worker_source:
         fail("SEO Worker must consume the repository-built sitemap instead of maintaining a duplicate URL inventory")
@@ -174,8 +184,8 @@ def main() -> int:
         fail("prepare_deploy.sh failed while restoring Preview test fixture")
 
     html_pages = sorted(DIST.rglob("*.html"))
-    if len(html_pages) != 29:
-        fail(f"expected 29 public HTML pages, found {len(html_pages)}")
+    if len(html_pages) != 30:
+        fail(f"expected 30 public HTML pages, found {len(html_pages)}")
     if not (DIST / "sitemap.html").is_file():
         fail("visitor-facing HTML sitemap is missing from the deployment output")
     if not (DIST / "contact.html").is_file():
