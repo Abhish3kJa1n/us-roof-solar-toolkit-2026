@@ -42,7 +42,13 @@ jobs:
         run: |
           set -euo pipefail
           export HALLMARK_PUPPETEER=/tmp/hallmark-tools/node_modules
-          export CHROME_PATH="$(node -e "process.stdout.write(require('/tmp/hallmark-tools/node_modules/playwright').chromium.executablePath())")"
+          export HALLMARK_CHROME_REAL="$(node -e "process.stdout.write(require('/tmp/hallmark-tools/node_modules/playwright').chromium.executablePath())")"
+          cat > /tmp/chrome-no-sandbox <<'SH'
+          #!/usr/bin/env bash
+          exec "$HALLMARK_CHROME_REAL" --no-sandbox --disable-setuid-sandbox "$@"
+          SH
+          chmod +x /tmp/chrome-no-sandbox
+          export CHROME_PATH=/tmp/chrome-no-sandbox
           set +e
           node /tmp/hallmark/skills/hallmark/scripts/sloplint.mjs . --genre editorial --render --json > hallmark-sloplint-report.json
           lint_status=$?
