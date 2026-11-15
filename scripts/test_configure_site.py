@@ -99,8 +99,8 @@ def main() -> int:
         # Indexing is opt-in and generates a complete, current list without fake lastmod dates.
         run(project, "--domain", "https://www.example.com", "--enable-indexing", "--readiness-file", readiness_path.name)
         sitemap = (project / "sitemap.xml").read_text(encoding="utf-8")
-        if sitemap.count("<url><loc>") != 28:
-            raise AssertionError("Sitemap must contain 28 public URLs and exclude 404")
+        if sitemap.count("<url><loc>") != 29:
+            raise AssertionError("Sitemap must contain 29 public URLs and exclude 404")
         if "404.html" in sitemap:
             raise AssertionError("Sitemap must never include the 404 page")
         if '<meta name="robots" content="noindex,follow" />' not in (project / "404.html").read_text(encoding="utf-8"):
