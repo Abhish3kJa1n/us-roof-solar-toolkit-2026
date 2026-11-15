@@ -1,4 +1,5 @@
 name: Real-browser Preview QA
+# [browser-qa] Verify Hallmark sentence-case typography and label cleanup
 
 on:
   push:
