@@ -22,6 +22,9 @@ const previewBeaconCorsErrors = [];
 const previewBeaconRequestFailures = [];
 let previewBeaconGenericFailures = 0;
 const beaconScriptResponses = [];
+let expected404Navigation = false;
+let expected404ConsoleErrors = 0;
+let expected404Responses = 0;
 const previewOrigin = new URL(base).origin;
 const results = [];
 
@@ -87,6 +90,10 @@ page.on('pageerror', error => browserErrors.push(error.message));
 page.on('console', message => {
   if (message.type() !== 'error') return;
   const text = message.text();
+  if (expected404Navigation && text === 'Failed to load resource: the server responded with a status of 404 ()') {
+    expected404ConsoleErrors += 1;
+    return;
+  }
   // Cloudflare validates Web Analytics against the registered hostname. This
   // branch runs on a pages.dev alias, not the registered production hostname.
   const previewAnalyticsCors = text.includes('https://cloudflareinsights.com/cdn-cgi/rum')
@@ -103,6 +110,13 @@ page.on('console', message => {
   browserErrors.push(text);
 });
 page.on('response', response => {
+  if (response.status() >= 400) {
+    if (expected404Navigation && response.status() === 404 && response.request().isNavigationRequest()) {
+      expected404Responses += 1;
+    } else {
+      requestFailures.push('HTTP ' + response.status() + ' ' + response.url());
+    }
+  }
   if (response.url().startsWith('https://static.cloudflareinsights.com/beacon.min.js')) {
     beaconScriptResponses.push({ url: response.url(), status: response.status() });
   }
@@ -609,12 +623,15 @@ try {
   results.push('standalone solar savings calculation and blank-price behavior: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-results.png'), fullPage: true });
 
+  expected404Navigation = true;
   const missingResponse = await page.goto(base + '/__google-tag-browser-404-check-20261118', { waitUntil: 'domcontentloaded', timeout: 60000 });
   assert.ok(missingResponse, 'No HTTP response for the custom 404 route');
+  await page.waitForLoadState('load');
+  expected404Navigation = false;
+  assert.equal(expected404Responses, 1, 'Only the expected main-document 404 response may be returned during the custom 404 check');
   assert.equal(missingResponse.status(), 404, 'Unknown Preview route must return HTTP 404');
   assert.match(await page.locator('main h1').innerText(), /We could not find that page/i, 'Custom 404 content must render');
   assert.equal(await page.locator('script[src*="google-tag-bootstrap-1.js"]').count(), 1, 'Custom 404 must load its first-party analytics bootstrap');
-  await page.waitForLoadState('load');
   assert.equal(await page.locator('script[src*="googletagmanager.com/gtm.js?id=GTM-5X5DFWMW"]').count(), 0, 'Preview 404 must not load Production Google Analytics');
   results.push('custom 404 renders and keeps Production Google Analytics disabled on Preview: PASS');
 
