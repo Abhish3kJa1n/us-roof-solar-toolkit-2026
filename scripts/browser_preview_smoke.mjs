@@ -135,9 +135,15 @@ async function open(pathname) {
     const nonceMatch = scriptDirective && scriptDirective.match(/'nonce-([^']+)'/);
     assert.ok(nonceMatch && nonceValues.length > 0 && nonceValues.every(value => value === nonceMatch[1]), pathname + ' all scripts must carry the matching nonce');
   } else {
-    assert.match(csp, /script-src 'self'/, pathname + ' must retain current enforced CSP');
+    assert.match(csp, /script-src [^;]*'self'/, pathname + ' must retain same-origin script execution');
+    assert.match(csp, /https:\/\/www\.googletagmanager\.com/, pathname + ' must allow the Google tag script origin');
+    assert.match(csp, /https:\/\/\*\.google-analytics\.com/, pathname + ' must allow Google Analytics measurement endpoints');
+    const scriptDirective = csp.split(';').map(value => value.trim()).find(value => value.startsWith('script-src '));
+    const nonceMatch = scriptDirective && scriptDirective.match(/'nonce-([^']+)'/);
+    assert.ok(nonceMatch && nonceValues.length > 0 && nonceValues.every(value => value === nonceMatch[1]), pathname + ' all scripts must carry the matching nonce');
   }
   assert.equal(await page.locator('script[src*="adsbygoogle.js"]').count(), 0, pathname + ' Preview must never load AdSense');
+  assert.equal(await page.locator('script[src*="googletagmanager.com/gtm.js?id=GTM-5X5DFWMW"]').count(), 0, pathname + ' Preview must never load the Production Google Analytics tag');
   const robots = await page.locator('meta[name="robots"]').getAttribute('content');
   assert.match((robots || '').toLowerCase(), /noindex/, pathname + ' meta robots must remain noindex');
   await page.locator('body').waitFor({ state: 'visible' });
