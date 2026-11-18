@@ -69,6 +69,7 @@ assert.ok(middleware.includes("const loadGoogleTag = isProductionHost"), "Google
 assert.ok(!middleware.includes("isNotFound"), "Cloudflare Pages static 404 fallback must use its separate static bootstrap");
 assert.ok(notFoundHtml.includes('assets/js/google-tag-bootstrap-1.js'), "custom 404 page must load the first-party analytics bootstrap");
 assert.ok(notFoundBootstrap.includes("GTM-5X5DFWMW"), "404 bootstrap must use the exact Google tag ID from the owner screenshot");
+assert.ok(notFoundBootstrap.includes("document.querySelector"), "404 bootstrap must avoid double-loading the tag on a direct /404.html request");
 assert.ok(notFoundBootstrap.includes("getroofsolarcalculator.online"), "404 bootstrap must restrict loading to the production custom domains");
 assert.ok(notFoundBootstrap.includes("window.location.protocol !== \"https:\""), "404 bootstrap must require HTTPS");
 assert.ok(cspSource.includes("https://static.cloudflareinsights.com/beacon.min.js"), "shared CSP helper must allow the exact Cloudflare beacon script URL");
