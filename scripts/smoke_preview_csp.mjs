@@ -29,19 +29,21 @@ async function getReady() {
   throw new Error(`Preview did not become ready: ${lastError?.message || "unknown error"}`);
 }
 
-function readNonce(response, html, path) {
-  assert.equal(response.status, 200, `${path}: expected HTTP 200`);
+function readNonce(response, html, path, expectedStatus = 200) {
+  assert.equal(response.status, expectedStatus, `${path}: expected HTTP ${expectedStatus}`);
   assert.match(response.headers.get("content-type") || "", /^text\/html\b/i, `${path}: expected HTML`);
   const enforced = response.headers.get("content-security-policy") || "";
   const reportOnly = response.headers.get("content-security-policy-report-only") || "";
   assert.ok(reportOnly.includes("'strict-dynamic'"), `${path}: report-only CSP header missing`);
   const eligible = path.startsWith("/guides/") || path === "/electricity-prices-by-state" || path === "/electricity-prices-by-state.html";
-  const policy = eligible ? enforced : reportOnly;
+  const policy = enforced;
   if (eligible) {
     assert.ok(enforced.includes("'strict-dynamic'"), `${path}: eligible pages must enforce strict nonce CSP`);
     assert.ok(enforced.includes("base-uri 'none'"), `${path}: strict CSP base-uri restriction missing`);
   } else {
-    assert.ok(enforced.includes("script-src 'self'"), `${path}: noneligible pages must retain existing CSP`);
+    assert.ok(enforced.includes("'self'"), `${path}: noneligible pages must retain same-origin script execution`);
+    assert.ok(enforced.includes("https://www.googletagmanager.com"), `${path}: Google tag script must be CSP-allowlisted`);
+    assert.ok(enforced.includes("https://*.google-analytics.com"), `${path}: Google Analytics endpoints must be CSP-allowlisted`);
   }
   const nonceMatch = policy.match(/'nonce-([A-Za-z0-9+/]{22}==)'/);
   assert.ok(nonceMatch, `${path}: CSP nonce missing`);
@@ -57,6 +59,7 @@ function readNonce(response, html, path) {
   assert.equal(response.headers.get("x-frame-options"), "DENY");
   assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
   assert.ok(!/adsbygoogle\.js/i.test(html), `${path}: Preview must never load AdSense`);
+  assert.ok(!/gtm\.js\?id=GTM-5X5DFWMW/i.test(html), `${path}: Preview must not send test traffic to Production Google Analytics`);
   return nonce;
 }
 
@@ -82,6 +85,24 @@ for (const path of [
     `${path}: Pages should redirect .html to its extensionless canonical path`,
   );
 }
+
+const missingPath = "/__google-tag-preview-404-check-20261118";
+const missingPage = await get(missingPath);
+const missingHtml = await missingPage.text();
+assert.equal(missingPage.status, 404, "unknown Preview route must return HTTP 404");
+assert.match(missingPage.headers.get("content-type") || "", /^text\/html\b/i, "404 route must return HTML");
+assert.match(missingPage.headers.get("x-robots-tag") || "", /noindex/i, "404 fallback must stay noindex");
+assert.match(missingPage.headers.get("content-security-policy") || "", /https:\/\/www\.googletagmanager\.com/, "static 404 CSP must allow the Google tag script origin");
+assert.match(missingHtml, /We could not find that page/i, "404 route must return the custom not-found page");
+assert.match(missingHtml, /assets\/js\/google-tag-bootstrap-1\.js/, "404 route must load the first-party bootstrap");
+assert.ok(!/googletagmanager\.com\/gtm\.js\?id=GTM-5X5DFWMW/i.test(missingHtml), "Preview 404 HTML must not contain the Production Google tag loader");
+const notFoundLoaderResponse = await fetch(new URL("/assets/js/google-tag-bootstrap-1.js", base), {
+  headers: { "Cache-Control": "no-cache" },
+});
+assert.equal(notFoundLoaderResponse.status, 200, "404 analytics bootstrap must be served as a first-party asset");
+const notFoundLoader = await notFoundLoaderResponse.text();
+assert.ok(notFoundLoader.includes("GTM-5X5DFWMW"), "404 bootstrap must use the requested tag ID");
+assert.ok(notFoundLoader.includes("www.getroofsolarcalculator.online"), "404 bootstrap must restrict itself to the production hostnames");
 
 const secondHome = await get("/");
 const secondNonce = readNonce(secondHome, await secondHome.text(), "/ (second request)");

@@ -125,6 +125,13 @@ privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
     "not currently displaying advertising or loading an adsense ad-serving script",
     "cloudflare web analytics",
+    "google analytics website measurement",
+    "gtm-5x5dfwmw",
+    "approximate geolocation",
+    "browser and device information",
+    "first-party cookie named",
+    "does not intentionally attach calculator values",
+    "does not include a visitor-facing analytics consent banner or google consent mode",
     "browser performance timing metrics",
     "does not collect or use visitors' personal data",
     "or track individual end users across customers' internet properties",
@@ -174,5 +181,5 @@ print(f"PASS {len(pages)} HTML pages have no form submission endpoint, no inline
 print(f"PASS JS assets contain no localStorage, cookies or IndexedDB; only the combined estimator uses disclosed, tab-scoped sessionStorage for the city lookup handoff, with a one-hour restoration limit and no identifying fields. API requests do not send household calculator inputs.")
 print("PASS literal defaults are limited to the four editable PVWatts reference-model assumptions and the source-labelled $2.62/W national solar price reference. The combined calculator may load disclosed, editable national roof/solar references at runtime; household consumption, actual bill usage, self-consumption and export credit remain visitor-specific and unprefilled.")
 print("PASS README and methodology contain no obsolete 50% self-use or blank-export-as-zero claim.")
-print("PASS no ad-serving or analytics script is embedded in repository HTML source; Cloudflare project-level Web Analytics configuration is disclosed separately and live beacon execution remains unverified.")
+print("PASS no analytics or ad-serving script is embedded in static HTML; the nonce-protected Google tag is injected only by production middleware, and the Privacy Notice discloses Google Analytics collection separately from Cloudflare Web Analytics.")
 print("LIMIT: static source inspection does not detect host-level logs, server/CDN processing, browser extensions or third-party scripts added after deployment.")
