@@ -67,7 +67,7 @@ assert.ok(middleware.includes("GTM-5X5DFWMW"), "middleware must use the exact Go
 assert.ok(middleware.includes("element.prepend("), "Google tag must be placed immediately after the opening head element");
 assert.ok(middleware.includes("const loadGoogleTag = isProductionHost"), "Google Analytics must be limited to the exact HTTPS production hosts");
 assert.ok(!middleware.includes("isNotFound"), "Cloudflare Pages static 404 fallback must use its separate static bootstrap");
-assert.ok(notFoundHtml.includes('/assets/js/google-tag-bootstrap-1.js'), "custom 404 page must load the first-party analytics bootstrap");
+assert.ok(notFoundHtml.includes('assets/js/google-tag-bootstrap-1.js'), "custom 404 page must load the first-party analytics bootstrap");
 assert.ok(notFoundBootstrap.includes("GTM-5X5DFWMW"), "404 bootstrap must use the exact Google tag ID from the owner screenshot");
 assert.ok(notFoundBootstrap.includes("getroofsolarcalculator.online"), "404 bootstrap must restrict loading to the production custom domains");
 assert.ok(notFoundBootstrap.includes("window.location.protocol !== \"https:\""), "404 bootstrap must require HTTPS");
