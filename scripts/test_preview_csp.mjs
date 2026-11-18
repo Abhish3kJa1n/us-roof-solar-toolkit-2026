@@ -56,6 +56,7 @@ assert.ok(staticHeaders.includes("https://*.google-analytics.com"), "static CSP 
 assert.ok(staticHeaders.includes("connect-src 'self' https://cloudflareinsights.com"), "static CSP must allow same-origin and Cloudflare telemetry destinations");
 
 const middleware = readFileSync(join(root, "functions/_middleware.js"), "utf8");
+const cspSource = readFileSync(join(root, "functions/_shared/csp.mjs"), "utf8");
 assert.ok(middleware.includes('url.pathname.startsWith("/api/")'), "API routes must bypass HTML rewriting");
 assert.ok(middleware.includes('new HTMLRewriter()'), "Preview HTML must be rewritten by HTMLRewriter");
 assert.ok(middleware.includes('element.setAttribute("nonce", nonce)'), "every script tag must receive the generated nonce");
@@ -64,7 +65,7 @@ assert.ok(middleware.includes("GTM-5X5DFWMW"), "middleware must use the exact Go
 assert.ok(middleware.includes("element.prepend("), "Google tag must be placed immediately after the opening head element");
 assert.ok(middleware.includes("const loadGoogleTag = isProductionHost"), "Google Analytics must be limited to the exact HTTPS production hosts");
 assert.ok(middleware.includes("const isNotFound = response.status === 404"), "HTML 404 responses must be nonce-protected and receive the Google tag on production");
-assert.ok(middleware.includes("https://static.cloudflareinsights.com/beacon.min.js"), "middleware CSP must allow the exact Cloudflare beacon script URL");
+assert.ok(cspSource.includes("https://static.cloudflareinsights.com/beacon.min.js"), "shared CSP helper must allow the exact Cloudflare beacon script URL");
 assert.ok(middleware.includes("https://*.google-analytics.com"), "middleware CSP must allow Google Analytics measurement endpoints");
 assert.ok(middleware.includes("connect-src 'self' https://cloudflareinsights.com"), "middleware CSP must allow Cloudflare telemetry destinations");
 assert.ok(middleware.includes('headers.set("Content-Security-Policy-Report-Only"'), "candidate policy must be report-only");
