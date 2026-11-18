@@ -39,9 +39,7 @@ export async function onRequest(context) {
 
   const response = await context.next();
   const contentType = response.headers.get("Content-Type") || "";
-  const isNotFound = response.status === 404;
-  const isHtmlPage = response.status >= 200 && response.status < 300;
-  if (!/^text\/html(?:\s*;|$)/i.test(contentType) || (!isHtmlPage && !isNotFound)) return response;
+  if (!/^text\/html(?:\s*;|$)/i.test(contentType) || response.status < 200 || response.status >= 300) return response;
 
   const nonce = createNonce();
   const eligible = isAdEligiblePath(url.pathname);
@@ -79,7 +77,7 @@ export async function onRequest(context) {
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
   headers.set("Content-Security-Policy", eligible ? buildStrictCsp(nonce) : buildStandardEnforcedCsp(nonce));
   headers.set("Content-Security-Policy-Report-Only", buildStrictCspReportOnly(nonce));
-  if (isProductionHost && !isNotFound) headers.delete("X-Robots-Tag");
+  if (isProductionHost) headers.delete("X-Robots-Tag");
   else headers.set("X-Robots-Tag", "noindex, follow");
 
   // Every nonce-bearing HTML response is uncacheable to prevent nonce reuse.
