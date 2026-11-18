@@ -10,6 +10,18 @@ export function createNonce(cryptoProvider = globalThis.crypto) {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary);
 }
+export function buildStandardEnforcedCsp(nonce) {
+  assertNonce(nonce);
+  return [
+    "default-src 'self'", "base-uri 'self'", "object-src 'none'", "frame-ancestors 'none'", "form-action 'self'",
+    `script-src 'nonce-${nonce}' 'self' https://static.cloudflareinsights.com/beacon.min.js https://www.googletagmanager.com`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https://www.googletagmanager.com https://*.google-analytics.com",
+    "font-src 'self' data:",
+    "connect-src 'self' https://cloudflareinsights.com https://www.googletagmanager.com https://*.google-analytics.com https://*.google.com",
+    "upgrade-insecure-requests",
+  ].join("; ");
+}
 export function buildStrictCspReportOnly(nonce) {
   assertNonce(nonce);
   return [

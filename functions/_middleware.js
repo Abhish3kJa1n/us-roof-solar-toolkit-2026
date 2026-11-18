@@ -1,15 +1,11 @@
-import { buildStrictCsp, buildStrictCspReportOnly, createNonce } from "./_shared/csp.mjs";
+import { buildStandardEnforcedCsp, buildStrictCsp, buildStrictCspReportOnly, createNonce } from "./_shared/csp.mjs";
 
 const PUBLISHER_ID = "ca-pub-6193507831935325";
+const GOOGLE_TAG_ID = "GTM-5X5DFWMW";
 const PRODUCTION_HOSTS = new Set([
   "getroofsolarcalculator.online",
   "www.getroofsolarcalculator.online",
 ]);
-const CURRENT_ENFORCED_CSP = [
-  "default-src 'self'", "base-uri 'self'", "object-src 'none'", "frame-ancestors 'none'",
-  "form-action 'self'", "script-src 'self' https://static.cloudflareinsights.com/beacon.min.js", "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:", "font-src 'self' data:", "connect-src 'self' https://cloudflareinsights.com", "upgrade-insecure-requests",
-].join("; ");
 const SECURITY_HEADERS = {
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
@@ -43,17 +39,33 @@ export async function onRequest(context) {
 
   const response = await context.next();
   const contentType = response.headers.get("Content-Type") || "";
-  if (!/^text\/html(?:\s*;|$)/i.test(contentType) || response.status < 200 || response.status >= 300) return response;
+  const isNotFound = response.status === 404;
+  const isHtmlPage = response.status >= 200 && response.status < 300;
+  if (!/^text\/html(?:\s*;|$)/i.test(contentType) || (!isHtmlPage && !isNotFound)) return response;
 
   const nonce = createNonce();
   const eligible = isAdEligiblePath(url.pathname);
-  const isProductionHost = PRODUCTION_HOSTS.has(url.hostname);
+  const isProductionHost = url.protocol === "https:" && PRODUCTION_HOSTS.has(url.hostname);
+  const loadGoogleTag = isProductionHost;
   const loadAdSense = eligible && canLoadAdSense(context, url, response);
 
   const transformed = new HTMLRewriter()
     .on("script", { element(element) { element.setAttribute("nonce", nonce); } })
     .on("head", {
       element(element) {
+        if (loadGoogleTag) {
+          element.prepend(
+            `<!-- Google tag -->
+<script async src="https://www.googletagmanager.com/gtm.js?id=${GOOGLE_TAG_ID}" nonce="${nonce}"></script>
+<script nonce="${nonce}">
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+</script>
+`,
+            { html: true },
+          );
+        }
         if (!loadAdSense) return;
         element.append(
           `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${PUBLISHER_ID}" crossorigin="anonymous" nonce="${nonce}"></script>`,
@@ -65,9 +77,9 @@ export async function onRequest(context) {
 
   const headers = new Headers(transformed.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
-  headers.set("Content-Security-Policy", eligible ? buildStrictCsp(nonce) : CURRENT_ENFORCED_CSP);
+  headers.set("Content-Security-Policy", eligible ? buildStrictCsp(nonce) : buildStandardEnforcedCsp(nonce));
   headers.set("Content-Security-Policy-Report-Only", buildStrictCspReportOnly(nonce));
-  if (isProductionHost) headers.delete("X-Robots-Tag");
+  if (isProductionHost && !isNotFound) headers.delete("X-Robots-Tag");
   else headers.set("X-Robots-Tag", "noindex, follow");
 
   // Every nonce-bearing HTML response is uncacheable to prevent nonce reuse.

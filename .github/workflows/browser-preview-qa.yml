@@ -63,6 +63,10 @@ jobs:
           PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
           AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
           QA_SCREENSHOT_DIR: browser-qa-output
+      - name: Verify nonce CSP, production-only Google tag targeting and 404 handling
+        run: node scripts/smoke_preview_csp.mjs
+        env:
+          PREVIEW_BASE_URL: ${{ steps.preview.outputs.base_url }}
       - name: Capture and audit all 16 homeowner guide pages at desktop, tablet and mobile
         run: node scripts/guide_visual_qa.mjs
         env:

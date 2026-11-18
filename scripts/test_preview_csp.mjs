@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildStrictCsp, buildStrictCspReportOnly, createNonce } from "../functions/_shared/csp.mjs";
+import { buildStandardEnforcedCsp, buildStrictCsp, buildStrictCspReportOnly, createNonce } from "../functions/_shared/csp.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 
@@ -26,6 +26,7 @@ assert.notEqual(nonceA, nonceB, "independent page nonces must not repeat");
 
 const reportOnly = buildStrictCspReportOnly(nonceA);
 const enforced = buildStrictCsp(nonceA);
+const standardEnforced = buildStandardEnforcedCsp(nonceA);
 for (const directive of [
   "default-src 'self'",
   "object-src 'none'",
@@ -38,20 +39,29 @@ for (const directive of [
   assert.ok(reportOnly.includes(directive), `missing report-only directive: ${directive}`);
   assert.ok(enforced.includes(directive), `missing enforced directive: ${directive}`);
 }
+for (const directive of ["`script-src 'nonce-${nonceA}' 'self' https://static.cloudflareinsights.com/beacon.min.js https://www.googletagmanager.com`","\"img-src 'self' data: https://www.googletagmanager.com https://*.google-analytics.com\"","\"connect-src 'self' https://cloudflareinsights.com https://www.googletagmanager.com https://*.google-analytics.com https://*.google.com\""]) assert.ok(standardEnforced.includes(directive.replace(/^`|`$/g, "")) || standardEnforced.includes(directive), `missing standard enforced directive: ${directive}`);
+assert.throws(() => buildStandardEnforcedCsp("not-a-nonce"), TypeError);
 assert.throws(() => buildStrictCspReportOnly("not-a-nonce"), TypeError);
 assert.throws(() => buildStrictCsp("not-a-nonce"), TypeError);
 assert.ok(enforced.includes("upgrade-insecure-requests"), "enforced policy must upgrade insecure requests");
 assert.ok(!reportOnly.includes("upgrade-insecure-requests"), "report-only policy must not emit an ignored upgrade-insecure-requests warning");
 const staticHeaders = readFileSync(join(root, "_headers"), "utf8");
-assert.ok(staticHeaders.includes("https://static.cloudflareinsights.com/beacon.min.js"), "static CSP must allow only the documented Cloudflare beacon script URL");
+assert.ok(staticHeaders.includes("https://static.cloudflareinsights.com/beacon.min.js"), "static CSP must allow the Cloudflare beacon script URL");
+assert.ok(staticHeaders.includes("https://www.googletagmanager.com"), "static CSP must allow the Google tag container script");
+assert.ok(staticHeaders.includes("https://*.google-analytics.com"), "static CSP must allow Google Analytics measurement requests");
 assert.ok(staticHeaders.includes("connect-src 'self' https://cloudflareinsights.com"), "static CSP must allow same-origin and Cloudflare telemetry destinations");
 
 const middleware = readFileSync(join(root, "functions/_middleware.js"), "utf8");
 assert.ok(middleware.includes('url.pathname.startsWith("/api/")'), "API routes must bypass HTML rewriting");
 assert.ok(middleware.includes('new HTMLRewriter()'), "Preview HTML must be rewritten by HTMLRewriter");
 assert.ok(middleware.includes('element.setAttribute("nonce", nonce)'), "every script tag must receive the generated nonce");
-assert.ok(middleware.includes('eligible ? buildStrictCsp(nonce) : CURRENT_ENFORCED_CSP'), "existing enforced CSP must remain in place");
+assert.ok(middleware.includes("eligible ? buildStrictCsp(nonce) : buildStandardEnforcedCsp(nonce)"), "standard pages must use the restrictive nonce CSP with Google Analytics allowlisted");
+assert.ok(middleware.includes("GTM-5X5DFWMW"), "middleware must use the exact Google tag ID from the owner screenshot");
+assert.ok(middleware.includes("element.prepend("), "Google tag must be placed immediately after the opening head element");
+assert.ok(middleware.includes("const loadGoogleTag = isProductionHost"), "Google Analytics must be limited to the exact HTTPS production hosts");
+assert.ok(middleware.includes("const isNotFound = response.status === 404"), "HTML 404 responses must be nonce-protected and receive the Google tag on production");
 assert.ok(middleware.includes("https://static.cloudflareinsights.com/beacon.min.js"), "middleware CSP must allow the exact Cloudflare beacon script URL");
+assert.ok(middleware.includes("https://*.google-analytics.com"), "middleware CSP must allow Google Analytics measurement endpoints");
 assert.ok(middleware.includes("connect-src 'self' https://cloudflareinsights.com"), "middleware CSP must allow Cloudflare telemetry destinations");
 assert.ok(middleware.includes('headers.set("Content-Security-Policy-Report-Only"'), "candidate policy must be report-only");
 assert.ok(middleware.includes('headers.set("Cache-Control", "private, no-store, max-age=0")'), "nonce-bearing Preview HTML must not be cached");
