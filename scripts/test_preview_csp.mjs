@@ -39,7 +39,11 @@ for (const directive of [
   assert.ok(reportOnly.includes(directive), `missing report-only directive: ${directive}`);
   assert.ok(enforced.includes(directive), `missing enforced directive: ${directive}`);
 }
-for (const directive of ["`script-src 'nonce-${nonceA}' 'self' https://static.cloudflareinsights.com/beacon.min.js https://www.googletagmanager.com`","\"img-src 'self' data: https://www.googletagmanager.com https://*.google-analytics.com\"","\"connect-src 'self' https://cloudflareinsights.com https://www.googletagmanager.com https://*.google-analytics.com https://*.google.com\""]) assert.ok(standardEnforced.includes(directive.replace(/^`|`$/g, "")) || standardEnforced.includes(directive), `missing standard enforced directive: ${directive}`);
+for (const directive of [
+  `script-src 'nonce-${nonceA}' 'self' https://static.cloudflareinsights.com/beacon.min.js https://www.googletagmanager.com`,
+  "img-src 'self' data: https://www.googletagmanager.com https://*.google-analytics.com",
+  "connect-src 'self' https://cloudflareinsights.com https://www.googletagmanager.com https://*.google-analytics.com https://*.google.com",
+]) assert.ok(standardEnforced.includes(directive), `missing standard enforced directive: ${directive}`);
 assert.throws(() => buildStandardEnforcedCsp("not-a-nonce"), TypeError);
 assert.throws(() => buildStrictCspReportOnly("not-a-nonce"), TypeError);
 assert.throws(() => buildStrictCsp("not-a-nonce"), TypeError);
