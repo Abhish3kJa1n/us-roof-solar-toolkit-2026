@@ -87,7 +87,8 @@ def main() -> int:
     if len(preview_routes.get("include", [])) > 100:
         fail("Preview route list exceeds Cloudflare Pages' 100-rule limit")
 
-    # Production must retain the original static HTML path: only /api/* invokes Functions.
+    # Production must route every public HTML document through middleware so
+    # the GTM injection and nonce CSP run on the live site, while assets/data stay static.
     env["CF_PAGES_BRANCH"] = "main"
     result = subprocess.run(
         ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
@@ -95,33 +96,24 @@ def main() -> int:
     if result.returncode:
         fail("prepare_deploy.sh failed for Production")
     production_routes = json.loads((DIST / "_routes.json").read_text(encoding="utf-8"))
-    if production_routes.get("include") != ["/api/*"]:
-        fail("Production must continue routing only /api/* through Pages Functions")
+    expected_production_routes = {"/api/*", "/"}
+    for page in DIST.rglob("*.html"):
+        relative_page = page.relative_to(DIST).as_posix()
+        if relative_page == "404.html":
+            continue
+        if relative_page == "index.html":
+            expected_production_routes.add("/")
+        else:
+            expected_production_routes.add("/" + relative_page.removesuffix(".html"))
+    if set(production_routes.get("include", [])) != expected_production_routes:
+        fail("Production must route every public HTML document and /api/* through Pages Functions")
+    if set(production_routes.get("exclude", [])) != set():
+        fail("Production route exclusions must not bypass required HTML middleware")
+    if len(production_routes.get("include", [])) > 100:
+        fail("Production route list exceeds Cloudflare Pages' 100-rule limit")
     if (DIST / "build-info.json").exists():
         fail("Production must not publish the Preview build identity endpoint")
 
-    # A separate build-time opt-in may route only the approved editorial documents.
-    env["ADSENSE_MIDDLEWARE_ENABLED"] = "true"
-    result = subprocess.run(
-        ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
-    )
-    if result.returncode:
-        fail("prepare_deploy.sh failed for explicit Production middleware opt-in")
-    enabled_routes = json.loads((DIST / "_routes.json").read_text(encoding="utf-8"))
-    expected_enabled = {
-        "/api/*", "/guides/*",
-        "/electricity-prices-by-state",
-    }
-    if set(enabled_routes.get("include", [])) != expected_enabled:
-        fail("explicit opt-in must route only API and selected editorial pages")
-    if set(enabled_routes.get("exclude", [])) != {"/assets/*", "/data/*"}:
-        fail("explicit opt-in must leave assets and public data static")
-    env.pop("ADSENSE_MIDDLEWARE_ENABLED", None)
-    result = subprocess.run(
-        ["sh", str(ROOT / "scripts" / "prepare_deploy.sh")], cwd=ROOT, env=env
-    )
-    if result.returncode:
-        fail("prepare_deploy.sh failed while restoring API-only Production routing")
     production_home = (DIST / "index.html").read_text(encoding="utf-8")
     if '<meta name="robots" content="index,follow" />' not in production_home:
         fail("Production homepage must retain the main-branch indexing transformation")
