@@ -59,6 +59,7 @@ function readNonce(response, html, path, expectedStatus = 200) {
   assert.equal(response.headers.get("x-frame-options"), "DENY");
   assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
   assert.ok(!/adsbygoogle\.js/i.test(html), `${path}: Preview must never load AdSense`);
+  assert.ok(!/gtm\.js\?id=GTM-5X5DFWMW/i.test(html), `${path}: Preview must not send test traffic to Production Google Analytics`);
   return nonce;
 }
 
