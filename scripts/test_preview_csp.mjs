@@ -57,6 +57,8 @@ assert.ok(staticHeaders.includes("connect-src 'self' https://cloudflareinsights.
 
 const middleware = readFileSync(join(root, "functions/_middleware.js"), "utf8");
 const cspSource = readFileSync(join(root, "functions/_shared/csp.mjs"), "utf8");
+const notFoundHtml = readFileSync(join(root, "404.html"), "utf8");
+const notFoundBootstrap = readFileSync(join(root, "assets/js/google-tag-bootstrap-1.js"), "utf8");
 assert.ok(middleware.includes('url.pathname.startsWith("/api/")'), "API routes must bypass HTML rewriting");
 assert.ok(middleware.includes('new HTMLRewriter()'), "Preview HTML must be rewritten by HTMLRewriter");
 assert.ok(middleware.includes('element.setAttribute("nonce", nonce)'), "every script tag must receive the generated nonce");
@@ -64,7 +66,11 @@ assert.ok(middleware.includes("eligible ? buildStrictCsp(nonce) : buildStandardE
 assert.ok(middleware.includes("GTM-5X5DFWMW"), "middleware must use the exact Google tag ID from the owner screenshot");
 assert.ok(middleware.includes("element.prepend("), "Google tag must be placed immediately after the opening head element");
 assert.ok(middleware.includes("const loadGoogleTag = isProductionHost"), "Google Analytics must be limited to the exact HTTPS production hosts");
-assert.ok(middleware.includes("const isNotFound = response.status === 404"), "HTML 404 responses must be nonce-protected and receive the Google tag on production");
+assert.ok(!middleware.includes("isNotFound"), "Cloudflare Pages static 404 fallback must use its separate static bootstrap");
+assert.ok(notFoundHtml.includes('/assets/js/google-tag-bootstrap-1.js'), "custom 404 page must load the first-party analytics bootstrap");
+assert.ok(notFoundBootstrap.includes("GTM-5X5DFWMW"), "404 bootstrap must use the exact Google tag ID from the owner screenshot");
+assert.ok(notFoundBootstrap.includes("getroofsolarcalculator.online"), "404 bootstrap must restrict loading to the production custom domains");
+assert.ok(notFoundBootstrap.includes("window.location.protocol !== \"https:\""), "404 bootstrap must require HTTPS");
 assert.ok(cspSource.includes("https://static.cloudflareinsights.com/beacon.min.js"), "shared CSP helper must allow the exact Cloudflare beacon script URL");
 assert.ok(cspSource.includes("https://*.google-analytics.com"), "shared CSP helper must allow Google Analytics measurement endpoints");
 assert.ok(cspSource.includes("connect-src 'self' https://cloudflareinsights.com"), "shared CSP helper must allow Cloudflare telemetry destinations");
