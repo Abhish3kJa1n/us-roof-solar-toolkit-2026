@@ -66,8 +66,8 @@ assert.ok(middleware.includes("element.prepend("), "Google tag must be placed im
 assert.ok(middleware.includes("const loadGoogleTag = isProductionHost"), "Google Analytics must be limited to the exact HTTPS production hosts");
 assert.ok(middleware.includes("const isNotFound = response.status === 404"), "HTML 404 responses must be nonce-protected and receive the Google tag on production");
 assert.ok(cspSource.includes("https://static.cloudflareinsights.com/beacon.min.js"), "shared CSP helper must allow the exact Cloudflare beacon script URL");
-assert.ok(middleware.includes("https://*.google-analytics.com"), "middleware CSP must allow Google Analytics measurement endpoints");
-assert.ok(middleware.includes("connect-src 'self' https://cloudflareinsights.com"), "middleware CSP must allow Cloudflare telemetry destinations");
+assert.ok(cspSource.includes("https://*.google-analytics.com"), "shared CSP helper must allow Google Analytics measurement endpoints");
+assert.ok(cspSource.includes("connect-src 'self' https://cloudflareinsights.com"), "shared CSP helper must allow Cloudflare telemetry destinations");
 assert.ok(middleware.includes('headers.set("Content-Security-Policy-Report-Only"'), "candidate policy must be report-only");
 assert.ok(middleware.includes('headers.set("Cache-Control", "private, no-store, max-age=0")'), "nonce-bearing Preview HTML must not be cached");
 assert.ok(middleware.includes("adsbygoogle.js?client="), "guarded AdSense loader must exist");
