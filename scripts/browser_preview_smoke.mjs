@@ -609,6 +609,15 @@ try {
   results.push('standalone solar savings calculation and blank-price behavior: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-ux-results.png'), fullPage: true });
 
+  const missingResponse = await page.goto(base + '/__google-tag-browser-404-check-20261118', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  assert.ok(missingResponse, 'No HTTP response for the custom 404 route');
+  assert.equal(missingResponse.status(), 404, 'Unknown Preview route must return HTTP 404');
+  assert.match(await page.locator('main h1').innerText(), /We could not find that page/i, 'Custom 404 content must render');
+  assert.equal(await page.locator('script[src*="google-tag-bootstrap-1.js"]').count(), 1, 'Custom 404 must load its first-party analytics bootstrap');
+  await page.waitForLoadState('load');
+  assert.equal(await page.locator('script[src*="googletagmanager.com/gtm.js?id=GTM-5X5DFWMW"]').count(), 0, 'Preview 404 must not load Production Google Analytics');
+  results.push('custom 404 renders and keeps Production Google Analytics disabled on Preview: PASS');
+
   assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load successfully; observed: ' + JSON.stringify(beaconScriptResponses));
   // Preview pages.dev hosts are not the registered analytics hostname. A failed beacon request
   // can be aborted during navigation without a matching CORS console message, so counts need not match.
