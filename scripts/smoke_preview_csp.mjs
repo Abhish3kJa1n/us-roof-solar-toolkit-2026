@@ -90,7 +90,7 @@ const missingPath = "/__google-tag-preview-404-check-20261118";
 const missingPage = await get(missingPath);
 const missingHtml = await missingPage.text();
 assert.equal(missingPage.status, 404, "unknown Preview route must return HTTP 404");
-assert.match(missingPage.headers.get("content-type") || "", /^text\/html\\b/i, "404 route must return HTML");
+assert.match(missingPage.headers.get("content-type") || "", /^text\/html\b/i, "404 route must return HTML");
 assert.match(missingPage.headers.get("x-robots-tag") || "", /noindex/i, "404 fallback must stay noindex");
 assert.match(missingPage.headers.get("content-security-policy") || "", /https:\/\/www\.googletagmanager\.com/, "static 404 CSP must allow the Google tag script origin");
 assert.match(missingHtml, /We could not find that page/i, "404 route must return the custom not-found page");
