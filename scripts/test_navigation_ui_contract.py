@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guard shared navigation CTA contrast and canonical About destinations."""
+"""Guard shared navigation, breadcrumb layout/semantics, and canonical About destinations."""
 from __future__ import annotations
 
 from html.parser import HTMLParser
@@ -18,6 +18,7 @@ class HeaderLinks(HTMLParser):
         self.href = ""
         self.text = ""
         self.links: list[tuple[str, str]] = []
+        self.nav_labels: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         values = dict(attrs)
@@ -25,6 +26,7 @@ class HeaderLinks(HTMLParser):
             self.in_header = True
         elif self.in_header and tag == "nav":
             self.in_nav = True
+            self.nav_labels.append(values.get("aria-label") or "")
         elif self.in_nav and tag == "a":
             self.in_anchor = True
             self.href = values.get("href") or ""
@@ -52,6 +54,11 @@ def main() -> int:
         raise AssertionError("Shared CTA hover must preserve readable navy text")
     if re.search(r"\.links a:hover\s*\{", shared_css):
         raise AssertionError("Generic shared nav hover still overrides CTA text")
+    if not re.search(
+        r"\.wrap\.crumbs\s*\{[^}]*width:min\(1120px,calc\(100% - 36px\)\)!important;[^}]*margin:20px auto!important",
+        shared_css,
+    ):
+        raise AssertionError("Breadcrumbs must use the shared centered desktop content width")
 
     homepage = (ROOT / "index.html").read_text(encoding="utf-8")
     for required in (
@@ -64,11 +71,27 @@ def main() -> int:
 
     pages = sorted(page for page in ROOT.rglob("*.html") if "dist" not in page.relative_to(ROOT).parts)
     checked = 0
+    breadcrumb_pages = 0
     for page in pages:
+        source = page.read_text(encoding="utf-8")
+        if re.search(r'class=["\'][^"\']*\bcrumbs\b[^"\']*["\']', source):
+            breadcrumb_pages += 1
+            if not re.search(
+                r"<nav\b(?=[^>]*class=[\"'][^\"']*\bcrumbs\b[^\"']*[\"'])(?=[^>]*aria-label=[\"']Breadcrumb[\"'])",
+                source,
+                re.I,
+            ):
+                raise AssertionError(
+                    f"Visible breadcrumbs must be a semantic nav landmark: {page.relative_to(ROOT)}"
+                )
         if page.name in {"404.html", "about.html"}:
             continue
         parser = HeaderLinks()
-        parser.feed(page.read_text(encoding="utf-8"))
+        parser.feed(source)
+        if any(label != "Main navigation" for label in parser.nav_labels):
+            raise AssertionError(
+                f"Header navigation must have aria-label='Main navigation': {page.relative_to(ROOT)}"
+            )
         about_links = [(label, href) for label, href in parser.links if label.lower() == "about"]
         if not about_links:
             raise AssertionError(f"Missing About link in main navigation: {page.relative_to(ROOT)}")
@@ -76,7 +99,10 @@ def main() -> int:
             raise AssertionError(f"About navigation must target /about: {page.relative_to(ROOT)}: {about_links}")
         checked += 1
 
-    print(f"PASS: shared CTA hover contrast and About navigation on {checked} public pages")
+    print(
+        f"PASS: shared CTA contrast, centered breadcrumb layout and semantics on {breadcrumb_pages} pages, "
+        f"and labeled About navigation on {checked} public pages"
+    )
     return 0
 
 
