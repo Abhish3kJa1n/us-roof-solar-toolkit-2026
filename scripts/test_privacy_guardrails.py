@@ -175,6 +175,12 @@ for internal_detail in (
 
 
 
+for contact_page in ("contact.html", "editorial-policy.html", "privacy.html", "terms.html"):
+    contact_html = (ROOT / contact_page).read_text(encoding="utf-8")
+    if re.search(r"getroofsolarcalculator\\.gmail\\.com</a>\\.", contact_html, re.I):
+        fail(f"contact email is followed by stray punctuation in {contact_page}")
+
+
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
 for stale_public_phrase in (
     "static demo",
