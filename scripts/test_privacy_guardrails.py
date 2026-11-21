@@ -123,26 +123,40 @@ if not story_options or story_options[0].get("value") != "" or "selected" not in
 
 privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
-    "not currently displaying advertising or loading an adsense ad-serving script",
-    "cloudflare web analytics",
-    "google analytics website measurement",
-    "approximate geolocation",
-    "browser and device information",
-    "first-party cookie named",
-    "does not intentionally attach calculator values",
-    "does not currently display an analytics consent banner or use google consent mode",
-    "browser performance timing metrics",
-    "does not collect or use visitors' personal data",
-    "or track individual end users across customers' internet properties",
-    "calculator inputs are not sent to the site's calculation apis",
-    "temporarily retained in the current browser tab",
-    "cleared after it is restored or when the tab is closed",
-    "does not ask for your street address",
+    "what information is handled",
+    "calculator entries",
+    "website and device information",
+    "messages you send us",
+    "how information is used",
+    "service providers and external links",
+    "cookies and your choices",
+    "storage and retention",
+    "your privacy rights",
+    "google analytics",
+    "cloudflare",
+    "national laboratory of the rockies",
     "openei utility rate database",
-    "if advertising is introduced, this notice will be updated to describe the advertising services in use",
+    "does not request your street address",
+    "for up to one hour",
+    "advertising is not currently displayed",
+    "getroofsolarcalculator@gmail.com",
 ):
     if required_disclosure not in privacy_notice:
-        fail(f"Privacy Notice is missing current visitor-facing disclosure: {required_disclosure}")
+        fail(f"Privacy Policy is missing a material visitor-facing disclosure: {required_disclosure}")
+
+for internal_detail in (
+    "sessionstorage",
+    "gtm-5x5dfwmw",
+    "google consent mode",
+    "cloudflare-hosted endpoint",
+    "request counters",
+    "server-side api credential",
+    "representative census latitude and longitude",
+    "does not currently display an analytics consent banner",
+    "by using the site, you understand",
+):
+    if internal_detail in privacy_notice:
+        fail(f"Privacy Policy exposes unnecessary implementation or consent-acceptance language: {internal_detail}")
 
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
 for stale_public_phrase in (
