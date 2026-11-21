@@ -70,6 +70,11 @@ def main() -> int:
     ):
         raise AssertionError("Breadcrumb width must retain the mobile page gutter")
 
+    if not re.search(r"@media\\(min-width:1440px\\)\\{\\.wrap\\{width:min\\(1320px,calc\\(100% - 48px\\)\\)\\}\\.wrap\\.crumbs\\{width:min\\(1320px,calc\\(100% - 48px\\)\\)\\}\\}", shared_css):
+        raise AssertionError("Wide desktop containers and breadcrumbs must expand together to 1320px")
+    if not re.search(r"\\.article>:where\\(p,ul,ol,h2,h3\\)\\{max-width:78ch\\}", shared_css):
+        raise AssertionError("Article text measure must remain readable when the desktop container expands")
+
     homepage = (ROOT / "index.html").read_text(encoding="utf-8")
     for required in (
         ".nav-links a:not(.btn):hover",
