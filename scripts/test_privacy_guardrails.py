@@ -139,7 +139,7 @@ for required_disclosure in (
     "contact messages and retention",
     "advertising is not currently displayed",
     "depending on where you live and which privacy laws apply",
-    "rights to request access to, correction of or deletion",
+    "rights to access, correct or delete personal information",
     "getroofsolarcalculator@gmail.com",
 ):
     if required_disclosure not in privacy_notice:
