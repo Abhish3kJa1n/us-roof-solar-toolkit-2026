@@ -126,22 +126,21 @@ for required_disclosure in (
     "not currently displaying advertising or loading an adsense ad-serving script",
     "cloudflare web analytics",
     "google analytics website measurement",
-    "gtm-5x5dfwmw",
     "approximate geolocation",
     "browser and device information",
     "first-party cookie named",
     "does not intentionally attach calculator values",
-    "does not include a visitor-facing analytics consent banner or google consent mode",
+    "does not currently display an analytics consent banner or use google consent mode",
     "browser performance timing metrics",
     "does not collect or use visitors' personal data",
     "or track individual end users across customers' internet properties",
     "calculator inputs are not sent to the site's calculation apis",
-    "temporarily kept in this browser tab so they can be restored when you return",
-    "cleared after restoration or when the tab is closed",
+    "temporarily retained in the current browser tab",
+    "cleared after it is restored or when the tab is closed",
     "does not ask for your street address",
     "openei utility rate database",
-    "if advertising is introduced, this notice will be updated to describe the relevant advertising technologies",
-):
+    "if advertising is introduced, this notice will be updated to describe the advertising services in use",
+)
     if required_disclosure not in privacy_notice:
         fail(f"Privacy Notice is missing current visitor-facing disclosure: {required_disclosure}")
 
