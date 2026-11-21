@@ -123,22 +123,23 @@ if not story_options or story_options[0].get("value") != "" or "selected" not in
 
 privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
-    "what information is handled",
-    "calculator entries",
-    "website and device information",
-    "messages you send us",
-    "how information is used",
-    "service providers and external links",
-    "cookies and your choices",
-    "storage and retention",
-    "your privacy rights",
-    "google analytics",
-    "cloudflare",
-    "national laboratory of the rockies",
+    "calculator and location information",
+    "most calculator entries, including roof measurements, electricity use and cost assumptions, are processed in your browser",
+    "this temporary save expires after one hour",
+    "city or place name and state",
+    "national laboratory of the rockies pvwatts service",
     "openei utility rate database",
-    "do not request your street address",
-    "for up to one hour",
+    "website and device information",
+    "cloudflare provides website hosting, delivery and security",
+    "google analytics is used to understand general website visits and usage",
+    "approximate location",
+    "first-party cookies",
+    "does not intentionally include calculator values",
+    "how information is used",
+    "contact messages and retention",
     "advertising is not currently displayed",
+    "depending on where you live and which privacy laws apply",
+    "rights to request access to, correction of or deletion",
     "getroofsolarcalculator@gmail.com",
 ):
     if required_disclosure not in privacy_notice:
@@ -157,6 +158,7 @@ for internal_detail in (
 ):
     if internal_detail in privacy_notice:
         fail(f"Privacy Policy exposes unnecessary implementation or consent-acceptance language: {internal_detail}")
+
 
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
 for stale_public_phrase in (
