@@ -367,6 +367,28 @@
     @media(max-width:850px){.how-grid{grid-template-columns:1fr;gap:20px}}
     @media(max-width:600px){.optional-assumptions summary{align-items:flex-start;flex-direction:column;gap:4px}.optional-assumptions summary small{text-align:left}}
 
+
+    /* Worked examples make the calculator's arithmetic inspectable without turning the page into a text wall. */
+    .example-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+    .example-card{min-width:0;padding:24px;border:1px solid var(--line);border-radius:14px;background:#fff}
+    .example-label{color:#80520d;font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}
+    .example-card h3{margin:9px 0 8px;color:var(--navy);font-size:19px;line-height:1.3}
+    .example-card>p{color:var(--muted);font-size:13px;line-height:1.7}
+    .equation{margin:17px 0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+    .equation>div{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:10px 12px;border-bottom:1px solid var(--line);font-size:12px}
+    .equation>div:last-child{border-bottom:0}
+    .equation span{color:var(--muted)}
+    .equation strong{color:var(--navy);text-align:right;font-variant-numeric:tabular-nums}
+    .equation .equation-result{background:#f3f6f8}
+    .equation-result strong{font-size:14px}
+    .example-card .example-caveat{padding-top:12px;border-top:1px solid var(--line);font-size:12px}
+    .example-card>a{display:inline-block;margin-top:5px;color:var(--navy);font-size:12px;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+    .source-notes{margin-top:22px;padding:22px 24px;border-left:3px solid var(--gold);background:#f1f4f6}
+    .source-notes h3{margin:0 0 8px;color:var(--navy);font-size:16px}
+    .source-notes p{margin:8px 0 0;color:#526577;font-size:12px;line-height:1.7}
+    .source-notes a{color:#183f60;text-decoration:underline;text-underline-offset:2px}
+    @media(max-width:850px){.example-grid{grid-template-columns:1fr}}
+    @media(max-width:600px){.example-card{padding:18px}.equation>div{gap:8px;font-size:11px}.source-notes{padding:18px}}
 </style>
 <link rel="canonical" href="https://getroofsolarcalculator.online/" />
 <meta property="og:url" content="https://getroofsolarcalculator.online/" />
@@ -520,6 +542,52 @@
 <article class="how-card"><div class="how-no">02</div><h3>Use assumptions you can explain</h3><p>Compare roof prices that cover the same work. For solar, use a location-specific production estimate and check your utility import rate and export credit. Leave figures blank when you do not know them.</p></article>
 <article class="how-card"><div class="how-no">03</div><h3>Check the actual project</h3><p>Have the roof measured and inspected. Ask contractors to spell out materials, removal, flashing, ventilation and other work. For solar, check the system design, utility tariff and written proposal before signing.</p></article>
 </div>
+</div>
+</section>
+<section class="section worked-examples" id="worked-examples" aria-labelledby="worked-examples-title">
+<div class="container">
+  <div class="section-head">
+    <div class="section-kicker">The numbers, step by step</div>
+    <h2 id="worked-examples-title">See what goes into an estimate.</h2>
+    <p>These examples use made-up inputs to show the arithmetic. They are not typical project prices, local market estimates or promises about what a home will save.</p>
+  </div>
+  <div class="example-grid">
+    <article class="example-card">
+      <div class="example-label">Example 1 · Roof replacement</div>
+      <h3>How a roof-cost range is calculated</h3>
+      <p>Say a measured roof has 1,800 square feet of surface area. A homeowner is comparing two written estimates that work out to $5.50 and $8.00 per roof square foot.</p>
+      <div class="equation">
+        <div><span>Measured roof area</span><strong>1,800 sq ft</strong></div>
+        <div><span>Lower rate assumption</span><strong>$5.50 / sq ft</strong></div>
+        <div><span>Higher rate assumption</span><strong>$8.00 / sq ft</strong></div>
+        <div class="equation-result"><span>Illustrative range</span><strong>$9,900–$14,400</strong></div>
+      </div>
+      <p class="example-caveat">That is multiplication, not a quote. The result is only useful if both rates cover comparable work. Tear-off, disposal, underlayment, flashing, decking repairs, ventilation, permits and cleanup can change the final price. The calculator does not add those items automatically.</p>
+      <a href="calculators/roof-replacement-cost">Try the roof replacement calculator →</a>
+    </article>
+    <article class="example-card">
+      <div class="example-label">Example 2 · Solar energy value</div>
+      <h3>Why production and bill savings are different</h3>
+      <p>Suppose a household uses 10,800 kWh a year and wants to model solar generation equal to 80% of that use. The production assumption is 1,350 kWh per installed DC kW each year.</p>
+      <div class="equation">
+        <div><span>Generation target</span><strong>10,800 × 80% = 8,640 kWh</strong></div>
+        <div><span>Estimated system size</span><strong>8,640 ÷ 1,350 = 6.4 kW</strong></div>
+        <div><span>Used directly (40%)</span><strong>3,456 kWh</strong></div>
+        <div><span>Sent to the grid</span><strong>5,184 kWh</strong></div>
+        <div><span>Direct-use value at $0.18/kWh</span><strong>$622.08</strong></div>
+        <div><span>Export value at $0.05/kWh</span><strong>$259.20</strong></div>
+        <div class="equation-result"><span>Modeled annual energy value</span><strong>$881.28</strong></div>
+      </div>
+      <p class="example-caveat">The $881.28 is a modeled value for these assumptions, not a guaranteed reduction in the utility bill. Actual results depend on when the home uses power, the system's real production, the utility's export rules and charges that solar does not remove.</p>
+      <a href="calculators/solar-savings">Try the solar savings calculator →</a>
+    </article>
+  </div>
+  <div class="source-notes">
+    <h3>Where to check the inputs</h3>
+    <p>Use a roof measurement and comparable written bids for a real roofing project. For solar production, run the property's assumptions through <a href="https://pvwatts.nrel.gov/" target="_blank" rel="noopener noreferrer">NREL's PVWatts calculator</a> rather than treating a national production figure as a local forecast. Your utility bill and current tariff are the right starting points for import rates and export credits.</p>
+    <p>The U.S. Census Bureau and HUD's <a href="https://www.census.gov/content/dam/Census/library/visualizations/2024/demo/2023%20Home%20Improvements%20Infographic.pdf" target="_blank" rel="noopener noreferrer">2023 Home Improvements infographic</a> reports a $10,000 median roofing expenditure for its 2021–2023 reference period. That is national survey context, not a current price per square foot and not an input to this calculator.</p>
+    <p>For the full formulas, source notes, geographic data limits and publication status, see the <a href="methodology">calculation methodology</a>.</p>
+  </div>
 </div>
 </section>
 <section class="section" aria-labelledby="estimate-details-title">
