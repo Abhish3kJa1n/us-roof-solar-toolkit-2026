@@ -136,7 +136,7 @@ for required_disclosure in (
     "cloudflare",
     "national laboratory of the rockies",
     "openei utility rate database",
-    "does not request your street address",
+    "do not request your street address",
     "for up to one hour",
     "advertising is not currently displayed",
     "getroofsolarcalculator@gmail.com",
