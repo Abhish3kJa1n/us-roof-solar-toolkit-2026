@@ -123,27 +123,63 @@ if not story_options or story_options[0].get("value") != "" or "selected" not in
 
 privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
-    "not currently displaying advertising or loading an adsense ad-serving script",
-    "cloudflare web analytics",
-    "google analytics website measurement",
-    "gtm-5x5dfwmw",
-    "approximate geolocation",
-    "browser and device information",
-    "first-party cookie named",
-    "does not intentionally attach calculator values",
-    "does not include a visitor-facing analytics consent banner or google consent mode",
-    "browser performance timing metrics",
-    "does not collect or use visitors' personal data",
-    "or track individual end users across customers' internet properties",
-    "calculator inputs are not sent to the site's calculation apis",
-    "temporarily kept in this browser tab so they can be restored when you return",
-    "cleared after restoration or when the tab is closed",
-    "does not ask for your street address",
+    "who operates this website",
+    "roof & solar toolkit",
+    "information we collect",
+    "calculator and home information",
+    "location and place information",
+    "automatically collected device and usage information",
+    "information you send us",
+    "how we use information",
+    "third-party services and disclosures",
+    "u.s. census bureau",
+    "national laboratory of the rockies",
     "openei utility rate database",
-    "if advertising is introduced, this notice will be updated to describe the relevant advertising technologies",
+    "google tag manager",
+    "google analytics",
+    "page url and query-string information",
+    "cookies and similar technologies",
+    "data retention",
+    "data security",
+    "international processing",
+    "u.s. state privacy rights",
+    "children's privacy",
+    "advertising, sale and sharing",
+    "no advertising is currently displayed",
+    "we do not sell personal information for money",
+    "this site does not currently provide a first-party cookie preference center",
+    "getroofsolarcalculator@gmail.com",
 ):
     if required_disclosure not in privacy_notice:
-        fail(f"Privacy Notice is missing current visitor-facing disclosure: {required_disclosure}")
+        fail(f"Privacy Policy is missing a material generator-style section or disclosure: {required_disclosure}")
+
+for table_heading in (
+    "information category",
+    "examples and source",
+    "purpose and recipients",
+    "retention or deletion",
+):
+    if table_heading not in privacy_notice:
+        fail(f"Privacy Policy data-practices table is missing column: {table_heading}")
+
+for internal_detail in (
+    "gtm-5x5dfwmw",
+    "server-side api credential",
+    "x-location-proof",
+    "request counters",
+    "d1 quota",
+    "authorization token",
+):
+    if internal_detail in privacy_notice:
+        fail(f"Privacy Policy exposes an unnecessary implementation detail: {internal_detail}")
+
+
+
+for contact_page in ("contact.html", "editorial-policy.html", "privacy.html", "terms.html"):
+    contact_html = (ROOT / contact_page).read_text(encoding="utf-8")
+    if re.search(r"getroofsolarcalculator\\.gmail\\.com</a>\\.", contact_html, re.I):
+        fail(f"contact email is followed by stray punctuation in {contact_page}")
+
 
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
 for stale_public_phrase in (
