@@ -90,3 +90,14 @@ button:disabled{opacity:.55;cursor:not-allowed}
 .roof-scope-details{margin-top:13px}
 @media(max-width:600px){.roof-cost-step{padding:13px}.roof-reference-action{align-items:flex-start;flex-direction:column}.roof-reference-action .btn{width:100%}.roof-cost-actions .btn{flex:1}}
 
+
+/* Keep breadcrumb landmarks aligned with the shared page container. */
+.wrap.crumbs{width:min(1120px,calc(100% - 36px));margin:20px auto}
+@media(max-width:600px){.wrap.crumbs{width:calc(100% - 28px)}}
+
+/* Wide desktop: give task layouts room without stretching article reading lines. */
+@media(min-width:1200px){
+  .wrap{width:min(1320px,calc(100% - 48px))}
+  .wrap.crumbs{width:min(1320px,calc(100% - 48px))}
+}
+.article>:where(p,ul,ol,h2,h3){max-width:78ch}
