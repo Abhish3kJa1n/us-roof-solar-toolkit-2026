@@ -123,41 +123,56 @@ if not story_options or story_options[0].get("value") != "" or "selected" not in
 
 privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
-    "calculator and location information",
-    "most calculator entries, including roof measurements, electricity use and cost assumptions, are processed in your browser",
-    "this temporary save expires after one hour",
-    "city or place name and state",
-    "national laboratory of the rockies pvwatts service",
+    "who operates this website",
+    "roof & solar toolkit",
+    "information we collect",
+    "calculator and home information",
+    "location and place information",
+    "automatically collected device and usage information",
+    "information you send us",
+    "how we use information",
+    "third-party services and disclosures",
+    "u.s. census bureau",
+    "national laboratory of the rockies",
     "openei utility rate database",
-    "website and device information",
-    "cloudflare provides website hosting, delivery and security",
-    "google analytics is used to understand general website visits and usage",
-    "approximate location",
-    "first-party cookies",
-    "does not intentionally include calculator values",
-    "how information is used",
-    "contact messages and retention",
-    "advertising is not currently displayed",
-    "depending on where you live and which privacy laws apply",
-    "rights to access, correct or delete personal information",
+    "google tag manager",
+    "google analytics",
+    "page url and query-string information",
+    "cookies and similar technologies",
+    "data retention",
+    "data security",
+    "international processing",
+    "u.s. state privacy rights",
+    "children's privacy",
+    "advertising, sale and sharing",
+    "no advertising is currently displayed",
+    "we do not sell personal information for money",
+    "this site does not currently provide a first-party cookie preference center",
     "getroofsolarcalculator@gmail.com",
 ):
     if required_disclosure not in privacy_notice:
-        fail(f"Privacy Policy is missing a material visitor-facing disclosure: {required_disclosure}")
+        fail(f"Privacy Policy is missing a material generator-style section or disclosure: {required_disclosure}")
+
+for table_heading in (
+    "information category",
+    "examples and source",
+    "purpose and recipients",
+    "retention or deletion",
+):
+    if table_heading not in privacy_notice:
+        fail(f"Privacy Policy data-practices table is missing column: {table_heading}")
 
 for internal_detail in (
-    "sessionstorage",
     "gtm-5x5dfwmw",
-    "google consent mode",
-    "cloudflare-hosted endpoint",
-    "request counters",
     "server-side api credential",
-    "representative census latitude and longitude",
-    "does not currently display an analytics consent banner",
-    "by using the site, you understand",
+    "x-location-proof",
+    "request counters",
+    "d1 quota",
+    "authorization token",
 ):
     if internal_detail in privacy_notice:
-        fail(f"Privacy Policy exposes unnecessary implementation or consent-acceptance language: {internal_detail}")
+        fail(f"Privacy Policy exposes an unnecessary implementation detail: {internal_detail}")
+
 
 
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
