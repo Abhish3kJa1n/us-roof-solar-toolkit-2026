@@ -367,6 +367,28 @@
     @media(max-width:850px){.how-grid{grid-template-columns:1fr;gap:20px}}
     @media(max-width:600px){.optional-assumptions summary{align-items:flex-start;flex-direction:column;gap:4px}.optional-assumptions summary small{text-align:left}}
 
+
+    /* Worked examples make the calculator's arithmetic inspectable without turning the page into a text wall. */
+    .example-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start}
+    .example-card{min-width:0;padding:24px;border:1px solid var(--line);border-radius:14px;background:#fff}
+    .example-label{color:#80520d;font-size:10px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}
+    .example-card h3{margin:9px 0 8px;color:var(--navy);font-size:19px;line-height:1.3}
+    .example-card>p{color:var(--muted);font-size:13px;line-height:1.7}
+    .equation{margin:17px 0;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+    .equation>div{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding:10px 12px;border-bottom:1px solid var(--line);font-size:12px}
+    .equation>div:last-child{border-bottom:0}
+    .equation span{color:var(--muted)}
+    .equation strong{color:var(--navy);text-align:right;font-variant-numeric:tabular-nums}
+    .equation .equation-result{background:#f3f6f8}
+    .equation-result strong{font-size:14px}
+    .example-card .example-caveat{padding-top:12px;border-top:1px solid var(--line);font-size:12px}
+    .example-card>a{display:inline-block;margin-top:5px;color:var(--navy);font-size:12px;font-weight:800;text-decoration:underline;text-underline-offset:3px}
+    .source-notes{margin-top:22px;padding:22px 24px;border-left:3px solid var(--gold);background:#f1f4f6}
+    .source-notes h3{margin:0 0 8px;color:var(--navy);font-size:16px}
+    .source-notes p{margin:8px 0 0;color:#526577;font-size:12px;line-height:1.7}
+    .source-notes a{color:#183f60;text-decoration:underline;text-underline-offset:2px}
+    @media(max-width:850px){.example-grid{grid-template-columns:1fr}}
+    @media(max-width:600px){.example-card{padding:18px}.equation>div{gap:8px;font-size:11px}.source-notes{padding:18px}}
 </style>
 <link rel="canonical" href="https://getroofsolarcalculator.online/" />
 <meta property="og:url" content="https://getroofsolarcalculator.online/" />
@@ -522,6 +544,53 @@
 </div>
 </div>
 </section>
+<section class="section worked-examples" id="worked-examples" aria-labelledby="worked-examples-title">
+<div class="container">
+  <div class="section-head">
+    <div class="section-kicker">The numbers, step by step</div>
+    <h2 id="worked-examples-title">See what goes into an estimate.</h2>
+    <p>These examples use made-up inputs to show the arithmetic. They are not typical project prices, local market estimates or promises about what a home will save.</p>
+  </div>
+  <div class="example-grid">
+    <article class="example-card">
+      <div class="example-label">Example 1 · Roof replacement</div>
+      <h3>How a roof-cost range is calculated</h3>
+      <p>Say a measured roof has 1,800 square feet of surface area. A homeowner is comparing two written estimates that work out to $5.50 and $8.00 per roof square foot.</p>
+      <div class="equation">
+        <div><span>Measured roof area</span><strong>1,800 sq ft</strong></div>
+        <div><span>Lower rate assumption</span><strong>$5.50 / sq ft</strong></div>
+        <div><span>Higher rate assumption</span><strong>$8.00 / sq ft</strong></div>
+        <div class="equation-result"><span>Illustrative range</span><strong>$9,900–$14,400</strong></div>
+      </div>
+      <p class="example-caveat">That is multiplication, not a quote. The result is only useful if both rates cover comparable work. Tear-off, disposal, underlayment, flashing, decking repairs, ventilation, permits and cleanup can change the final price. The calculator does not add those items automatically.</p>
+      <a href="calculators/roof-replacement-cost">Try the roof replacement calculator →</a>
+    </article>
+    <article class="example-card">
+      <div class="example-label">Example 2 · Solar energy value</div>
+      <h3>Why production and bill savings are different</h3>
+      <p>Suppose a household uses 10,800 kWh a year and wants to model solar generation equal to 80% of that use. The production assumption is 1,350 kWh per installed DC kW each year.</p>
+      <div class="equation">
+        <div><span>Generation target</span><strong>10,800 × 80% = 8,640 kWh</strong></div>
+        <div><span>Estimated system size</span><strong>8,640 ÷ 1,350 = 6.4 kW</strong></div>
+        <div><span>Used directly (40%)</span><strong>3,456 kWh</strong></div>
+        <div><span>Sent to the grid</span><strong>5,184 kWh</strong></div>
+        <div><span>Direct-use value at $0.18/kWh</span><strong>$622.08</strong></div>
+        <div><span>Export value at $0.05/kWh</span><strong>$259.20</strong></div>
+        <div class="equation-result"><span>Modeled annual energy value</span><strong>$881.28</strong></div>
+      </div>
+      <p class="example-caveat">The $881.28 is a modeled value for these assumptions, not a guaranteed reduction in the utility bill. Actual results depend on when the home uses power, the system's real production, the utility's export rules and charges that solar does not remove.</p>
+      <a href="calculators/solar-savings">Try the solar savings calculator →</a>
+    </article>
+  </div>
+  <div class="source-notes">
+    <h3>Where to check the inputs</h3>
+    <p>Use a roof measurement and comparable written bids for a real roofing project. For solar production, run the property's location and system assumptions through <a href="https://pvwatts.nrel.gov/" target="_blank" rel="noopener noreferrer">PVWatts</a>. It models expected production from location, weather and system inputs; it does not inspect a roof, confirm shade on your property or predict your utility bill. Your utility bill and current tariff are the right starting points for import rates and export credits.</p>
+    <p>Each source answers a different question. PVWatts is a production model. The Census Bureau and HUD provide historical national home-improvement spending context. Your written roofing bids establish the scope and price of a specific job, while your utility's current tariff determines how imported and exported electricity are valued. None of these sources can stand in for the others.</p>
+    <p>The U.S. Census Bureau and HUD's <a href="https://www.census.gov/content/dam/Census/library/visualizations/2024/demo/2023%20Home%20Improvements%20Infographic.pdf" target="_blank" rel="noopener noreferrer">2023 Home Improvements infographic</a> reports a $10,000 median roofing expenditure for its 2021–2023 reference period. That is national survey context, not a current price per square foot and not an input to this calculator.</p>
+    <p>For the full formulas, source notes, geographic data limits and publication status, see the <a href="methodology">calculation methodology</a>.</p>
+  </div>
+</div>
+</section>
 <section class="section" aria-labelledby="estimate-details-title">
 <div class="container">
 <div class="section-head"><div class="section-kicker">Before you rely on a number</div><h2 id="estimate-details-title">Two details can change an estimate quite a bit.</h2><p>A couple of common assumptions can make a roof or solar estimate look more certain than it really is.</p></div>
@@ -571,6 +640,7 @@
 <div class="faq-list">
 <details class="faq-item"><summary>How do I know when my roof needs to be replaced?</summary><div class="faq-answer">Age is only one clue. Leaks, missing or damaged shingles, soft decking, recurring repairs, ventilation issues and storm damage can all affect the decision. This calculator uses only the condition you report to suggest inspection or monitoring; it does not calculate remaining roof life or decide whether replacement is necessary. Roof age is displayed as context only. Ask a qualified local roofing professional to inspect the roof.</div></details>
 <details class="faq-item"><summary>Can solar panels be installed on any roof?</summary><div class="faq-answer">No. Roof condition, remaining useful life, orientation, slope, shading, obstructions, structural capacity, fire setbacks, local code and utility requirements all matter. A roof that needs replacement may be better addressed before solar installation. A solar professional and, when appropriate, a structural professional should verify suitability.</div></details>
+<details class="faq-item"><summary>How should I compare roof replacement bids?</summary><div class="faq-answer">Start with the same measured roof area, roofing product and work scope. Check whether each price includes tear-off and disposal, underlayment, flashing, drip edge, ventilation, permits, cleanup and the same warranty coverage. Compare the decking-repair allowance and the price for extra work, too. Ask each contractor to put exclusions, payment milestones and change-order terms in writing. A lower total may leave more work outside the contract. Use the <a href="guides/roof-replacement-cost-factors">three-bid comparison worksheet</a> to line up the details.</div></details>
 <details class="faq-item"><summary>How is the solar savings estimate calculated?</summary><div class="faq-answer">The calculator requires annual kWh from utility bills. It uses a visitor-entered import rate to value directly used solar electricity, and a separately entered export rate to value surplus generation. Dollar value is not calculated without an import rate. It values self-consumed generation at that rate and exported generation at the separately entered export-compensation rate. Actual savings depend on hourly load, system design, weather, shading, tariffs, fixed charges and utility export rules.</div></details>
 <details class="faq-item"><summary>Does the estimate include tax credits or local incentives?</summary><div class="faq-answer">No incentives, rebates or tax credits are automatically included. Eligibility and value depend on current federal, state, local and utility rules, project ownership, timing and individual tax circumstances. Verify current programs with official government or utility sources and consult a qualified tax professional. Do not rely on this calculator for tax advice.</div></details>
 <details class="faq-item"><summary>What does the financing estimate mean?</summary><div class="faq-answer">The optional loan figure is a mathematical payment illustration based on the system-cost assumption, APR and term entered. It is not an offer, prequalification, lender quote or approval. Real financing may include fees, dealer charges, escalators, different terms, liens or other contract provisions that are not modeled here.</div></details>
@@ -581,7 +651,7 @@
 <section aria-label="Solar tax incentive information" class="section"><div class="container"><div class="note-box"><strong>Federal homeowner solar tax credit in 2026:</strong> As of October 31, 2026, the IRS Section 25D law-change FAQ states that the homeowner Residential Clean Energy Credit is not allowed for expenditures after December 31, 2025. For an individual item, the expenditure is treated as made when its original installation is completed; paying on or before December 31, 2025 does not preserve the credit if installation is completed after that date. The FAQ states a separate timing rule for expenditures connected with construction or reconstruction of a structure. This is general information about homeowner Section 25D, not a determination of an individual's eligibility. This calculator does not model tax credits, leases, power-purchase agreements or provider-level tax treatment. Verify current rules with the IRS and a qualified tax professional. Read the <a href="https://www.irs.gov/newsroom/faqs-for-modification-of-sections-25c-25d-25e-30c-30d-45l-45w-and-179d-under-public-law-119-21-139-stat-72-july-4-2025-commonly-known-as-the-one-big-beautiful-bill-obbb" rel="noopener" target="_blank">IRS law-change FAQs for the current Section 25D timing rule</a>. State, local and utility programs are separate and may change.</div></div></section>
 <section class="section" id="about"><div class="container about-grid">
 <div class="about-visual"><div class="about-mark">About Roof &amp; Solar Toolkit</div><strong>Practical tools for better-informed home decisions.</strong><span style="color:#aebdca;font-size:12px;position:relative;z-index:1;">Source-linked guides and practical calculators for early roof and solar decisions.</span></div>
-<div class="about-copy"><div class="section-kicker">About this resource</div><h2>Independent tools for better-informed home decisions.</h2><p>Roof &amp; Solar Toolkit publishes free calculators and practical guides for U.S. homeowners planning roof work or considering solar.</p><p>The calculators help you test assumptions and understand the numbers. The guides explain the details that can change a quote, a production estimate or the value of solar electricity.</p><p>We link to sources and explain important calculation limits. Results are educational estimates, not contractor quotes, property inspections or guarantees.</p>
+<div class="about-copy"><div class="section-kicker">About this resource</div><h2>Independent tools for better-informed home decisions.</h2><p>Roof &amp; Solar Toolkit publishes free calculators and practical guides for U.S. homeowners planning roof work or considering solar.</p><p>The calculators help you test assumptions and understand the numbers. The guides explain the details that can change a quote, a production estimate or the value of solar electricity.</p><p>We link to sources and explain important calculation limits. Results are educational estimates, not contractor quotes, property inspections or guarantees.</p><p>The site is independently maintained by one publisher under the Roof &amp; Solar Toolkit name. The publisher is responsible for the research, calculator maintenance, source documentation and corrections. The <a href="/about">About page</a> explains the site's scope and the qualifications it does not claim.</p>
 
 </div>
 </div></section>
