@@ -73,7 +73,7 @@ def main() -> int:
     if not all(
         rule in shared_css
         for rule in (
-            "@media(min-width:1440px){",
+            "@media(min-width:1200px){",
             ".wrap{width:min(1320px,calc(100% - 48px))}",
             ".wrap.crumbs{width:min(1320px,calc(100% - 48px))}",
             ".article>:where(p,ul,ol,h2,h3){max-width:78ch}",
