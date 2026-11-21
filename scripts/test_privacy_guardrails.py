@@ -123,26 +123,36 @@ if not story_options or story_options[0].get("value") != "" or "selected" not in
 
 privacy_notice = (ROOT / "privacy.html").read_text(encoding="utf-8").lower()
 for required_disclosure in (
-    "not currently displaying advertising or loading an adsense ad-serving script",
-    "cloudflare web analytics",
-    "google analytics website measurement",
-    "approximate geolocation",
-    "browser and device information",
-    "first-party cookie named",
-    "does not intentionally attach calculator values",
-    "does not currently display an analytics consent banner or use google consent mode",
-    "browser performance timing metrics",
-    "does not collect or use visitors' personal data",
-    "or track individual end users across customers' internet properties",
-    "calculator inputs are not sent to the site's calculation apis",
-    "temporarily retained in the current browser tab",
-    "cleared after it is restored or when the tab is closed",
-    "does not ask for your street address",
+    "most calculator entries, including roof measurements, electricity use and cost assumptions, are processed in your browser",
+    "temporarily saved in your browser",
+    "this temporary save expires after one hour",
+    "city or place name and state",
+    "national laboratory of the rockies pvwatts service",
     "openei utility rate database",
-    "if advertising is introduced, this notice will be updated to describe the advertising services in use",
+    "cloudflare provides website hosting, delivery and security",
+    "google analytics is used to understand how visitors use the site",
+    "approximate location",
+    "first-party cookies",
+    "does not intentionally include calculator values",
+    "not currently displaying advertisements",
+    "depending on where you live and which privacy laws apply",
+    "right to request access to, correction of, or deletion",
+    "getroofsolarcalculator@gmail.com",
 ):
     if required_disclosure not in privacy_notice:
         fail(f"Privacy Notice is missing current visitor-facing disclosure: {required_disclosure}")
+
+for unnecessary_detail in (
+    "gtm-5x5dfwmw",
+    "sessionstorage",
+    "cloudflare-hosted endpoint",
+    "request counters",
+    "cachettl",
+    "api_quota_db",
+    "nonce",
+):
+    if unnecessary_detail in privacy_notice:
+        fail(f"Privacy Notice exposes unnecessary implementation detail: {unnecessary_detail}")
 
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
 for stale_public_phrase in (
