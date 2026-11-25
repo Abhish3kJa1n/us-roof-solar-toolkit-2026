@@ -188,7 +188,7 @@
       useButton.addEventListener('click', () => {
         importRateInput.value = incomingStateRate.toFixed(4);
         importRateBasis = `EIA state-average residential price used by explicit visitor choice for ${stateLabel}; illustrative scenario only, not the household marginal tariff.`;
-        appliedNote.textContent = `Applied ${incomingStateRate.toFixed(4)} $/kWh EIA state average for ${stateLabel}. Use your utility's marginal rate for a household estimate.`;
+        appliedNote.textContent = `Applied ${incomingStateRate.toFixed(4)} $/kWh EIA state average as a comparison rate. Replace it with your utility's marginal rate for household savings.`;
         appliedNote.hidden = false;
         useButton.disabled = true;
         useButton.textContent = 'EIA scenario value applied';
