@@ -635,7 +635,14 @@ try {
   assert.equal(await page.locator('script[src*="googletagmanager.com/gtm.js"]').count(), 0, 'Custom 404 must not load Google Tag Manager');
   results.push('custom 404 renders without Google tracking injection: PASS');
 
-  assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load successfully; observed: ' + JSON.stringify(beaconScriptResponses));
+  // Cloudflare Pages preview deployments may not receive the production Web Analytics
+  // injection. If the beacon script is present on preview, its static asset must still return 200.
+  // Require the script on the registered production hostname, not on an unregistered pages.dev alias.
+  const previewHost = new URL(base).hostname.endsWith('.pages.dev');
+  if (!previewHost) {
+    assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load on the registered production hostname; observed: ' + JSON.stringify(beaconScriptResponses));
+  }
+  assert.ok(beaconScriptResponses.every(item => item.status === 200), 'Cloudflare Web Analytics beacon script returned a non-200 response: ' + JSON.stringify(beaconScriptResponses));
   // Preview pages.dev hosts are not the registered analytics hostname. A failed beacon request
   // can be aborted during navigation without a matching CORS console message, so counts need not match.
   assert.ok(previewBeaconGenericFailures <= previewBeaconRequestFailures.length, 'Unmatched net::ERR_FAILED console errors must not be suppressed');
