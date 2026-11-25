@@ -240,7 +240,7 @@
     if (incomingSolarDataIsValid) {
       solarRateInput.value = incomingSolarPrice.toFixed(2);
       const geography = incomingSolarGeography === 'city' ? importedCityLabel : `${handoff.get('state') || 'Selected'} state-wide`;
-      solarPriceBasis = `Berkeley Lab Tracking the Sun 2026 historical ${incomingSolarGeography}-level median for ${geography}; ${incomingSolarSampleN.toLocaleString('en-US')} records, installation years ${incomingSolarYearMin}–${incomingSolarYearMax}, nominal pre-incentive USD/W DC.`;
+      solarPriceBasis = `Berkeley Lab Tracking the Sun 2026 ${incomingSolarGeography}-level median; ${incomingSolarSampleN.toLocaleString('en-US')} records, ${incomingSolarYearMin}–${incomingSolarYearMax}.`;
       solarReferenceStatus.hidden = false;
       solarReferenceStatus.textContent = `${solarPriceBasis} Published p25–p75: $${incomingSolarP25.toFixed(2)}–$${incomingSolarP75.toFixed(2)}/W DC. Historical installation data. The median input is editable; compare its scope with a current proposal.`;
       addFieldNote(solarRateInput, 'solarCityPricePrefillNote', solarPriceBasis, 'https://emp.lbl.gov/tracking-the-sun');
@@ -264,7 +264,7 @@
         solarPriceBasis = 'No solar price entered; payback is not estimated.';
         solarReferenceStatus.hidden = true;
       } else if (solarPriceBasis.startsWith('EnergySage') || solarPriceBasis.startsWith('Berkeley Lab')) {
-        solarPriceBasis = 'User-edited solar price after loading a published benchmark; no longer the unchanged source statistic.';
+        solarPriceBasis = 'User-edited price based on a published benchmark.';
         solarReferenceStatus.textContent = solarPriceBasis;
       } else if (!solarPriceBasis.startsWith('User-entered')) {
         solarPriceBasis = 'User-entered cash-price quote supplied by visitor.';
@@ -381,7 +381,7 @@
         rate === null ? 'Import rate: not entered.' : `Import rate: ${money(rate,3)}/kWh. Basis: ${importRateBasis}`,
         `Production assumption: ${number(productionPerKW)} kWh per kW DC per year. Basis: ${importedCityLabel ? 'NLR PVWatts V8 using a representative Census city point' : 'visitor-entered or sourced separately'}.`,
         selfUseShare === null ? 'Direct-use share: not entered.' : `Annual energy flow: ${number(selfConsumedKwh)} kWh used at home and ${number(exportedKwh)} kWh exported, using a ${Math.round(selfUseShare*100)}% direct-use scenario.`,
-        solarPricePerWatt === null ? 'Payback and loan payment need an installed price per DC watt.' : `Installed price: ${money(solarPricePerWatt,2)}/W; modeled cash price ${money(solarCost)}. Simple payback divides this price by first-year modeled annual energy value.`,
+        solarPricePerWatt === null ? 'Payback and loan payment need an installed price per DC watt.' : `Installed price: ${money(solarPricePerWatt,2)}/W (${solarPriceBasis}). Modeled cash price ${money(solarCost)}; simple payback divides this price by first-year modeled annual energy value.`,
         'Annual scenario excludes fixed utility charges, time-of-use billing, batteries, maintenance, financing fees, incentives and future rate changes.'
       ];
       document.getElementById('assumptionList').innerHTML = assumptions.map(x => `<li>${x.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}</li>`).join('');
@@ -558,8 +558,8 @@
       syncAreaMode();
       syncFinancingFields();
 
-      roofRateBasis = 'Angi broad national roof-replacement reference range of $4–$11 per roof sq ft; national planning context, not a local quote or material-specific price.';
-      solarPriceBasis = 'EnergySage H1 2026 national solar-only marketplace median of $2.62/W DC; not a local installer quote.';
+      roofRateBasis = 'Angi U.S. roof-replacement reference: $4–$11 per roof sq ft (October 22, 2026).';
+      solarPriceBasis = 'EnergySage H1 2026 national solar-only median: $2.62/W DC before incentives.';
       importRateBasis = 'EIA January–September 2026 U.S. average residential price of 18.19 cents/kWh, used as a comparison scenario.';
       roofReferenceStatus.hidden = false;
       roofReferenceStatus.textContent = roofRateBasis + ' National reference loaded. Replace it with comparable local proposals.';
