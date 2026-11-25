@@ -61,6 +61,8 @@ jobs:
         run: node scripts/smoke_calculator_browser.mjs
         env:
           PREVIEW_BASE_URL: https://test-homepage-calculator-v2.roof-solar-toolkit-2026.pages.dev
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
   browser-calculator-smoke:
     name: Browser calculator and interaction regression smoke
@@ -87,6 +89,8 @@ jobs:
         run: node scripts/smoke_calculator_browser.mjs
         env:
           PREVIEW_BASE_URL: https://fix-combined-roof-pitch-rang.roof-solar-toolkit-2026.pages.dev
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
   preview-csp-smoke:
     name: Live Preview CSP nonce and API routing smoke test
@@ -107,6 +111,8 @@ jobs:
         run: node scripts/smoke_preview_csp.mjs
         env:
           PREVIEW_BASE_URL: https://audit-guarded-adsense-bootst.roof-solar-toolkit-2026.pages.dev
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
   production-public-smoke:
     name: Live Production Pages and custom-domain edge smoke test
@@ -164,6 +170,8 @@ jobs:
         run: node scripts/smoke_production_multiregion.mjs
         env:
           PREVIEW_BASE_URL: https://test-production-six-region-s.roof-solar-toolkit-2026.pages.dev
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
   live-preview-smoke:
     name: Live Census, PVWatts and OpenEI preview smoke test
@@ -184,4 +192,6 @@ jobs:
         run: node scripts/live_preview_smoke.mjs
         env:
           PREVIEW_BASE_URL: https://audit-stage1-20261103.roof-solar-toolkit-2026.pages.dev
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
 
