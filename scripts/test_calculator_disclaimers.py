@@ -87,7 +87,7 @@ def check_calculator(relative: str) -> str:
         "calculators/solar-savings.html": (
             "System size = target annual generation",
             "Model assumptions",
-            "Enter an export credit to value surplus generation",
+            "Annual energy value = electricity used at home × import rate + exported electricity × export credit.",
             "December 31, 2025",
         ),
     }[relative]
