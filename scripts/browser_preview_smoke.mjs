@@ -447,14 +447,12 @@ try {
   await accessibilityScan('roof-cost-mobile');
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
-  await page.waitForFunction(() => {
-    const node = document.querySelector('#roofMetroBenchmarkResult');
-    return Boolean(node && /national point estimates reproduce the Census Table C-16/i.test(node.innerText));
-  }, undefined, { timeout: 15000 });
-  assert.equal(await page.locator('#roofMetroBenchmarkField').isVisible(), false, 'empty AHS registry must hide the unavailable dropdown field');
-  const ahsStatus = await page.locator('#roofMetroBenchmarkResult').innerText();
-  assert.match(ahsStatus, /No AHS metro roofing distribution is currently approved/i);
-  assert.match(ahsStatus, /national point estimates reproduce the Census Table C-16/i);
+  assert.equal(await page.locator('#roofMetroBenchmarkField').count(), 0, 'homeowner page must not expose an unavailable metro-price control');
+  assert.equal(await page.locator('#roofMetroBenchmarkResult').count(), 0, 'homeowner page must not expose internal AHS metro-processing status');
+  const roofCostCopy = await page.locator('#main-content').innerText();
+  assert.doesNotMatch(roofCostCopy, /metro-level roofing range|No AHS metro roofing distribution|variance and margin-of-error reconciliation/i, 'internal unpublished AHS processing status must stay out of homeowner copy');
+  assert.match(roofCostCopy, /Published U\.S\. cost references/i, 'approved national roofing cost references remain available');
+  assert.match(roofCostCopy, /Historical Census roofing expenditure/i, 'historical Census context remains available');
 
   const styleValues = await page.locator('#metalSystem optgroup[label="Roof style / system"] option').evaluateAll(options => options.map(option => option.value));
   const materialValues = await page.locator('#metalSystem optgroup[label="Base metal / material"] option').evaluateAll(options => options.map(option => option.value));
