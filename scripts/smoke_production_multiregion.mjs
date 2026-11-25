@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
+import { assertPreviewNotAccessChallenge, fetchPreview } from "./cloudflare_access.mjs";
 
 const BASE = process.env.PREVIEW_BASE_URL || "https://test-production-six-region-s.roof-solar-toolkit-2026.pages.dev";
 const PLACES = [
@@ -12,11 +13,11 @@ const PLACES = [
 ];
 
 async function getJson(path, headers = {}) {
-  const response = await fetch(BASE + path, {
+  const response = await fetchPreview(BASE + path, {
     headers: { Accept: "application/json", "Cache-Control": "no-cache", ...headers },
-    redirect: "error",
     signal: AbortSignal.timeout(30000),
-  });
+  }, BASE);
+  assertPreviewNotAccessChallenge(response, "Regional Preview API request " + path);
   let body;
   try {
     body = await response.json();
