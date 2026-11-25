@@ -73,7 +73,10 @@ const rateBasis=()=>{
     if(editedEndpoints.size===0) return activeReference.basis;
     return 'Edited reference rates. '+endpointDescription('low',activeReference)+'; '+endpointDescription('high',activeReference)+'. Source: '+referenceBasis(activeReference);
   }
-  if(carriedReference) return carriedNotice(materialEl.value==='metal'&&metalReferences[metalSystemEl.value]?metalReferences[metalSystemEl.value].label:'the selected material');
+  if(carriedReference){
+    const nextLabel=materialEl.value==='metal'&&metalReferences[metalSystemEl.value]?metalReferences[metalSystemEl.value].label:'the selected material';
+    return endpointDescription('low',carriedReference)+'; '+endpointDescription('high',carriedReference)+'. Reload to use the '+nextLabel+' reference.';
+  }
   if(customNotice) return customNotice;
   return 'Visitor-entered rates; source not asserted.';
 };
