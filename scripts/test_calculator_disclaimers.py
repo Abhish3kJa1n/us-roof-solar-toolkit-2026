@@ -148,8 +148,13 @@ if '<div class="hero-note">' in index:
     fail("index.html still repeats the planning disclosure in the hero")
 if "See the Section 25D note below the results" in index:
     fail("index.html still repeats the tax-credit warning before results")
-if index.find('class="calculator-method-note"') < index.find('id="results"'):
-    fail("index.html methodology note must follow the combined estimator results")
+homepage_results_pos = index.find('id="results"')
+homepage_results_tag_pos = index.rfind("<div", 0, homepage_results_pos)
+homepage_results_end = matching_div_end(index, homepage_results_tag_pos)
+homepage_note_pos = index.find('<div class="calculator-method-note" role="note">', homepage_results_end)
+homepage_gap = index[homepage_results_end:homepage_note_pos] if homepage_note_pos >= 0 else "missing"
+if homepage_note_pos < 0 or re.sub(r"</div\\s*>|\\s+", "", homepage_gap, flags=re.IGNORECASE):
+    fail("index.html methodology note must immediately follow the complete combined results block")
 
 print("PASS homepage and all five standalone calculators use one universal notice and one result-adjacent method note.")
 print("PASS repeated footer and generic sidebar disclaimers are removed.")
