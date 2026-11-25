@@ -4,6 +4,7 @@ from __future__ import annotations
 from html.parser import HTMLParser
 from pathlib import Path
 import re
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -233,6 +234,50 @@ if re.search(r"googletag|adsbygoogle|gtag\s*\(|google-analytics|facebook\.net|ho
     fail("unexpected ad/analytics/third-party tracking code found in HTML")
 if "Independent educational resource" in source_all:
     fail("premature publisher independence claim remains")
+
+# Scan every tracked text file for the retired personal Gmail contact, not only public HTML.
+tracked = subprocess.run(
+    ["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True
+).stdout.decode("utf-8").split("\\0")
+old_contact = "getroofsolarcalculator" + "@gmail.com"
+text_suffixes = {".html", ".js", ".mjs", ".cjs", ".css", ".json", ".md", ".txt", ".xml", ".yml", ".yaml", ".toml", ".py", ".sh", ".sql"}
+for relative in tracked:
+    if not relative or relative == "scripts/test_privacy_guardrails.py":
+        continue
+    candidate = ROOT / relative
+    if candidate.suffix.lower() not in text_suffixes or not candidate.is_file():
+        continue
+    try:
+        tracked_text = candidate.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        continue
+    if old_contact in tracked_text.lower():
+        fail(f"old Gmail contact remains in tracked repository file: {relative}")
+
+# Audit executable runtime payload separately. _headers is intentionally excluded:
+# its legacy Google CSP origins are inert permissions and the owner forbade _headers edits.
+runtime_files = list(pages)
+for runtime_root in (ROOT / "assets", ROOT / "functions"):
+    if runtime_root.exists():
+        runtime_files.extend(
+            p for p in runtime_root.rglob("*")
+            if p.is_file() and p.suffix.lower() in {".js", ".mjs", ".cjs"}
+        )
+active_tracker_tokens = (
+    "googletagmanager.com",
+    "gtm-5x5dfwmw",
+    "gtag(",
+    "google-analytics.com",
+    "google-tag-bootstrap",
+)
+for runtime_file in runtime_files:
+    runtime_text = runtime_file.read_text(encoding="utf-8").lower()
+    for token in active_tracker_tokens:
+        if token in runtime_text:
+            fail(f"active Google tracking reference {token!r} remains in runtime file: {runtime_file.relative_to(ROOT)}")
+    if re.search(r"(?<![a-z0-9])_ga(?:_[a-z0-9]+)?(?![a-z0-9])", runtime_text):
+        fail(f"Google Analytics _ga identifier remains in runtime file: {runtime_file.relative_to(ROOT)}")
+
 
 print(f"PASS {len(pages)} HTML pages have no form submission endpoint, no inline JS, and only first-party scripts.")
 print(f"PASS JS assets contain no localStorage, cookies or IndexedDB; only the combined estimator uses disclosed, tab-scoped sessionStorage for the city lookup handoff, with a one-hour restoration limit and no identifying fields. API requests do not send household calculator inputs.")
