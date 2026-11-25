@@ -422,7 +422,7 @@ try {
 
   // Standalone roof-cost calculator: AHS availability state, material changes and all metal-system references.
   await open('/calculators/roof-replacement-cost.html');
-  assert.match(await page.locator('#main-content').innerText(), /Visitors can deliberately load the broad range as an editable national planning reference/i);
+  assert.match(await page.locator('#main-content').innerText(), /Start with the national reference above or choose a metal range by roof style\/system or base material/i);
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('roof-cost-desktop');
   await accessibilityScan('roof-cost');
