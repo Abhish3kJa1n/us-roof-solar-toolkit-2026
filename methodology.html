@@ -13,6 +13,37 @@
   <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <link rel="canonical" href="https://getroofsolarcalculator.online/methodology" />
 <meta property="og:url" content="https://getroofsolarcalculator.online/methodology" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://getroofsolarcalculator.online/#publisher",
+      "name": "Roof & Solar Toolkit",
+      "url": "https://getroofsolarcalculator.online/",
+      "description": "An independently maintained U.S. homeowner planning publication providing roof and solar calculators and source-linked guidance.",
+      "email": "editor@getroofsolarcalculator.online",
+      "publishingPrinciples": "https://getroofsolarcalculator.online/editorial-policy"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://getroofsolarcalculator.online/#website",
+      "name": "Roof & Solar Toolkit",
+      "url": "https://getroofsolarcalculator.online/",
+      "publisher": { "@id": "https://getroofsolarcalculator.online/#publisher" }
+    },
+    {
+      "@type": "TechArticle",
+      "@id": "https://getroofsolarcalculator.online/methodology#webpage",
+      "name": "Calculation Methodology",
+      "url": "https://getroofsolarcalculator.online/methodology",
+      "isPartOf": { "@id": "https://getroofsolarcalculator.online/#website" },
+      "about": { "@id": "https://getroofsolarcalculator.online/#publisher" }
+    }
+  ]
+}
+</script>
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
@@ -36,6 +67,12 @@
 <h3>National survey context — not a calculator input</h3>
 <p>The U.S. Census Bureau and HUD's 2023 American Housing Survey reported a median roofing expenditure of <strong>$10,000</strong> for the 2021–2023 reference period. The same infographic reports approximately 8.3 million roofing projects and $93.5 billion in total roofing expenditure. These are national owner-reported home-improvement statistics, not contractor invoice prices, current-year quotes, local prices or dollars per roof square foot. The underlying survey includes varied roof improvement scopes and does not establish that every project was a complete tear-off and replacement. <a href="https://www.census.gov/content/dam/Census/library/visualizations/2024/demo/2023%20Home%20Improvements%20Infographic.pdf" rel="noopener" target="_blank">Read the Census/HUD 2023 Home Improvements Infographic (PDF)</a>.</p>
 <p><strong>Arithmetic example, not a market benchmark:</strong> 1,800 sq ft × $5.50–$8.00 per sq ft = $9,900–$14,400. A roofing square is 100 sq ft; do not confuse dollars per roofing square with dollars per sq ft.</p>
+<h2>2026 reference data and regulatory context</h2>
+<p>The optional solar-price illustration in the combined estimator uses the EnergySage H1 2026 national solar-only marketplace median of <strong>$2.62 per watt DC</strong>. It is a marketplace reference, not a city price, installer proposal or guaranteed customer cost. The optional roof-cost fallback uses a broad U.S. national range of <strong>$4–$11 per roof sq ft</strong> from Angi; project scope, material, pitch, access, tear-off and local labor can move a written proposal outside that range. Neither figure is automatically treated as a local estimate.</p>
+<p>The EIA Electric Power Monthly Table 5.6.B reported a U.S. residential average electricity price of <strong>18.19 cents/kWh</strong> for January–August 2026 (data release October 23, 2026). This is an all-customer national average, not a household's marginal import rate or export compensation. The estimator leaves the household tariff fields blank unless the visitor enters a value or deliberately chooses an illustrative scenario.</p>
+<p>Location-based production uses NLR PVWatts V8 with a representative U.S. Census TIGERweb place point. OpenEI utility-rate results are nearby candidate records, not confirmation of the serving utility or tariff. These services support estimates; they do not inspect a property, determine its utility service territory or replace a current utility bill.</p>
+<p>Under current federal law, the Residential Clean Energy Credit under Internal Revenue Code Section 25D is not allowed for expenditures after December 31, 2025. The IRS states that an individual item's expenditure is generally treated as made when original installation is completed, with separate timing rules for construction or reconstruction of a structure. The calculators do not determine eligibility or include tax credits. <a href="https://www.irs.gov/newsroom/faqs-for-modification-of-sections-25c-25d-25e-30c-30d-45l-45w-and-179d-under-public-law-119-21-139-stat-72-july-4-2025-commonly-known-as-the-one-big-beautiful-bill-obbb" target="_blank" rel="noopener">See the IRS guidance</a>.</p>
+
 <h2>3. Geographic installed-price references (separate from calculator inputs)</h2>
 <p>The site does not infer installation prices from a city name, electricity rate or PV production model. A solar installed-price reference may be published only from a reviewed residential rooftop PV cohort with current commercial reuse clearance. City samples require at least 100 projects; state fallback samples require at least 500. If displayed, the middle 50% (25th–75th percentiles), median, project count, installation years, nominal pre-incentive $/W DC basis, filters and source are shown. These are historical project-price distributions, not a current installer quote or a guaranteed price.</p>
 <p>A roofing reference may be published only for a supported 2013 OMB CBSA metro after the official 2023 AHS relational PUF has been checked, the roofing job code verified, weighted estimates and replicate variance reviewed, and the results reconciled with Census Table C-16. The AHS measure is a whole-project nominal-dollar spending distribution, not a cost per square foot. It includes broader roof addition/replacement scopes and Census-edited/imputed values; it must not be used as the installed-rate input in the roof calculator. A selected current city is not automatically assigned a metro reference.</p>
