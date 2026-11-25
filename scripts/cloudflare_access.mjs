@@ -97,11 +97,15 @@ export async function fetchPreview(requestUrl, init = {}, previewBaseUrl = proce
 
 export function isCloudflareAccessChallenge(response) {
   if (!response) return false;
-  const responseUrl = String(response.url || '');
-  const location = response.headers?.get?.('location') || '';
-  const destination = response.headers?.get?.('Location') || '';
-  const urlText = responseUrl + ' ' + location + ' ' + destination;
-  return [401, 403].includes(Number(response.status))
+  const status = typeof response.status === 'function' ? response.status() : response.status;
+  const responseUrl = typeof response.url === 'function' ? response.url() : response.url;
+  const responseHeaders = typeof response.headers === 'function' ? response.headers() : response.headers;
+  const location = responseHeaders?.get?.('location')
+    || responseHeaders?.location
+    || responseHeaders?.Location
+    || '';
+  const urlText = String(responseUrl || '') + ' ' + String(location);
+  return [401, 403].includes(Number(status))
     || /(?:^|[./])cloudflareaccess\.com\b|\/cdn-cgi\/access\/login\b/i.test(urlText);
 }
 
@@ -112,5 +116,6 @@ export function assertPreviewNotAccessChallenge(response, label = 'Cloudflare Pa
   const credentialHint = hasId && hasSecret
     ? 'The configured service token may be invalid or its Service Auth policy may not cover this hostname.'
     : 'Configure both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET as GitHub Actions secrets.';
-  throw new Error(label + ' is returning a Cloudflare Access challenge (HTTP ' + response.status + '). ' + credentialHint);
+  const status = typeof response.status === 'function' ? response.status() : response.status;
+  throw new Error(label + ' is returning a Cloudflare Access challenge or denial (HTTP ' + status + '). ' + credentialHint);
 }
