@@ -522,9 +522,9 @@ try {
   assert.match(await page.locator('#loadReference').innerText(), /Reload corrugated sheet metal reference/i);
   await page.locator('#run').click();
   const mixedResult = await page.locator('#result').innerText();
-  assert.ok(mixedResult.includes('Edited reference rates'));
-  assert.ok(mixedResult.includes('Source: HomeGuide published installed range for standing seam'));
-  assert.ok(mixedResult.includes('rate entered by you: $10'));
+  assert.ok(mixedResult.includes('low rate entered by you: $10'));
+  assert.ok(mixedResult.includes('high rate retained from standing seam: $16'));
+  assert.ok(mixedResult.includes('Reload to use the corrugated sheet metal reference'));
   await page.locator('#loadReference').click();
   assert.equal(await page.locator('#low').inputValue(), '5');
   assert.equal(await page.locator('#high').inputValue(), '12');
