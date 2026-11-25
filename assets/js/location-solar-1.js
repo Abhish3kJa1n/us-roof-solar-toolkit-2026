@@ -589,7 +589,6 @@
       data.warnings.forEach((warning) => list.append(el('li', '', warning)));
       resultEl.append(el('p', '', 'PVWatts warnings:'), list);
     }
-    resultEl.append(el('p', '', 'Interpret as a modeled typical-year estimate, not a guarantee. The selected Census place point is a city-level representative coordinate; roof shading and actual site conditions are not inspected.'));
   }
 
   tariffBtn.addEventListener('click', async () => {
