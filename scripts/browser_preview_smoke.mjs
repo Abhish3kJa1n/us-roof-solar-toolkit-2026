@@ -631,9 +631,9 @@ try {
   assert.equal(expected404Responses, 1, 'Only the expected main-document 404 response may be returned during the custom 404 check');
   assert.equal(missingResponse.status(), 404, 'Unknown Preview route must return HTTP 404');
   assert.match(await page.locator('main h1').innerText(), /We could not find that page/i, 'Custom 404 content must render');
-  assert.equal(await page.locator('script[src*="google-tag-bootstrap-1.js"]').count(), 1, 'Custom 404 must load its first-party analytics bootstrap');
-  assert.equal(await page.locator('script[src*="googletagmanager.com/gtm.js?id=GTM-5X5DFWMW"]').count(), 0, 'Preview 404 must not load Production Google Analytics');
-  results.push('custom 404 renders and keeps Production Google Analytics disabled on Preview: PASS');
+  assert.equal(await page.locator('script[src*="google-tag-bootstrap-1.js"]').count(), 0, 'Custom 404 must not load the removed Google tracking bootstrap');
+  assert.equal(await page.locator('script[src*="googletagmanager.com/gtm.js"]').count(), 0, 'Custom 404 must not load Google Tag Manager');
+  results.push('custom 404 renders without Google tracking injection: PASS');
 
   assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load successfully; observed: ' + JSON.stringify(beaconScriptResponses));
   // Preview pages.dev hosts are not the registered analytics hostname. A failed beacon request
