@@ -48,8 +48,9 @@ def check_result_method_note(relative: str, source: str, result_id: str = "resul
     result_tag = source.rfind("<div", 0, result_pos)
     result_end = matching_div_end(source, result_tag)
     note_pos = source.find('<div class="calculator-method-note"', result_end)
-    if note_pos < 0 or source[result_end:note_pos].strip():
-        fail(f"{relative} method note must immediately follow the result")
+    gap = source[result_end:note_pos] if note_pos >= 0 else ""
+    if note_pos < 0 or not re.fullmatch(r"(?:\s*</div>\s*)*", gap, re.IGNORECASE):
+        fail(f"{relative} method note must immediately follow the result without intervening content")
     if GENERIC_NOTICE in source:
         fail(f"{relative} still contains the generic site-wide disclaimer")
     if '<div class="wrap disclaimer">' in source:
