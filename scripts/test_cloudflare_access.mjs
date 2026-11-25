@@ -30,6 +30,12 @@ try {
     'service-token headers must never be sent to another Pages project',
   );
 
+  assert.deepEqual(
+    cloudflareAccessHeadersForUrl('https://roof-solar-toolkit-2026.pages.dev/', 'https://roof-solar-toolkit-2026.pages.dev'),
+    {},
+    'the root Pages hostname is supported before Access is enabled',
+  );
+
   process.env.CF_ACCESS_CLIENT_ID = 'test-client-id';
   assert.throws(
     () => cloudflareAccessHeadersForUrl(base + '/', base),
@@ -45,6 +51,14 @@ try {
       'CF-Access-Client-Secret': 'test-client-secret',
     },
     'valid service-token headers must be added to the configured Preview origin',
+  );
+  assert.deepEqual(
+    cloudflareAccessHeadersForUrl('https://roof-solar-toolkit-2026.pages.dev/', 'https://roof-solar-toolkit-2026.pages.dev'),
+    {
+      'CF-Access-Client-Id': 'test-client-id',
+      'CF-Access-Client-Secret': 'test-client-secret',
+    },
+    'service-token headers must also support the separately protected root Pages hostname',
   );
   assert.deepEqual(
     cloudflareAccessHeadersForUrl('https://other.roof-solar-toolkit-2026.pages.dev/', base),
