@@ -64,6 +64,15 @@ try {
     false,
     'ordinary successful Preview responses must not be classified as Access challenges',
   );
+  assert.equal(
+    isCloudflareAccessChallenge({
+      status: () => 302,
+      url: () => base + '/',
+      headers: () => ({ location: 'https://roof-solar-toolkit-2026.cloudflareaccess.com/cdn-cgi/access/login' }),
+    }),
+    true,
+    'Playwright response methods must also be understood',
+  );
 
   console.log('PASS: Cloudflare Access headers are optional, paired, exact-origin scoped and login redirects are detected.');
 } finally {
