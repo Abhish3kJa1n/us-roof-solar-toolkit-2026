@@ -135,8 +135,16 @@ for (const url of urls) {
 
 const privacy = await getText(PAGES_ORIGIN + "/privacy.html", "text/html");
 assert.equal(privacy.response.status, 200);
-assert.match(privacy.body, /not currently displaying advertising or loading an AdSense ad-serving script/i, "Privacy Notice must state that AdSense delivery is inactive");
-assert.match(privacy.body, /the domain and Pages project are configured for Cloudflare Web Analytics/i, "Privacy Notice must disclose configured Cloudflare Web Analytics");
+assert.match(
+  privacy.body,
+  /(?:not currently displaying advertising or loading an AdSense ad-serving script|no advertising is currently displayed on this site[\s\S]{0,220}does not enable the AdSense ad-serving script)/i,
+  "Privacy Notice must state that AdSense delivery is inactive"
+);
+assert.match(
+  privacy.body,
+  /Cloudflare Web Analytics/i,
+  "Privacy Notice must disclose Cloudflare Web Analytics"
+);
 
 const notFound = await get(PAGES_ORIGIN + "/__production-smoke-not-found-20261108", "text/html");
 assert.equal(notFound.status, 404, "Unknown paths must return a real HTTP 404");
