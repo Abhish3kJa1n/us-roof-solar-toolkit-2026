@@ -50,7 +50,7 @@ loc=(ROOT/'calculators/location-solar.html').read_text(encoding='utf-8')
 for key,val in {'capacity':'1','tilt':'20','azimuth':'180','losses':'14'}.items():
     if not re.search(rf'<input[^>]*id="{key}"[^>]*value="{val}"', loc):
         fail(f'location estimator is missing its disclosed editable reference assumption for {key}')
-for marker in ('not facts inferred from your city','reference configuration','Replace these values'):
+for marker in ('Your city sets the solar resource','editable settings describe the array being modeled','Adjust them to match a proposal'):
     if marker.lower() not in loc.lower():
         fail('city estimator reference assumptions are not adequately disclosed')
 
