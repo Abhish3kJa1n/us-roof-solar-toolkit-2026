@@ -4,6 +4,8 @@
  * This intentionally calls the real Census and NLR endpoints. OpenEI is
  * reported as SKIPPED when its optional server-side key is not configured.
  */
+import { assertPreviewNotAccessChallenge, fetchPreview } from './cloudflare_access.mjs';
+
 const base = (process.env.PREVIEW_BASE_URL || '').replace(/\/$/, '');
 if (!base) throw new Error('PREVIEW_BASE_URL is required.');
 
