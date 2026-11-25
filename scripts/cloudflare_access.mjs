@@ -1,4 +1,4 @@
-const PROJECT_PREVIEW_SUFFIX = '.roof-solar-toolkit-2026.pages.dev';
+const PROJECT_PREVIEW_HOST = 'roof-solar-toolkit-2026.pages.dev';
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 function asUrl(value, base) {
@@ -19,7 +19,8 @@ export function cloudflareAccessHeadersForUrl(requestUrl, previewBaseUrl = proce
 
   const preview = asUrl(previewBaseUrl);
   const target = asUrl(requestUrl, preview);
-  if (!preview.hostname.toLowerCase().endsWith(PROJECT_PREVIEW_SUFFIX)) return {};
+  const previewHostname = preview.hostname.toLowerCase();
+  if (previewHostname !== PROJECT_PREVIEW_HOST && !previewHostname.endsWith('.' + PROJECT_PREVIEW_HOST)) return {};
   if (target.origin !== preview.origin) return {};
 
   const clientId = (process.env.CF_ACCESS_CLIENT_ID || '').trim();
