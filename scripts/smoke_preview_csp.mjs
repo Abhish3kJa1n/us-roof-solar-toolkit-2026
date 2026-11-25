@@ -1,16 +1,15 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
+import { assertPreviewNotAccessChallenge, fetchPreview } from "./cloudflare_access.mjs";
 
 const base = process.env.PREVIEW_BASE_URL;
 if (!base || !/^https:\/\/[a-z0-9-]+\.roof-solar-toolkit-2026\.pages\.dev$/i.test(base)) {
   throw new Error("PREVIEW_BASE_URL must be this project's HTTPS Cloudflare Pages Preview host.");
 }
 
-async function get(path) {
-  const response = await fetch(new URL(path, base), {
-    headers: { Accept: "text/html,application/json", "Cache-Control": "no-cache" },
-    redirect: "follow",
-  });
+async function get(path, headers = { Accept: "text/html,application/json", "Cache-Control": "no-cache" }) {
+  const response = await fetchPreview(new URL(path, base), { headers }, base);
+  assertPreviewNotAccessChallenge(response, "Preview request " + path);
   return response;
 }
 
@@ -98,18 +97,14 @@ assert.ok(
   !/google-tag-bootstrap|googletagmanager\.com\/gtm\.js|gtag\(/i.test(missingHtml),
   "Preview 404 HTML must not contain executable Google tracking code"
 );
-const obsoleteBootstrap = await fetch(new URL("/assets/js/google-tag-bootstrap-1.js", base), {
-  headers: { "Cache-Control": "no-cache" },
-});
+const obsoleteBootstrap = await get("/assets/js/google-tag-bootstrap-1.js", { "Cache-Control": "no-cache" });
 assert.equal(obsoleteBootstrap.status, 404, "obsolete Google tracking bootstrap asset must not be present");
 
 const secondHome = await get("/");
 const secondNonce = readNonce(secondHome, await secondHome.text(), "/ (second request)");
 assert.notEqual(firstNonce, secondNonce, "a fresh HTML response must receive a fresh nonce");
 
-const adsTxtResponse = await fetch(new URL("/ads.txt", base), {
-  headers: { Accept: "text/plain" },
-});
+const adsTxtResponse = await get("/ads.txt", { Accept: "text/plain" });
 assert.equal(adsTxtResponse.status, 200, "Preview should publish the ads.txt file at the web root");
 const adsTxt = (await adsTxtResponse.text()).trim();
 assert.equal(adsTxt, "google.com, pub-6193507831935325, DIRECT, f08c47fec0942fa0");
@@ -119,9 +114,7 @@ assert.match(
   "homepage AdSense site-verification meta tag should match ads.txt publisher ID",
 );
 
-const apiResponse = await fetch(new URL("/api/location?search=xy", base), {
-  headers: { Accept: "application/json" },
-});
+const apiResponse = await get("/api/location?search=xy", { Accept: "application/json" });
 assert.equal(apiResponse.status, 400, "API route should reach the existing location Function validation");
 assert.match(apiResponse.headers.get("content-type") || "", /application\/json/i);
 const apiBody = await apiResponse.json();
