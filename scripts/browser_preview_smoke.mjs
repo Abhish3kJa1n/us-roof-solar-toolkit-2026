@@ -546,7 +546,7 @@ try {
   await page.locator('#metalSystem').selectOption('metal_shingles');
   assert.equal(await page.locator('#low').inputValue(), '5.5');
   assert.equal(await page.locator('#high').inputValue(), '8.5');
-  assert.match(await page.locator('#referenceStatus').innerText(), /not a published reference for the new category/i);
+  assert.match(await page.locator('#referenceStatus').innerText(), /Your rates were retained after changing the metal category to metal shingles/i);
   await page.locator('#loadReference').click();
   await page.waitForTimeout(100);
   const metalRefAfter = await page.locator('#loadReference').evaluate(button => ({
