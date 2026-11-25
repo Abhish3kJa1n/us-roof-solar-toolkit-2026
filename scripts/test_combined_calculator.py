@@ -10,8 +10,9 @@ HARNESS=r'''
 const ids=[...new Set([...__IDS__,'year','calculatorForm','progressValue','stepCount','stepProgress','calculator','error1','error2','roofAreaField','homeAreaField','storiesField','aprField','termField','offsetValue','results','resultWarning','assumptionList'])];
 const all={};
 let createdCount=0;
-global.window={location:{search:''}};
-function makeEl(id){return all[id]||(all[id]={id,value:'',textContent:'',innerHTML:'',hidden:false,required:false,checked:false,dataset:{},style:{},attrs:{},handlers:{},selectedOptions:[{text:'Asphalt shingles'}],classList:{toggle(){},add(){},remove(){}},addEventListener(type,fn){this.handlers[type]=fn;},setAttribute(k,v){this.attrs[k]=v;},removeAttribute(k){delete this.attrs[k];},scrollIntoView(){},remove(){},append(){},closest(){return {append(){}}}})};
+global.window={location:{search:'',pathname:'/'},history:{replaceState(_state,_title,path){const next=new URL(path,'https://example.test');window.location.pathname=next.pathname;window.location.search=next.search;}}};
+global.sessionStorage={items:new Map(),getItem(k){return this.items.has(k)?this.items.get(k):null;},setItem(k,v){this.items.set(k,String(v));},removeItem(k){this.items.delete(k);}};
+function makeEl(id){return all[id]||(all[id]={id,value:'',textContent:'',innerHTML:'',hidden:false,required:false,checked:false,dataset:{},style:{},attrs:{},handlers:{},selectedOptions:[{text:'Asphalt shingles'}],classList:{_names:new Set(),toggle(name,force){if(force===undefined){if(this._names.has(name))this._names.delete(name);else this._names.add(name);}else if(force)this._names.add(name);else this._names.delete(name);},add(name){this._names.add(name);},remove(name){this._names.delete(name);},contains(name){return this._names.has(name);}},addEventListener(type,fn){this.handlers[type]=fn;},setAttribute(k,v){this.attrs[k]=v;},removeAttribute(k){delete this.attrs[k];},scrollIntoView(){},remove(){},append(){},closest(){return {append(){}}}})};
 ids.forEach(makeEl);
 const modeRoof=makeEl('modeRoof'); modeRoof.value='roof'; modeRoof.checked=true;
 const modeHome=makeEl('modeHome'); modeHome.value='home'; modeHome.checked=false;
@@ -133,6 +134,51 @@ def main():
  if not city['appliedVisible'] or 'illustrative scenario' not in city['appliedText']:
   raise SystemExit('FAIL explicit EIA application provenance was not shown')
  print('PASS city-based PVWatts/LBNL prefill leaves tariff blank until visitor explicitly applies EIA scenario')
+
+
+ # The homepage quick-start action must populate a labelled illustrative scenario
+ # and run the existing validated calculation handler, not a parallel calculation.
+ quick_code=HARNESS+JS+"""
+const load=makeEl('loadTypicalExample').handlers.click;
+if(typeof load!=='function')throw Error('Load U.S. example button has no handler');
+load();
+const loaded={roofArea:makeEl('roofArea').value,roofRateLow:makeEl('roofRateLow').value,roofRateHigh:makeEl('roofRateHigh').value,annualKwh:makeEl('annualKwh').value,rate:makeEl('rate').value,productionPerKw:makeEl('productionPerKw').value,offset:makeEl('offset').value,selfUse:makeEl('selfUse').value,exportRate:makeEl('exportRate').value,solarPricePerWatt:makeEl('solarPricePerWatt').value,annualSavings:makeEl('annualSavings').textContent,payback:makeEl('payback').textContent,assumptions:makeEl('assumptionList').innerHTML,resultsVisible:makeEl('results').classList.contains('show')};
+console.log(JSON.stringify(loaded));
+"""
+ with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(quick_code);temp=Path(f.name)
+ try:r=subprocess.run(['node',str(temp)],capture_output=True,text=True)
+ finally:temp.unlink(missing_ok=True)
+ if r.returncode:raise SystemExit(f'FAIL homepage U.S. example button: {r.stderr}')
+ loaded=json.loads(r.stdout)
+ expected={'roofArea':'2000','roofRateLow':'4','roofRateHigh':'11','annualKwh':'10500','rate':'0.1819','productionPerKw':'1350','offset':'80','selfUse':'40','exportRate':'0.08','solarPricePerWatt':'2.62'}
+ for key,value in expected.items():
+  if loaded.get(key)!=value:raise SystemExit(f'FAIL U.S. example {key}: expected {value}, got {loaded.get(key)}')
+ if loaded['annualSavings'] in ('$— / yr','—') or loaded['payback'] in ('— years','—') or not loaded['resultsVisible']:
+  raise SystemExit(f'FAIL U.S. example did not run the existing calculation handler: {loaded}')
+ for provenance in ('EIA','Angi','EnergySage','PVWatts'):
+  if provenance not in loaded['assumptions']:
+   raise SystemExit(f'FAIL U.S. example is missing the {provenance} input provenance: {loaded}')
+ print('PASS homepage illustrative U.S. example populates inputs, retains source labels and runs validated calculation')
+
+ # Reset must restore the blank, honest starting state and clear city-handoff state.
+ reset_code=HARNESS+JS+"""
+makeEl('loadTypicalExample').handlers.click();
+const reset=makeEl('resetCalculator').handlers.click;
+if(typeof reset!=='function')throw Error('Reset button has no handler');
+reset();
+const cleared=['roofType','roofAge','roofArea','homeArea','stories','pitch','roofRateLow','roofRateHigh','annualKwh','rate','productionPerKw','offset','selfUse','exportRate','solarPricePerWatt','apr','term'].every(id=>makeEl(id).value==='');
+console.log(JSON.stringify({cleared,condition:makeEl('condition').value,roofMode:modeRoof.checked,homeMode:modeHome.checked,cash:financeCash.checked,loan:financeLoan.checked,resultsVisible:makeEl('results').classList.contains('show'),roofStatus:makeEl('roofReferenceStatus').textContent,solarStatus:makeEl('solarReferenceStatus').textContent,locationSearch:window.location.search,sessionState:sessionStorage.getItem('roof-solar-toolkit:combined-form:v1')}));
+"""
+ with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(reset_code);temp=Path(f.name)
+ try:r=subprocess.run(['node',str(temp)],capture_output=True,text=True)
+ finally:temp.unlink(missing_ok=True)
+ if r.returncode:raise SystemExit(f'FAIL homepage reset button: {r.stderr}')
+ reset=json.loads(r.stdout)
+ if not reset['cleared'] or reset['condition']!='unknown' or not reset['roofMode'] or reset['homeMode'] or not reset['cash'] or reset['loan'] or reset['resultsVisible']:
+  raise SystemExit(f'FAIL reset did not restore blank calculator defaults: {reset}')
+ if reset['roofStatus'] or reset['solarStatus'] or reset['locationSearch'] or reset['sessionState'] is not None:
+  raise SystemExit(f'FAIL reset left source handoff or saved location state: {reset}')
+ print('PASS homepage reset clears example data and restores the original blank defaults')
 
  print(f'Passed {len(CASES)+3}/{len(CASES)+3} combined calculator scenarios.')
  print('Limit: deterministic DOM stubs exercise the real homepage JavaScript, not browser rendering, tariff accuracy or engineering validation.')
