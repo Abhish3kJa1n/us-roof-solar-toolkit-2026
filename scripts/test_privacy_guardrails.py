@@ -135,8 +135,11 @@ for required_disclosure in (
     "u.s. census bureau",
     "national laboratory of the rockies",
     "openei utility rate database",
-    "google tag manager",
-    "google analytics",
+    "cloudflare web analytics",
+    "does not use cookies for analytics",
+    "does not use localstorage or sessionstorage for analytics identifiers",
+    "does not fingerprint individual visitors",
+    "preceding six months of web analytics reports",
     "page url and query-string information",
     "cookies and similar technologies",
     "data retention",
@@ -147,6 +150,7 @@ for required_disclosure in (
     "advertising, sale and sharing",
     "no advertising is currently displayed",
     "we do not sell personal information for money",
+    "we do not share personal information for cross-context behavioral advertising",
     "this site does not currently provide a first-party cookie preference center",
     "getroofsolarcalculator@gmail.com",
 ):
@@ -180,6 +184,16 @@ for contact_page in ("contact.html", "editorial-policy.html", "privacy.html", "t
     if re.search(r"getroofsolarcalculator\\.gmail\\.com</a>\\.", contact_html, re.I):
         fail(f"contact email is followed by stray punctuation in {contact_page}")
 
+
+middleware = (ROOT / "functions" / "_middleware.js").read_text(encoding="utf-8")
+for active_tracker in ("googletagmanager.com", "GTM-5X5DFWMW", "gtag("):
+    if active_tracker.lower() in middleware.lower():
+        fail(f"production middleware still injects a Google tracking tag: {active_tracker}")
+if (ROOT / "assets" / "js" / "google-tag-bootstrap-1.js").exists():
+    fail("obsolete Google Tag Manager bootstrap asset still exists")
+not_found = (ROOT / "404.html").read_text(encoding="utf-8")
+if "google-tag-bootstrap" in not_found.lower() or "googletagmanager.com" in not_found.lower():
+    fail("404 page still loads Google Tag Manager")
 
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
 for stale_public_phrase in (
@@ -217,5 +231,5 @@ print(f"PASS {len(pages)} HTML pages have no form submission endpoint, no inline
 print(f"PASS JS assets contain no localStorage, cookies or IndexedDB; only the combined estimator uses disclosed, tab-scoped sessionStorage for the city lookup handoff, with a one-hour restoration limit and no identifying fields. API requests do not send household calculator inputs.")
 print("PASS literal defaults are limited to the four editable PVWatts reference-model assumptions and the source-labelled $2.62/W national solar price reference. The combined calculator may load disclosed, editable national roof/solar references at runtime; household consumption, actual bill usage, self-consumption and export credit remain visitor-specific and unprefilled.")
 print("PASS README and methodology contain no obsolete 50% self-use or blank-export-as-zero claim.")
-print("PASS no analytics or ad-serving script is embedded in static HTML; the nonce-protected Google tag is injected only by production middleware, and the Privacy Notice discloses Google Analytics collection separately from Cloudflare Web Analytics.")
+print("PASS no Google Tag Manager or Google Analytics executable is embedded in public HTML, the 404 page or production middleware; Cloudflare Web Analytics is the configured site analytics service.")
 print("LIMIT: static source inspection does not detect host-level logs, server/CDN processing, browser extensions or third-party scripts added after deployment.")
