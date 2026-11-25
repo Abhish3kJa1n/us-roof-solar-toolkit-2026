@@ -109,6 +109,13 @@ export function isCloudflareAccessChallenge(response) {
     || /(?:^|[./])cloudflareaccess\.com\b|\/cdn-cgi\/access\/login\b/i.test(urlText);
 }
 
+export class CloudflareAccessError extends Error {
+  constructor(label, status, credentialHint) {
+    super(label + ' is returning a Cloudflare Access challenge or denial (HTTP ' + status + '). ' + credentialHint);
+    this.name = 'CloudflareAccessError';
+  }
+}
+
 export function assertPreviewNotAccessChallenge(response, label = 'Cloudflare Pages Preview') {
   if (!isCloudflareAccessChallenge(response)) return;
   const hasId = Boolean((process.env.CF_ACCESS_CLIENT_ID || '').trim());
@@ -117,5 +124,5 @@ export function assertPreviewNotAccessChallenge(response, label = 'Cloudflare Pa
     ? 'The configured service token may be invalid or its Service Auth policy may not cover this hostname.'
     : 'Configure both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET as GitHub Actions secrets.';
   const status = typeof response.status === 'function' ? response.status() : response.status;
-  throw new Error(label + ' is returning a Cloudflare Access challenge or denial (HTTP ' + status + '). ' + credentialHint);
+  throw new CloudflareAccessError(label, status, credentialHint);
 }
