@@ -19,11 +19,11 @@
 <a class="skip-link" href="#main-content">Skip to main content</a>
 <div class="top"><div class="wrap"><span><strong>Roof &amp; Solar Toolkit</strong> · Free roof and solar homeowner tools</span><span>Educational resource · Estimates only</span></div></div>
 <header><div class="wrap nav"><a class="brand" href="/"><span class="brand-mark">⌂</span>Roof &amp; Solar Toolkit</a><nav aria-label="Main navigation" class="links"><a href="/#tools">Tools</a><a href="/#guides">Guides</a><a href="/#how">How it works</a><a href="/about">About</a><a class="btn" href="/#calculator">Main calculator</a></nav></div></header>
-<section class="page-hero"><div class="wrap"><div class="eyebrow">Free homeowner calculator</div><h1>How Many Solar Panels Do I Need?</h1><p>Estimate a panel count from your home's annual electricity use, a target solar-generation offset, modeled local production and the panel wattage in a quote or datasheet.</p><p class="byline">Calculation notes: see methodology below</p></div></section>
-<div class="wrap" aria-label="Calculation documentation"><p style="margin:10px 0 14px;font-size:13px;color:#586779;">Review the <a href="/methodology">calculation methodology and source register</a> for formulas, reference data and limitations.</p></div>
+<section class="page-hero"><div class="wrap"><div class="eyebrow">Free homeowner calculator</div><h1>How Many Solar Panels Do I Need?</h1><p>Estimate a panel count from your home's annual electricity use, a target solar-generation offset, modeled local production and the panel wattage in a quote or datasheet.</p></div></section>
+<div class="wrap"><p class="calculator-notice" role="note">Planning estimates only. Results depend on the inputs and assumptions shown; they are not quotes, inspections, engineering designs, or guarantees.</p></div>
 <nav aria-label="Breadcrumb" class="wrap crumbs"><a href="/">Home</a> / <a href="/#tools">Tools &amp; guides</a> / How Many Solar Panels Do I Need?</nav>
 
-<div class="wrap layout"><main class="maincol" id="main-content">
+<div class="wrap layout layout-single"><main class="maincol" id="main-content">
 <section class="panel">
 <div class="kicker">Interactive calculator</div><h2>Estimate panel count from electricity use</h2>
 <p>For a usage-based estimate, enter 12 months of electricity consumption, your own target annual generation offset, and annual AC production per kW DC from a location-specific PVWatts model or a comparable installer model.</p>
@@ -39,7 +39,10 @@
 <div class="calculator"><div class="field"><label for="kw">Quoted or target system size (kW DC) <span class="hint">(alternative method)</span></label><input id="kw" data-validation-unit="kW DC" data-validation-exclusive-with="#annualUse,#offset,#production" max="50" min="0.5" step="0.1" type="number" placeholder="Only use if system size is already known"/><small>Use this alternative when an installer proposal already specifies the array's DC nameplate capacity.</small></div></div>
 <div class="btnrow"><button class="btn" id="run" data-field-validation-scope=".panel" type="button">Calculate panel count</button><button class="btn btn-outline" id="reset" type="button">Reset inputs</button></div>
 <div aria-live="polite" aria-atomic="true" class="output" id="result"><div class="kicker">Estimated module count</div><div class="big">Ready to calculate</div><p>Enter annual usage, target offset, modeled production and module wattage—or use a quoted system size as the alternative method.</p></div>
-<p class="note">The estimate is arithmetic, not a roof layout or final system design. Shading, orientation, setbacks, fire access, obstructions, structural capacity, equipment compatibility, local code and actual installation design can change the usable count. Do not treat module area as the roof area required.</p>
+<div class="calculator-method-note" role="note">
+<p><strong>Method:</strong> Usage-based path: target annual generation = annual electricity use × target offset; estimated DC system size = target generation ÷ modeled annual production; panel count = DC system size × 1,000 ÷ module wattage, rounded up. Quoted-size path: panel count = quoted DC system size × 1,000 ÷ module wattage, rounded up; annual production is not calculated by this method. Neither path assesses roof fit, setbacks or structural suitability; an installer must design the layout. See the <a href="/methodology">calculation methodology</a>.</p>
+<p><strong>Federal Section 25D:</strong> The Residential Clean Energy Credit is not allowed for expenditures made after December 31, 2025. An expenditure with respect to an item is treated as made when the original installation of the item is completed; for an expenditure made in connection with construction or reconstruction of a structure, it is treated as made when the original use of the constructed or reconstructed structure by the taxpayer begins. A payment or deposit before the cutoff does not by itself preserve eligibility when the applicable completion or original-use date is after it. See <a href="https://www.irs.gov/newsroom/faqs-for-modification-of-sections-25c-25d-25e-30c-30d-45l-45w-and-179d-under-public-law-119-21-139-stat-72-july-4-2025-commonly-known-as-the-one-big-beautiful-bill-obbb" target="_blank" rel="noopener">IRS Section 25D guidance</a> and consult a qualified tax professional.</p>
+</div>
 </section>
 <article class="article">
 <h2>How the panel-count estimate works</h2>
@@ -58,9 +61,8 @@
 </article>
 
 <section class="toolbox"><div class="kicker">Continue exploring</div><h2 style="color:#10243b;margin:6px 0 14px">Related tools and guides</h2><div class="related"><a href="location-solar"><strong>City solar production estimator</strong><span>Model annual output for a representative US city point</span></a><a href="solar-savings"><strong>Solar savings calculator</strong><span>Model production, savings and payback</span></a><a href="roof-area"><strong>Roof area calculator</strong><span>Estimate roof surface area from footprint and pitch</span></a><a href="../guides/are-solar-panels-worth-it"><strong>Are solar panels worth it?</strong><span>Evaluate tariffs, roof condition and project economics</span></a></div></section>
-</main>
-<aside class="sidecol"><div class="toolbox"><div class="kicker">Important</div><p style="font-size:12px;color:#65778a;margin-bottom:0">This site does not identify your exact roof, guarantee solar production, retrieve your utility tariff, determine incentives or assess financing eligibility. Verify inputs and proposal details independently.</p></div></aside></div>
-<footer class="footer"><div class="wrap"><div><strong style="color:white;font-size:16px">Roof &amp; Solar Toolkit</strong><p>Homeowner planning tools and explainers.</p></div><div><a href="/about">About</a><a href="../privacy">Privacy</a><a href="../terms">Terms</a><a href="../editorial-policy">Editorial policy</a></div></div><div class="wrap disclaimer">For planning only. Estimates are not quotes, guarantees or professional advice. Verify measurements, site conditions, prices, utility rules and eligibility with qualified local sources.</div></footer>
+</main></div>
+<footer class="footer"><div class="wrap"><div><strong style="color:white;font-size:16px">Roof &amp; Solar Toolkit</strong><p>Homeowner planning tools and explainers.</p></div><div><a href="/about">About</a><a href="../privacy">Privacy</a><a href="../terms">Terms</a><a href="../editorial-policy">Editorial policy</a></div></div></footer>
 <script src="../assets/js/field-validation-1.js"></script>
 <script src="../assets/js/solar-panel-count-1.js"></script>
 </body></html>

@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "audit/**"
+      - "fix/calculator-disclaimer-consolidation-20261125"
   pull_request:
     branches:
       - main

@@ -19,7 +19,7 @@
 <div class="top"><div class="wrap"><span><strong>Roof &amp; Solar Toolkit</strong> · Homeowner planning resource</span><span>Location-aware solar model · Educational estimate</span></div></div>
 <header><div class="wrap nav"><a class="brand" href="/"><span class="brand-mark">⌂</span>Roof &amp; Solar Toolkit</a><nav aria-label="Main navigation" class="links"><a href="/#tools">Tools</a><a href="/#guides">Guides</a><a href="/#how">How it works</a><a href="/about">About</a><a class="btn" href="/calculators/solar-savings">Savings calculator</a></nav></div></header>
 <section class="page-hero"><div class="wrap"><div class="eyebrow">Location-aware solar planning</div><h1>Solar production estimator by city</h1><p>Enter a US city, select the matching city/state suggestion, then model annual and monthly solar output with NLR PVWatts V8 using a US Census Bureau representative place point. The city point does not pinpoint a home or determine its roof characteristics.</p></div></section>
-<div class="wrap" aria-label="Calculation documentation"><p style="margin:10px 0 14px;font-size:13px;color:#586779;">Review the <a href="/methodology">calculation methodology and source register</a> for formulas, reference data and limitations.</p></div>
+<div class="wrap"><p class="calculator-notice" role="note">Planning estimates only. Results depend on the inputs and assumptions shown; they are not quotes, inspections, engineering designs, or guarantees.</p></div>
 <nav aria-label="Breadcrumb" class="wrap crumbs"><a href="/">Home</a> / <a href="/#tools">Tools</a> / City Solar Production Estimator</nav>
 
 <div class="wrap layout layout-single">
@@ -77,7 +77,9 @@
 </div>
 <div class="btnrow"><button class="btn" id="estimate" data-field-validation-scope="#arrayFields" type="button" disabled>Model solar production</button><span id="modelStatus" class="byline" role="status" aria-live="polite"></span></div>
 <div class="output" id="result" aria-live="polite" aria-atomic="true"><div class="kicker">PV production estimate</div><div class="big">Waiting for location and inputs</div><p>Find a city, choose a returned Census place, and enter the array assumptions to request a typical-year model.</p></div>
-<p class="note">PVWatts V8 models typical-year production from the selected city point and your system inputs. Roof-level shading, orientation, equipment and actual weather can change production.</p>
+<div class="calculator-method-note" role="note">
+<p><strong>Method:</strong> PVWatts V8 models typical-year output from the selected Census city point and your array assumptions. It is not a roof-level assessment; shading, orientation and site conditions can change actual production. See the <a href="/methodology">calculation methodology</a>.</p>
+</div>
 </section>
 <section class="toolbox" style="margin-top:20px">
 <div class="kicker">Step 3 · Utility rate plan (optional)</div><h2 style="color:#10243b;margin:6px 0 8px">Find nearby residential rate-plan records</h2>
@@ -106,7 +108,7 @@
 </main>
 
 </div>
-<footer class="footer"><div class="wrap"><div><strong style="color:white;font-size:16px">Roof &amp; Solar Toolkit</strong><p>Homeowner planning tools and explainers.</p></div><div><a href="/about">About</a><a href="../privacy">Privacy</a><a href="../terms">Terms</a><a href="../editorial-policy">Editorial policy</a></div></div><div class="wrap disclaimer">For planning only. Estimates are not quotes, guarantees or professional advice. Verify measurements, site conditions, prices, utility rules and eligibility with qualified local sources.</div></footer>
+<footer class="footer"><div class="wrap"><div><strong style="color:white;font-size:16px">Roof &amp; Solar Toolkit</strong><p>Homeowner planning tools and explainers.</p></div><div><a href="/about">About</a><a href="../privacy">Privacy</a><a href="../terms">Terms</a><a href="../editorial-policy">Editorial policy</a></div></div></footer>
 <script src="../assets/js/field-validation-1.js"></script>
 <script src="../assets/js/location-solar-1.js"></script>
 <script src="../assets/js/price-benchmarks-1.js"></script>
