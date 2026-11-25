@@ -26,7 +26,7 @@ def fail(message: str) -> None:
 def matching_div_end(source: str, opening_pos: int) -> int:
     """Return the end of a div, accounting for nested divs."""
     depth = 0
-    for match in re.finditer(r"</?div\\b[^>]*>", source[opening_pos:], re.IGNORECASE):
+    for match in re.finditer(r"</?div\b[^>]*>", source[opening_pos:], re.IGNORECASE):
         token = match.group(0)
         if token.startswith("</"):
             depth -= 1
