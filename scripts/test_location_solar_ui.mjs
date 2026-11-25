@@ -135,7 +135,7 @@ assert.match(calls.find((call) => call.includes('/api/location?city=')), /state=
 assert.ok(calls.some((call) => call.includes('/api/location?search=Austin')), 'city typing should call the nationwide suggestion route');
 assert.equal(nodes.stateBenchmark.hidden, false);
 assert.match(nodes.stateBenchmark.children.map((n) => n.textContent).join(' '), /16.51¢\/kWh/);
-assert.match(nodes.stateBenchmark.children.map((n) => n.textContent).join(' '), /not your utility’s marginal energy charge/);
+assert.match(nodes.stateBenchmark.children.map((n) => n.textContent).join(' '), /Use your utility’s marginal energy rate and export credit/);
 assert.match(nodes.stateBenchmark.children.map((n) => n.textContent).join(' '), /2026 year-to-date values preliminary/);
 assert.match(nodes.stateBenchmark.children.map((n) => n.textContent).join(' '), /Monthly estimates can be revised/);
 
