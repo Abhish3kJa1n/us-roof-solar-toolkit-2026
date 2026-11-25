@@ -14,7 +14,14 @@ function asUrl(value, base) {
  * Pages Preview origin. Never attach these credentials to Production,
  * other Pages projects, or third-party resources loaded by the page.
  */
-export class CloudflareAccessConfigurationError extends Error {\n  constructor(message) {\n    super(message);\n    this.name = 'CloudflareAccessConfigurationError';\n  }\n}\n\nexport function cloudflareAccessHeadersForUrl(requestUrl, previewBaseUrl = process.env.PREVIEW_BASE_URL) {
+export class CloudflareAccessConfigurationError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'CloudflareAccessConfigurationError';
+  }
+}
+
+export function cloudflareAccessHeadersForUrl(requestUrl, previewBaseUrl = process.env.PREVIEW_BASE_URL) {
   if (!previewBaseUrl) return {};
 
   const preview = asUrl(previewBaseUrl);
