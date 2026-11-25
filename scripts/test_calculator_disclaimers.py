@@ -40,14 +40,14 @@ def fail(message: str) -> None:
 for relative in PAGES:
     source = (ROOT / relative).read_text(encoding="utf-8")
     matches = re.findall(
-        r'<div class="wrap disclaimer">([\\s\\S]*?)</div>',
+        '<div class="wrap disclaimer">(.+?)</div>',
         source,
-        flags=re.I,
+        flags=re.I | re.S,
     )
     if len(matches) != 1:
         fail(f"{relative} must have exactly one shared footer disclaimer; found {len(matches)}")
-    plain = re.sub(r"<[^>]+>", "", matches[0])
-    plain = re.sub(r"\\s+", " ", plain).strip()
+    plain = re.sub("<[^>]+>", "", matches[0])
+    plain = " ".join(plain.split())
     if plain != EXPECTED:
         fail(f"{relative} shared footer disclaimer is not the concise approved text: {plain!r}")
     for required in PAGE_SPECIFIC.get(relative, ()):
