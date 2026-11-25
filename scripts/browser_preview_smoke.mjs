@@ -256,7 +256,7 @@ try {
   await page.locator('#loadNationalRoofReference').click();
   assert.equal(await page.locator('#roofRateLow').inputValue(), '4');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '11');
-  assert.match(await page.locator('#roofReferenceStatus').innerText(), /not a local or material-specific price/i);
+  assert.ok((await page.locator('#roofReferenceStatus').innerText()).includes('Broad U.S. price reference'));
 
   // Roof material is descriptive and optional; with the required roof area supplied, it must not block progress.
   await page.locator('#roofArea').fill('1800');
@@ -339,7 +339,7 @@ try {
   await page.waitForFunction(() => /17 panels/.test(document.querySelector('#result')?.innerText || ''), undefined, { timeout: 15000 });
   const quotedPanelCount = await page.locator('#result').innerText();
   assert.match(quotedPanelCount, /Quoted target capacity: 6\.60 kW DC/);
-  assert.match(quotedPanelCount, /Annual production was not calculated/);
+  assert.ok(quotedPanelCount.includes('Annual production is not part of the quoted-size method'));
   await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-quoted-size-method-result.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await accessibilityScan('solar-panel-count-mobile');
@@ -467,7 +467,7 @@ try {
   await page.locator('#loadReference').click();
   assert.equal(await page.locator('#low').inputValue(), '4');
   assert.equal(await page.locator('#high').inputValue(), '11');
-  assert.match(await page.locator('#referenceStatus').innerText(), /not a local or material-specific price/i);
+  assert.ok((await page.locator('#referenceStatus').innerText()).includes('Loaded Angi’s U.S. $4–$11 per roof sq ft reference'));
   await page.locator('#run').click();
   assert.match(await page.locator('#result').innerText(), /\$7,200|\$19,800/);
 
@@ -511,19 +511,19 @@ try {
   // A visitor edit creates a mixed range. Changing system preserves it as custom and does not mislabel it.
   await page.locator('#metalSystem').selectOption('standing_seam');
   await page.locator('#low').fill('10');
-  assert.match(await page.locator('#referenceStatus').innerText(), /high endpoint remains from the original/i);
+  assert.ok((await page.locator('#referenceStatus').innerText()).includes('high rate remains from the original'));
   await page.locator('#metalSystem').selectOption('corrugated');
   assert.equal(await page.locator('#low').inputValue(), '10');
   assert.equal(await page.locator('#high').inputValue(), '16');
   const mixedStatus = await page.locator('#referenceStatus').innerText();
   assert.match(mixedStatus, /standing seam/i);
-  assert.match(mixedStatus, /not a published range for corrugated sheet metal/i);
+  assert.ok(mixedStatus.includes('Reload to use the corrugated sheet metal reference'));
   assert.match(await page.locator('#loadReference').innerText(), /Reload corrugated sheet metal reference/i);
   await page.locator('#run').click();
   const mixedResult = await page.locator('#result').innerText();
-  assert.match(mixedResult, /Mixed\/custom rate pair/i);
-  assert.match(mixedResult, /Original source: HomeGuide published installed range for standing seam/i);
-  assert.match(mixedResult, /not a published range for corrugated sheet metal/i);
+  assert.ok(mixedResult.includes('Edited reference rates'));
+  assert.ok(mixedResult.includes('Source: HomeGuide published installed range for standing seam'));
+  assert.ok(mixedResult.includes('rate entered by you: $10'));
   await page.locator('#loadReference').click();
   assert.equal(await page.locator('#low').inputValue(), '5');
   assert.equal(await page.locator('#high').inputValue(), '12');
