@@ -235,6 +235,10 @@ try {
   await page.screenshot({ path: path.join(screenshotDir, 'homepage-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
+  const homepageMethodNote = await page.locator('.calculator-method-note').innerText();
+  assert.match(homepageMethodNote, /original installation of the item is completed/i);
+  assert.match(homepageMethodNote, /original use of the constructed or reconstructed structure/i);
+  assert.match(homepageMethodNote, /payment or deposit before the cutoff does not by itself preserve eligibility/i);
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'combined calculator must not silently prefill a national solar price');
   assert.equal(await page.locator('#roofPriceAssumptions').evaluate(node => node.open), false, 'roof price assumptions should be collapsed initially');
   assert.equal(await page.locator('#solarCostAssumptions').evaluate(node => node.open), false, 'solar cost assumptions should be collapsed initially');
@@ -358,7 +362,10 @@ try {
   assert.match(limitationsText, /not a utility-bill simulator/i);
   assert.match(limitationsText, /unknown, not zero/i);
   const solarMethodNote = await page.locator('.calculator-method-note').innerText();
-  assert.match(solarMethodNote, /(?:not available|unavailable) for expenditures made after December 31, 2025/i, 'solar calculator must state the current federal Section 25D termination date in the result-adjacent method note');
+  assert.match(solarMethodNote, /not allowed for expenditures made after December 31, 2025/i, 'solar calculator must state the current federal Section 25D termination date in the result-adjacent method note');
+  assert.match(solarMethodNote, /original installation of the item is completed/i, 'solar calculator must explain the installation-completion timing rule');
+  assert.match(solarMethodNote, /original use of the constructed or reconstructed structure/i, 'solar calculator must explain the construction/reconstruction timing rule');
+  assert.match(solarMethodNote, /payment or deposit before the cutoff does not by itself preserve eligibility/i, 'solar calculator must explain why payment timing alone does not preserve eligibility');
   assert.equal(await page.locator('.calculator-method-note a[href^="https://www.irs.gov/"]').count(), 1, 'federal credit timing note must link to the IRS source from the result-adjacent method note');
   await page.locator('#assumptionDisclosure summary').click();
   await page.locator('#annualUse').fill('12000');
