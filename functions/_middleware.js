@@ -1,7 +1,6 @@
 import { buildStandardEnforcedCsp, buildStrictCsp, buildStrictCspReportOnly, createNonce } from "./_shared/csp.mjs";
 
 const PUBLISHER_ID = "ca-pub-6193507831935325";
-const GOOGLE_TAG_ID = "GTM-5X5DFWMW";
 const PRODUCTION_HOSTS = new Set([
   "getroofsolarcalculator.online",
   "www.getroofsolarcalculator.online",
@@ -44,26 +43,14 @@ export async function onRequest(context) {
   const nonce = createNonce();
   const eligible = isAdEligiblePath(url.pathname);
   const isProductionHost = url.protocol === "https:" && PRODUCTION_HOSTS.has(url.hostname);
-  const loadGoogleTag = isProductionHost;
   const loadAdSense = eligible && canLoadAdSense(context, url, response);
 
   const transformed = new HTMLRewriter()
     .on("script", { element(element) { element.setAttribute("nonce", nonce); } })
     .on("head", {
       element(element) {
-        if (loadGoogleTag) {
-          element.prepend(
-            `<!-- Google tag -->
-<script async src="https://www.googletagmanager.com/gtm.js?id=${GOOGLE_TAG_ID}" nonce="${nonce}"></script>
-<script nonce="${nonce}">
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-</script>
-`,
-            { html: true },
-          );
-        }
+        // Analytics is provided by the Cloudflare Pages project setting.
+        // Do not inject Google Tag Manager, Google Analytics or other trackers here.
         if (!loadAdSense) return;
         element.append(
           `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${PUBLISHER_ID}" crossorigin="anonymous" nonce="${nonce}"></script>`,
