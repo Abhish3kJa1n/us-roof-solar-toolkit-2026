@@ -40,7 +40,7 @@ async function getExactLocation(path, cityLabel) {
       }
       return result;
     } catch (error) {
-      if (error?.name === 'CloudflareAccessError') throw error;
+      if (['CloudflareAccessError', 'CloudflareAccessConfigurationError'].includes(error?.name)) throw error;
       if (attempt === 0) {
         console.log("RETRY: Census request failed transiently for " + cityLabel + ": " + error.message);
         await new Promise((resolve) => setTimeout(resolve, 750));
