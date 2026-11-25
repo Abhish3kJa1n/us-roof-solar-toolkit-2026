@@ -35,21 +35,21 @@ DEFAULTS={
  'apr':'','term':'','condition':'good','stories':''
 }
 CASES=[
- ('unknown_use_share',{},['Inputs needed','No annual self-consumption share was entered','not split between self-use and exports'],['Rate needed','50%']),
- ('unknown_export_rate',{'selfUse':'50'},['Inputs needed','No export credit was entered','not assumed to be worth $0','export credit is unknown','Total annual energy value and payback are withheld'],['Rate needed','0.000/kWh']),
- ('unknown_import_rate',{'selfUse':'50','rate':'','exportRate':'0.04'},['import rate is unknown','4,320 kWh exported','Total annual energy value and payback are withheld'],['0.000/kWh']),
- ('both_tariff_rates_unknown',{'selfUse':'50','rate':'','exportRate':''},['import rate is unknown','export credit is unknown','Total annual energy value and payback are withheld'],['0.000/kWh']),
- ('complete_scenario',{'selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh self-used','$0.040/kWh','20.8 years'],['Inputs needed']),
+ ('unknown_use_share',{},['Inputs needed','Add a direct-use share and utility rates to calculate annual value','Direct-use share: not entered'],['not split between self-use and exports']),
+ ('unknown_export_rate',{'selfUse':'50'},['Inputs needed','Add your utility export credit to value surplus generation','Export credit is unknown'],['not assumed to be worth $0']),
+ ('unknown_import_rate',{'selfUse':'50','rate':'','exportRate':'0.04'},['Add your marginal import rate to value electricity used at home','Import rate: not entered','4,320 kWh exported'],['0.000/kWh']),
+ ('both_tariff_rates_unknown',{'selfUse':'50','rate':'','exportRate':''},['Add your marginal import rate to value electricity used at home','Import rate: not entered','Direct-use share: 50%'],['0.000/kWh']),
+ ('complete_scenario',{'selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh used at home','$0.040/kWh','20.8 years'],['Inputs needed']),
  ('zero_import_rate_explicit',{'selfUse':'50','rate':'0','exportRate':'0.04'},['$173 / yr','0.000/kWh'],['No import rate was entered']),
- ('all_direct_use_export_not_required',{'selfUse':'100'},['$1,728 / yr','12.5 years','8,640 kWh self-used'],['No export credit was entered']),
- ('export_only_without_import_rate',{'selfUse':'0','exportRate':'0.04','rate':''},['$346 / yr','0 kWh self-consumed','no import-rate input is needed'],['Inputs needed']),
- ('material_is_optional',{'roofType':'','selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh self-used'],['Select a roof material'])
+ ('all_direct_use_export_not_required',{'selfUse':'100'},['$1,728 / yr','12.5 years','8,640 kWh used at home'],['Add your utility export credit']),
+ ('export_only_without_import_rate',{'selfUse':'0','exportRate':'0.04','rate':''},['$346 / yr','8,640 kWh exported'],['Add your marginal import rate']),
+ ('material_is_optional',{'roofType':'','selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh used at home'],['Select a roof material'])
 ]
 
 def main():
  for name,overrides,yes,no in CASES:
   values={**DEFAULTS,**overrides}
-  code=HARNESS+JS+'\n'+f"for(const [k,v] of Object.entries({json.dumps(values)})) makeEl(k).value=v; makeEl('calculateButton').handlers.click(); console.log(JSON.stringify({{annual:makeEl('annualSavings').textContent,desc:makeEl('savingsDesc').textContent,payback:makeEl('payback').textContent,warning:makeEl('resultWarning').textContent,assumptions:makeEl('assumptionList').innerHTML,error:makeEl('error1').textContent}}));"
+  code=HARNESS+JS+'\n'+f"for(const [k,v] of Object.entries({json.dumps(values)})) makeEl(k).value=v; makeEl('calculateButton').handlers.click(); console.log(JSON.stringify({{annual:makeEl('annualSavings').textContent,desc:makeEl('savingsDesc').textContent,payback:makeEl('payback').textContent,warning:makeEl('resultWarning').textContent,assumptions:makeEl('assumptionList').innerHTML,system:makeEl('systemDesc').textContent,error:makeEl('error1').textContent}}));"
   with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(code);temp=Path(f.name)
   try:r=subprocess.run(['node',str(temp)],capture_output=True,text=True)
   finally:temp.unlink(missing_ok=True)
@@ -59,6 +59,8 @@ def main():
   missing=[x for x in yes if x not in combined]
   present=[x for x in no if x in combined]
   if missing or present:raise SystemExit(f'FAIL {name}: missing={missing}; unwanted={present}; output={out}')
+  if out.get('warning'):
+   raise SystemExit(f'FAIL {name}: legacy global result warning must remain empty: {out["warning"]}')
   print('PASS',name)
  # Home-area conversion must not silently assume a one-storey footprint.
  values={**DEFAULTS,'roofArea':'','homeArea':'2000','pitch':'moderate','stories':''}
