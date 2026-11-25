@@ -51,6 +51,12 @@ def check_page(relative: str) -> None:
         fail(f"{relative} must have exactly one top planning notice")
     if NOTICE not in source:
         fail(f"{relative} is missing the approved top notice wording")
+    hero_start = source.find('<section class="page-hero">')
+    hero_end = source.find("</section>", hero_start)
+    notice_pos = source.find('class="calculator-notice"')
+    result_pos = source.find('id="result"')
+    if hero_start < 0 or hero_end < 0 or not hero_end < notice_pos < result_pos:
+        fail(f"{relative} planning notice must sit after the hero and before the calculator")
     if source.count('class="calculator-method-note"') != 1:
         fail(f"{relative} must have exactly one result-adjacent methodology note")
     result_pos = source.find('id="result"')
@@ -79,6 +85,11 @@ for page in PAGES:
 index = (ROOT / "index.html").read_text(encoding="utf-8")
 if index.count('class="calculator-notice"') != 1 or NOTICE not in index:
     fail("index.html must have exactly one approved top planning notice")
+homepage_notice_pos = index.find('class="calculator-notice"')
+journey_pos = index.find('<section class="journey-section"')
+calculator_pos = index.find('<section class="section calculator-section"')
+if journey_pos < 0 or calculator_pos < 0 or not homepage_notice_pos < journey_pos < calculator_pos:
+    fail("index.html planning notice must appear below the hero and above the main page sections")
 if index.count('class="calculator-method-note"') != 1:
     fail("index.html must have exactly one combined methodology/Section 25D note")
 if index.count("Federal Section 25D") != 1:
