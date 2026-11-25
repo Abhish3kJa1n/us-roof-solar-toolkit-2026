@@ -263,6 +263,11 @@ for runtime_root in (ROOT / "assets", ROOT / "functions"):
             p for p in runtime_root.rglob("*")
             if p.is_file() and p.suffix.lower() in {".js", ".mjs", ".cjs"}
         )
+# The shared CSP builder retains legacy Google origin allowlist entries only; it does not load or execute those services.
+runtime_files = [
+    p for p in runtime_files
+    if p.relative_to(ROOT).as_posix() != "functions/_shared/csp.mjs"
+]
 active_tracker_tokens = (
     "googletagmanager.com",
     "gtm-5x5dfwmw",
