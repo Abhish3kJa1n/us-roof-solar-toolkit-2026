@@ -148,7 +148,7 @@ for required_disclosure in (
     "u.s. state privacy rights",
     "children's privacy",
     "advertising, sale and sharing",
-    "no advertising is currently displayed",
+    "not currently displaying advertising or loading an adsense ad-serving script",
     "we do not sell personal information for money",
     "we do not share personal information for cross-context behavioral advertising",
     "this site does not currently provide a first-party cookie preference center",
