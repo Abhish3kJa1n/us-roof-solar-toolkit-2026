@@ -184,7 +184,7 @@ console.log('PASS changing away from Metal clears its source-derived rate pair a
 // Generic national reference requires explicit opt-in and is cleared when Metal is selected.
 reload();
 assertRates('4', '11', 'explicit Angi national opt-in');
-assert.ok(elements.referenceStatus.textContent.includes('Angi U.S. reference: $4–$11 per roof sq ft'));
+assert.ok(elements.referenceStatus.textContent.includes('Loaded Angi’s U.S. $4–$11 per roof sq ft reference'));
 elements.low.value = '5';
 elements.low.emit('input');
 chooseMaterial('metal');
