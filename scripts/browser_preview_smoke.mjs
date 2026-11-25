@@ -433,7 +433,7 @@ try {
   assert.equal(await page.locator('.roof-field-details').evaluate(node => node.open), false, 'metal methodology starts collapsed');
   assert.equal(await page.locator('.roof-scope-details').evaluate(node => node.open), false, 'scope caveats start collapsed');
   await page.locator('.roof-scope-details summary').click();
-  assert.match(await page.locator('.roof-scope-details').innerText(), /does not separately calculate array detach-and-reset, storage or reinstallation/i, 'roof calculator must disclose existing solar-array removal/reinstall scope');
+  assert.match(await page.locator('.roof-scope-details').innerText(), /For existing solar equipment, ask your solar provider to price detach-and-reset, storage and reinstallation separately/i, 'roof calculator must guide homeowners with existing solar equipment to price removal and reinstallation');
   assert.equal(await page.locator('.roof-scope-details a[href="../guides/roof-before-solar"]').count(), 1, 'roof calculator must link the roof-before-solar guide from this scope note');
   await page.locator('.roof-scope-details summary').click();
   await page.setViewportSize({ width: 390, height: 844 });
