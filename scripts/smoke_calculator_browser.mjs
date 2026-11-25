@@ -65,6 +65,7 @@ async function navigate(path) {
       lastStatus = response ? String(response.status()) : "no response";
       if (response?.status() === 200) return response;
     } catch (error) {
+      if (error?.name === 'CloudflareAccessError') throw error;
       lastStatus = error.message;
     }
     await sleep(5000);
