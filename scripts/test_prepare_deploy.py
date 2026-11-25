@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from html.parser import HTMLParser
+from datetime import date
 import json
 import re
 import os
@@ -137,13 +138,25 @@ def main() -> int:
     except ET.ParseError as exc:
         fail(f"Production sitemap.xml is invalid XML: {exc}")
     namespace = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    sitemap_entries = sitemap_root.findall("sm:url", namespace)
     sitemap_urls = [
         node.text.strip()
-        for node in sitemap_root.findall("sm:url/sm:loc", namespace)
-        if node.text and node.text.strip()
+        for entry in sitemap_entries
+        for node in [entry.find("sm:loc", namespace)]
+        if node is not None and node.text and node.text.strip()
     ]
     if len(sitemap_urls) != 30 or len(set(sitemap_urls)) != 30:
         fail(f"Production sitemap must contain 30 unique URLs; found {len(sitemap_urls)}")
+    if len(sitemap_entries) != 30:
+        fail(f"Production sitemap must contain exactly 30 URL entries; found {len(sitemap_entries)}")
+    for entry in sitemap_entries:
+        lastmod = entry.findtext("sm:lastmod", namespaces=namespace)
+        if not lastmod:
+            fail("Every production sitemap URL must have a verified lastmod date")
+        try:
+            date.fromisoformat(lastmod.strip())
+        except ValueError:
+            fail(f"Invalid sitemap lastmod date: {lastmod}")
     for url in sitemap_urls:
         parsed = urlsplit(url)
         if parsed.scheme != "https" or parsed.netloc != "getroofsolarcalculator.online" or parsed.query or parsed.fragment:
