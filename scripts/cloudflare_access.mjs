@@ -45,11 +45,13 @@ export async function installCloudflareAccess(context, previewBaseUrl = process.
 
   await context.route('**/*', async (route) => {
     const request = route.request();
+    const safeHeaders = { ...request.headers() };
+    delete safeHeaders['cf-access-client-id'];
+    delete safeHeaders['cf-access-client-secret'];
     const accessHeaders = cloudflareAccessHeadersForUrl(request.url(), previewBaseUrl);
-    if (Object.keys(accessHeaders).length === 0) return route.continue();
     return route.continue({
       headers: {
-        ...request.headers(),
+        ...safeHeaders,
         ...accessHeaders,
       },
     });
