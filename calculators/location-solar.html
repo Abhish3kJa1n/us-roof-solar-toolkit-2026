@@ -16,10 +16,10 @@
 </head>
 <body>
 <a class="skip-link" href="#main-content">Skip to main content</a>
-<div class="top"><div class="wrap"><span><strong>Roof &amp; Solar Toolkit</strong> · Homeowner planning resource</span><span>Location-aware solar model · Educational estimate</span></div></div>
+<div class="top"><div class="wrap"><span><strong>Roof &amp; Solar Toolkit</strong> · Homeowner planning resource</span><span>Location-based production model</span></div></div>
 <header><div class="wrap nav"><a class="brand" href="/"><span class="brand-mark">⌂</span>Roof &amp; Solar Toolkit</a><nav aria-label="Main navigation" class="links"><a href="/#tools">Tools</a><a href="/#guides">Guides</a><a href="/#how">How it works</a><a href="/about">About</a><a class="btn" href="/calculators/solar-savings">Savings calculator</a></nav></div></header>
-<section class="page-hero"><div class="wrap"><div class="eyebrow">Location-aware solar planning</div><h1>Solar production estimator by city</h1><p>Enter a US city, select the matching city/state suggestion, then model annual and monthly solar output with NLR PVWatts V8 using a US Census Bureau representative place point. The city point does not pinpoint a home or determine its roof characteristics.</p></div></section>
-<div class="wrap"><p class="calculator-notice" role="note">Planning estimates only. Results depend on the inputs and assumptions shown; they are not quotes, inspections, engineering designs, or guarantees.</p></div>
+<section class="page-hero"><div class="wrap"><div class="eyebrow">Location-aware solar planning</div><h1>Solar production estimator by city</h1><p>Enter a U.S. city and select its Census match to model annual and monthly solar production with NLR PVWatts V8. The model uses a representative city point.</p></div></section>
+
 <nav aria-label="Breadcrumb" class="wrap crumbs"><a href="/">Home</a> / <a href="/#tools">Tools</a> / City Solar Production Estimator</nav>
 
 <div class="wrap layout layout-single">
@@ -33,7 +33,7 @@
     <label for="city">City</label>
     <input id="city" minlength="3" required pattern="[A-Za-zÀ-ÖØ-öø-ÿĀ-ž0-9 .’'&()\\-]+" data-pattern-message="Enter a city name using letters, numbers, spaces or common punctuation." type="text" maxlength="80" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="citySuggestions" aria-describedby="cityHelp" placeholder="Start typing a US city, e.g. Austin"/>
     <div id="citySuggestions" class="autocomplete-results" role="listbox" aria-label="Matching Census cities and states" hidden></div>
-    <small id="cityHelp">Type at least 3 letters. Select the matching city and state from the Census suggestions; the state is filled automatically. Capitalization does not matter. Do not enter a street address.</small>
+    <small id="cityHelp">Type at least 3 letters. Select the matching city and state from the Census suggestions; the state is filled automatically. Capitalization does not matter. Enter a city name, not a street address.</small>
   </div>
   <div class="field" id="stateField" hidden>
     <label for="stateDisplay">State or territory (selected automatically)</label>
@@ -45,7 +45,7 @@
   <div class="field" id="placeField" hidden><label for="place">Matching Census place</label><select id="place" aria-describedby="placeHelp"><option value="">Choose a place</option></select><small id="placeHelp">Choose the incorporated place or Census-designated place that matches the location you want to model. The state or territory was selected from the Census place suggestions.</small></div>
   <details id="manualStateFallback" class="manual-location-fallback">
     <summary>Can't find your city? Enter its state manually</summary>
-    <p>Use this only when the Census suggestions do not show the place you need. The exact city-and-state Census verification still runs before the solar model is enabled.</p>
+    <p>If your city is missing from the suggestions, enter its state and verify the city before running the model.</p>
     <div class="field">
       <label for="manualState">State or territory</label>
       <select id="manualState">
@@ -58,32 +58,32 @@
       </select>
     </div>
     <button class="btn" id="useManualState" type="button">Use this state</button>
-  <p><strong>State electricity benchmark:</strong> The separate state-average residential price comes from EIA Electric Power Monthly Table 5.6.B. It is a statewide average, not your utility's marginal rate or export credit; 2026 year-to-date figures are preliminary and may be revised. <a href="https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_06_b" target="_blank" rel="noopener">EIA Table 5.6.B</a>.</p>
+  <p><strong>State electricity benchmark:</strong> EIA Electric Power Monthly Table 5.6.B reports a statewide average for comparison. Use your utility's current tariff for import rates and export credits; 2026 year-to-date figures are preliminary. <a href="https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_06_b" target="_blank" rel="noopener">EIA Table 5.6.B</a>.</p>
 </details>
   <div class="note" id="stateBenchmark" hidden aria-live="polite"></div>
-  <div class="note" id="solarInstalledBenchmark" aria-live="polite"><strong>Installed solar price reference</strong><p>Select a Census place to check whether a source-reviewed historical city or state price distribution exists. PVWatts estimates energy production; it does not estimate installation cost.</p></div>
+  <div class="note" id="solarInstalledBenchmark" aria-live="polite"><strong>Installed solar price reference</strong><p>Select a Census place to check whether a source-reviewed historical city or state price distribution exists. PVWatts models energy production. Use the installed-price reference below for cost data.</p></div>
 </div>
 <div class="btnrow"><button class="btn" id="lookup" data-field-validation-scope="#locationFields" type="button" disabled>Verify selected city</button><span id="locationStatus" class="byline" role="status" aria-live="polite"></span></div>
-<p class="note">The city point is a Census representative location, not a property address.</p>
+
 <hr style="border:0;border-top:1px solid #e3e9ee;margin:24px 0"/>
 <div class="kicker">Step 2 · PV system assumptions</div>
 <h2>Describe the solar array</h2>
-<p>These are editable model assumptions, not facts inferred from your city. The starting scenario uses a 1 kW DC reference system, 20° tilt, south-facing azimuth and 14% losses so the result can be read as kWh per kW DC. Replace these values with a proposal or roof-plane assumptions when known.</p>
+<p>Your city sets the solar resource; these editable settings describe the array being modeled. Start with a 1 kW DC reference system, 20° tilt, south-facing azimuth and 14% losses. Adjust them to match a proposal or your roof-plane scenario.</p>
 <div class="calculator" id="arrayFields">
-  <div class="field"><label for="capacity">System size (kW DC)</label><input id="capacity" data-validation-unit="kW DC" required value="1" type="number" min="0.05" max="100" step="0.05" placeholder="e.g. 6.5"/><small>The 1 kW starting value is a reference configuration for per-kW yield, not a recommended home system size. Residential scope limit: 100 kW DC.</small></div>
-  <div class="field"><label for="tilt">Array tilt (degrees)</label><input id="tilt" data-validation-unit="degrees" required value="20" type="number" min="0" max="90" step="1" placeholder="e.g. 25"/><small>0° is horizontal; 90° is vertical. Do not assume roof pitch equals panel tilt on every installation.</small></div>
+  <div class="field"><label for="capacity">System size (kW DC)</label><input id="capacity" data-validation-unit="kW DC" required value="1" type="number" min="0.05" max="100" step="0.05" placeholder="e.g. 6.5"/><small>A 1 kW DC configuration reports production per installed kW. Use your proposal's system size for project-specific output. Residential scope limit: 100 kW DC.</small></div>
+  <div class="field"><label for="tilt">Array tilt (degrees)</label><input id="tilt" data-validation-unit="degrees" required value="20" type="number" min="0" max="90" step="1" placeholder="e.g. 25"/><small>0° is horizontal; 90° is vertical. Panel tilt can differ from roof pitch.</small></div>
   <div class="field"><label for="azimuth">Array azimuth (degrees)</label><input id="azimuth" data-validation-unit="degrees" required value="180" type="number" min="0" max="359.99" step="1" placeholder="e.g. 180"/><small>PVWatts convention: 180° is south; 90° east; 270° west; 0° north.</small></div>
-  <div class="field"><label for="losses">Total system losses (%)</label><input id="losses" data-validation-unit="%" required value="14" type="number" min="0" max="99" step="0.5" placeholder="e.g. 14"/><small>Use a proposal/model value if supplied. Losses can include soiling, shading, wiring, mismatch, availability and other factors. They are not inspected here.</small></div>
+  <div class="field"><label for="losses">Total system losses (%)</label><input id="losses" data-validation-unit="%" required value="14" type="number" min="0" max="99" step="0.5" placeholder="e.g. 14"/><small>Use a proposal/model value if supplied. Typical losses include soiling, shading, wiring, mismatch and system availability.</small></div>
 </div>
 <div class="btnrow"><button class="btn" id="estimate" data-field-validation-scope="#arrayFields" type="button" disabled>Model solar production</button><span id="modelStatus" class="byline" role="status" aria-live="polite"></span></div>
 <div class="output" id="result" aria-live="polite" aria-atomic="true"><div class="kicker">PV production estimate</div><div class="big">Waiting for location and inputs</div><p>Find a city, choose a returned Census place, and enter the array assumptions to request a typical-year model.</p></div>
 <div class="calculator-method-note" role="note">
-<p><strong>Method:</strong> PVWatts V8 models typical-year output from the selected Census city point and your array assumptions. It is not a roof-level assessment; shading, orientation and site conditions can change actual production. See the <a href="/methodology">calculation methodology</a>.</p>
+<p>PVWatts V8 estimates typical-year output for the selected city point and array settings. Use a roof-specific proposal for tilt, azimuth and shading when available. See the <a href="/methodology">calculation methodology</a>.</p>
 </div>
 </section>
 <section class="toolbox" style="margin-top:20px">
 <div class="kicker">Step 3 · Utility rate plan (optional)</div><h2 style="color:#10243b;margin:6px 0 8px">Find nearby residential rate-plan records</h2>
-<p>This optional lookup searches the OpenEI Utility Rate Database for residential rate plans associated with utilities near the selected Census place. A nearby match does not confirm that the utility serves your home and may not reflect its current plan. Compare the utility name, customer charge, import rate, time-of-use rules and export credit with your bill and the utility's current published rate plan before using any rate.</p>
+<p>This optional lookup finds OpenEI residential rate plans associated with utilities near the selected city. Compare the utility and plan with your bill before using a rate.</p>
 <div class="btnrow"><button class="btn" id="tariffs" type="button" disabled>Find nearby rate plans</button><span id="tariffStatus" class="byline" role="status" aria-live="polite"></span></div>
 <div id="tariffResults" aria-live="polite"></div>
 
@@ -95,14 +95,14 @@
 </section>
 <article class="article">
 <h2>How to read the estimate</h2>
-<p>The city lookup supplies a representative Census place point. PVWatts models production from that point and the array assumptions you enter; it does not assess an individual roof, nearby shade or a home's electrical system.</p>
+<p>PVWatts models production for the selected city point and array settings.</p>
 <h2>Production is not bill savings</h2>
 <p>The value of solar electricity depends on when it is used, the utility's price for electricity you buy, any export credit for surplus power and other rate-plan rules (often called the tariff). This tool estimates production only. Use your own bill and the utility's current published rate plan for a savings calculation.</p>
 <details class="source-details">
 <summary>Data sources and methodology</summary>
-<p><strong>Location:</strong> US Census Bureau TIGERweb place geography. The selected point represents a Census place, not a home or utility service boundary. <a href="https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_main.html" target="_blank" rel="noopener">Census TIGERweb</a>.</p>
-<p><strong>Solar production:</strong> National Laboratory of the Rockies (NLR) PVWatts V8 uses system inputs and typical meteorological-year solar resource data where available. It is a modeled estimate, not live weather or a roof inspection. <a href="https://developer.nlr.gov/docs/solar/pvwatts/v8/" target="_blank" rel="noopener">PVWatts V8 API documentation</a>.</p>
-<p><strong>Utility-rate lookup:</strong> Nearby records are drawn from the OpenEI Utility Rate Database. A nearby record may belong to a different utility or rate plan; confirm it against your bill and the utility's current tariff. <a href="https://apps.openei.org/services/doc/rest/util_rates/" target="_blank" rel="noopener">OpenEI rate-data documentation</a>.</p>
+<p><strong>Location:</strong> U.S. Census Bureau TIGERweb place geography. <a href="https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_main.html" target="_blank" rel="noopener">Census TIGERweb</a>.</p>
+<p><strong>Solar production:</strong> National Laboratory of the Rockies PVWatts V8 typical meteorological-year model. <a href="https://developer.nlr.gov/docs/solar/pvwatts/v8/" target="_blank" rel="noopener">PVWatts V8 API documentation</a>.</p>
+<p><strong>Utility-rate lookup:</strong> OpenEI Utility Rate Database. <a href="https://apps.openei.org/services/doc/rest/util_rates/" target="_blank" rel="noopener">OpenEI rate-data documentation</a>.</p>
 </details>
 </article>
 </main>

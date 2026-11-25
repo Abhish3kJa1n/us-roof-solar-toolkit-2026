@@ -20,15 +20,15 @@ priceEl.addEventListener('input',()=>{
   priceEdited=true;
   priceOptIn=false;
   priceBasis='Visitor-entered price; source not asserted.';
-  if(priceContextEl) priceContextEl.textContent='You entered this price. The calculation uses your value; the site does not verify the quote. Compare PV-only cash prices on the same scope.';
+  if(priceContextEl) priceContextEl.textContent='Using the cash price you entered. Compare PV-only cash prices on the same scope.';
 });
 const nationalPriceButton=document.getElementById('loadNationalPriceReference');
 if(nationalPriceButton) nationalPriceButton.addEventListener('click',()=>{
   priceEl.value='2.62';
   priceEdited=false;
   priceOptIn=true;
-  priceBasis='EnergySage H1 2026 solar-only marketplace median: $2.62/W DC before incentives; national marketplace reference, not city-specific or an installer quote.';
-  if(priceContextEl) priceContextEl.textContent='National solar-only benchmark loaded because you requested it. This H1 2026 marketplace median is before incentives, not a local price or installer quote; replace it with a comparable written cash quote.';
+  priceBasis='EnergySage H1 2026 solar-only marketplace median: $2.62/W DC before incentives; national solar-only benchmark.';
+  if(priceContextEl) priceContextEl.textContent='H1 2026 national solar-only median loaded before incentives. Replace it with a comparable local cash proposal.';
   if(typeof window!=='undefined'&&window.FieldValidation&&typeof window.FieldValidation.refresh==='function') window.FieldValidation.refresh(priceEl);
 });
 function validApprovedSolarRow(row, registry){
@@ -59,8 +59,8 @@ async function applyApprovedCityPrice(city,state){
     if(!row||priceEdited||priceOptIn) return;
     priceEl.value=Number(row.median).toFixed(2);
     const geography=row.geography_level==='city'?`${row.city}, ${row.state}`:`${row.state_name||row.state} state-wide (not city-specific)`;
-    priceBasis=`Berkeley Lab Tracking the Sun 2026 historical ${row.geography_level} distribution for ${geography}; median $${Number(row.median).toFixed(2)}/W DC; n=${row.sample_n}; installations ${row.installation_year_min}–${row.installation_year_max}. Not a current quote.`;
-    if(priceContextEl) priceContextEl.textContent=`Prefilled from approved Berkeley Lab historical ${row.geography_level} installed-price data for ${geography}: median $${Number(row.median).toFixed(2)}/W DC; 25th–75th percentile $${Number(row.p25).toFixed(2)}–$${Number(row.p75).toFixed(2)}; sample ${row.sample_n}; installation years ${row.installation_year_min}–${row.installation_year_max}. Not a current quote. Editable; replace with a comparable written cash quote.`;
+    priceBasis=`Berkeley Lab Tracking the Sun 2026 historical ${row.geography_level} distribution for ${geography}; median $${Number(row.median).toFixed(2)}/W DC; n=${row.sample_n}; installations ${row.installation_year_min}–${row.installation_year_max}. Historical installation data.`;
+    if(priceContextEl) priceContextEl.textContent=`Prefilled from approved Berkeley Lab historical ${row.geography_level} installed-price data for ${geography}: median $${Number(row.median).toFixed(2)}/W DC; 25th–75th percentile $${Number(row.p25).toFixed(2)}–$${Number(row.p75).toFixed(2)}; sample ${row.sample_n}; installation years ${row.installation_year_min}–${row.installation_year_max}. Historical installation data. Editable; replace with a comparable written cash quote.`;
   }catch(_){ /* Keep the disclosed national fallback when the registry cannot be verified. */ }
 }
 
@@ -78,7 +78,7 @@ if (importedProduction !== null) {
     const note = document.createElement('small');
     note.className = 'field-import-note';
     const location = handoff.get('location');
-    note.textContent = `Prefilled from NLR PVWatts V8${location ? ` using a representative Census place point for ${location}` : ''}. The model inputs are editable; confirm roof-plane assumptions and model date.`;
+    note.textContent = `Prefilled from NLR PVWatts V8${location ? ` using a representative Census place point for ${location}` : ''}. Adjust the array settings to match a proposal or roof-plane scenario.`;
     productionEl.closest('.field').append(note);
   }
 }
@@ -92,7 +92,7 @@ if (
   const note = document.createElement('small');
   note.className = 'field-import-note';
   note.id = 'eiaStateAverageNote';
-  note.textContent = `EIA state-average residential electricity price for ${stateLabel}: ${importedStateRate.toFixed(4)} $/kWh. This is not your marginal utility tariff and has not been applied.`;
+  note.textContent = `EIA state-average residential electricity price for ${stateLabel}: ${importedStateRate.toFixed(4)} $/kWh. Statewide average; not applied. Use your utility's marginal rate for savings calculations.`;
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'btn btn-outline eia-opt-in';
@@ -100,7 +100,7 @@ if (
   button.textContent = 'Use EIA average as an illustrative scenario';
   button.addEventListener('click', () => {
     importRateEl.value = importedStateRate.toFixed(4);
-    note.textContent = `Applied ${importedStateRate.toFixed(4)} $/kWh EIA state average for ${stateLabel}. This remains an illustrative scenario, not your household tariff.`;
+    note.textContent = `Applied ${importedStateRate.toFixed(4)} $/kWh EIA state average for ${stateLabel}. Use your utility's marginal rate for a household estimate.`;
     button.disabled = true;
     button.textContent = 'EIA scenario value applied';
   });
@@ -128,7 +128,7 @@ document.getElementById('run').addEventListener('click',()=>{
   if(!Number.isFinite(annualUse)||annualUse<1||annualUse>200000) return showError('Enter annual electricity use from 1 to 200,000 kWh, using your utility bills.');
   if(importRate!==null&&(!Number.isFinite(importRate)||importRate<0||importRate>5)) return showError('Enter a marginal import energy rate from $0 to $5 per kWh, or leave it blank. A rate is not needed when modeled direct use is zero.');
   if(!Number.isFinite(offset)||offset<0.01||offset>1) return showError('Enter a target annual generation percentage from 1% to 100%.');
-  if(!Number.isFinite(productionPerKw)||productionPerKw<100||productionPerKw>4000) return showError('Enter a production assumption from 100 to 4,000 kWh per kW DC per year, based on a site-specific model. These limits are typo checks, not a US range.');
+  if(!Number.isFinite(productionPerKw)||productionPerKw<100||productionPerKw>4000) return showError('Enter modeled production from 100 to 4,000 kWh per kW DC per year. Use the city estimator or a site-specific model.');
   if(selfUseShare!==null&&(!Number.isFinite(selfUseShare)||selfUseShare<0||selfUseShare>1)) return showError('Enter a direct-use share from 0% to 100%, or leave it blank until you have a modeled value.');
   if((selfUseLow===null)!==(selfUseHigh===null)) return showError('For a self-consumption sensitivity comparison, enter both low and high scenario shares or leave both blank.');
   if(selfUseLow!==null&&(!Number.isFinite(selfUseLow)||!Number.isFinite(selfUseHigh)||selfUseLow<0||selfUseHigh>1||selfUseLow>selfUseHigh)) return showError('Enter valid low and high direct-use shares from 0% to 100%, with the low value no greater than the high value.');
@@ -166,7 +166,7 @@ document.getElementById('run').addEventListener('click',()=>{
     <p><strong>Estimated used directly:</strong> ${selfConsumed===null?'Not modeled — enter an annual direct-use share':selfConsumed<0.01?'0 kWh in this scenario; no avoided-import value':avoidedImportValue===null?`${whole(selfConsumed)} kWh — enter the marginal import rate to value avoided purchases`:`${whole(selfConsumed)} kWh × ${rateMoney(importRate)}/kWh = ${money(avoidedImportValue)} avoided import charges`}</p>
     <p><strong>Estimated exported:</strong> ${exported===null?'Not modeled — enter an annual direct-use share':`${whole(exported)} kWh`}${exported===null||exportRate===null?' — export value requires both an energy-flow share and your tariff credit':` × ${rateMoney(exportRate)}/kWh = ${money(exportValue)} export credits`}</p>
     <p><strong>Modeled annual energy value:</strong> ${annualValue===null?`Not calculated — missing ${missingEnergyInputs.join(' and ')}`:`${money(annualValue)} (${money(annualValue/12)}/month average)`}</p>
-    ${selfUseLow===null?'':`<p><strong>User-selected self-consumption sensitivity (not a forecast):</strong> ${Math.round(selfUseLow*100)}% low case: ${lowScenarioValue===null?'not calculated — required tariff input missing':money(lowScenarioValue)+' annual energy value'}; ${Math.round(selfUseHigh*100)}% high case: ${highScenarioValue===null?'not calculated — required tariff input missing':money(highScenarioValue)+' annual energy value'}. These are two what-if assumptions, not statistical bounds.</p>`}
+    ${selfUseLow===null?'':`<p><strong>User-selected self-consumption scenarios:</strong> ${Math.round(selfUseLow*100)}% low case: ${lowScenarioValue===null?'not calculated — required tariff input missing':money(lowScenarioValue)+' annual energy value'}; ${Math.round(selfUseHigh*100)}% high case: ${highScenarioValue===null?'not calculated — required tariff input missing':money(highScenarioValue)+' annual energy value'}. Two user-selected what-if scenarios.</p>`}
     <p><strong>Modeled installed cash price:</strong> ${solarCost===null?'Not entered':money(solarCost)}. Basis: ${priceBasis}</p>
     <p><strong>Simple pre-incentive cash payback:</strong> ${payback===null?'Not calculated — requires a complete energy-value model and installed price':payback.toFixed(1)+' years'}</p>
     <p><strong>Assumptions:</strong> ${selfUseShare===null?'Direct-use share not entered':`${Math.round(selfUseShare*100)}% of generation used directly`}; ${importRate===null?(selfConsumed!==null&&selfConsumed<0.01?'marginal import rate not needed because modeled direct use is zero':'marginal import rate not entered'):`${rateMoney(importRate)}/kWh marginal import rate`}; ${exportRate===null?'export compensation unknown':`${rateMoney(exportRate)}/kWh export compensation`}; ${whole(annualUse)} kWh annual consumption. No fixed utility charges are removed.</p>`;

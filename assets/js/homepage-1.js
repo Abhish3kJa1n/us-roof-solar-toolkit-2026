@@ -169,7 +169,7 @@
       const note = document.createElement('small');
       note.id = 'importRatePrefillNote';
       note.className = 'field-import-note';
-      note.textContent = `EIA state-average residential electricity price for ${stateLabel}: ${incomingStateRate.toFixed(4)} $/kWh. This is a statewide average, not your marginal utility tariff. It has not been applied.`;
+      note.textContent = `EIA state-average residential electricity price for ${stateLabel}: ${incomingStateRate.toFixed(4)} $/kWh. Statewide average; not applied. Use your utility's marginal rate for a household estimate.`;
       const source = document.createElement('a');
       source.href = 'https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_06_b';
       source.target = '_blank';
@@ -188,7 +188,7 @@
       useButton.addEventListener('click', () => {
         importRateInput.value = incomingStateRate.toFixed(4);
         importRateBasis = `EIA state-average residential price used by explicit visitor choice for ${stateLabel}; illustrative scenario only, not the household marginal tariff.`;
-        appliedNote.textContent = `Applied ${incomingStateRate.toFixed(4)} $/kWh EIA state average for ${stateLabel}. This remains an illustrative scenario, not your household tariff.`;
+        appliedNote.textContent = `Applied ${incomingStateRate.toFixed(4)} $/kWh EIA state average as a comparison rate. Replace it with your utility's marginal rate for household savings.`;
         appliedNote.hidden = false;
         useButton.disabled = true;
         useButton.textContent = 'EIA scenario value applied';
@@ -200,16 +200,16 @@
     function loadNationalRoofReference() {
       roofLowInput.value = '4';
       roofHighInput.value = '11';
-      roofRateBasis = 'Angi broad national reference range (updated October 22, 2026); not city-specific, material-specific or a contractor quote.';
+      roofRateBasis = 'Angi broad U.S. roof-replacement reference, updated October 22, 2026.';
       roofReferenceStatus.hidden = false;
-      roofReferenceStatus.textContent = `${roofRateBasis} This is an optional national planning reference, not a local or material-specific price. Replace both rates with comparable local quotes; both values remain editable.`;
+      roofReferenceStatus.textContent = `${roofRateBasis} Broad U.S. price reference. Replace both editable rates with comparable local proposals.`;
       refreshField(roofLowInput); refreshField(roofHighInput);
     }
     function loadNationalSolarReference() {
       solarRateInput.value = '2.62';
-      solarPriceBasis = 'EnergySage H1 2026 solar-only marketplace median; national marketplace reference, not city-specific or an installer quote.';
+      solarPriceBasis = 'EnergySage H1 2026 national solar-only marketplace median.';
       solarReferenceStatus.hidden = false;
-      solarReferenceStatus.textContent = `${solarPriceBasis} Loaded because you requested it; this is a national marketplace reference, not a local quote. Replace it with a comparable written cash quote when available.`;
+      solarReferenceStatus.textContent = `${solarPriceBasis} National marketplace benchmark loaded. Replace it with a comparable written cash proposal.`;
       refreshField(solarRateInput);
     }
     document.getElementById('loadNationalRoofReference').addEventListener('click', loadNationalRoofReference);
@@ -240,9 +240,9 @@
     if (incomingSolarDataIsValid) {
       solarRateInput.value = incomingSolarPrice.toFixed(2);
       const geography = incomingSolarGeography === 'city' ? importedCityLabel : `${handoff.get('state') || 'Selected'} state-wide`;
-      solarPriceBasis = `Berkeley Lab Tracking the Sun 2026 historical ${incomingSolarGeography}-level median for ${geography}; ${incomingSolarSampleN.toLocaleString('en-US')} records, installation years ${incomingSolarYearMin}–${incomingSolarYearMax}, nominal pre-incentive USD/W DC.`;
+      solarPriceBasis = `Berkeley Lab Tracking the Sun 2026 ${incomingSolarGeography}-level median; ${incomingSolarSampleN.toLocaleString('en-US')} records, ${incomingSolarYearMin}–${incomingSolarYearMax}.`;
       solarReferenceStatus.hidden = false;
-      solarReferenceStatus.textContent = `${solarPriceBasis} Published p25–p75: $${incomingSolarP25.toFixed(2)}–$${incomingSolarP75.toFixed(2)}/W DC. Historical distribution, not a current contractor quote. The median input is editable; compare the dataset scope with your written proposal.`;
+      solarReferenceStatus.textContent = `${solarPriceBasis} Published p25–p75: $${incomingSolarP25.toFixed(2)}–$${incomingSolarP75.toFixed(2)}/W DC. Historical installation data. The median input is editable; compare its scope with a current proposal.`;
       addFieldNote(solarRateInput, 'solarCityPricePrefillNote', solarPriceBasis, 'https://emp.lbl.gov/tracking-the-sun');
       refreshField(solarRateInput);
     }
@@ -264,7 +264,7 @@
         solarPriceBasis = 'No solar price entered; payback is not estimated.';
         solarReferenceStatus.hidden = true;
       } else if (solarPriceBasis.startsWith('EnergySage') || solarPriceBasis.startsWith('Berkeley Lab')) {
-        solarPriceBasis = 'User-edited solar price after loading a published benchmark; no longer the unchanged source statistic.';
+        solarPriceBasis = 'User-edited price based on a published benchmark.';
         solarReferenceStatus.textContent = solarPriceBasis;
       } else if (!solarPriceBasis.startsWith('User-entered')) {
         solarPriceBasis = 'User-entered cash-price quote supplied by visitor.';
@@ -298,10 +298,10 @@
       const roofRateLow = lowRateText === '' ? null : Number(lowRateText);
       const roofRateHigh = highRateText === '' ? null : Number(highRateText);
       let status, statusDesc;
-      if (condition === 'poor') { status = 'Prompt inspection'; statusDesc = 'You reported leaks or visible damage. Arrange a qualified inspection promptly; this does not by itself prove full replacement is required.'; }
-      else if (condition === 'unknown') { status = 'Assessment needed'; statusDesc = 'Condition is unknown. Age alone cannot establish remaining service life or replacement urgency.'; }
-      else if (condition === 'fair') { status = 'Monitor and assess'; statusDesc = 'You reported aging or minor wear. Document the condition and arrange an assessment, especially before a solar installation.'; }
-      else { status = 'No issue reported'; statusDesc = 'You reported no known issues. This is not a condition certification; hidden defects and structural issues cannot be screened online.'; }
+      if (condition === 'poor') { status = 'Inspection recommended'; statusDesc = 'You reported leaks or visible damage. An inspection can clarify repair and replacement options.'; }
+      else if (condition === 'unknown') { status = 'Needs assessment'; statusDesc = 'Roof condition was not provided. Check it before planning a major project.'; }
+      else if (condition === 'fair') { status = 'Monitor'; statusDesc = 'You reported aging or minor wear. Recheck the condition before a major roof or solar project.'; }
+      else { status = 'No issue reported'; statusDesc = 'Based on the condition you selected.'; }
       const roofLow = roofRateLow === null ? null : roofArea * roofRateLow;
       const roofHigh = roofRateHigh === null ? null : roofArea * roofRateHigh;
       const annualText = document.getElementById('annualKwh').value.trim();
@@ -334,14 +334,14 @@
       const solarCost = solarPricePerWatt === null ? null : systemKW * 1000 * solarPricePerWatt;
       const payback = solarCost !== null && annualSavings !== null && annualSavings > 0 ? solarCost / annualSavings : null;
       const finance = document.querySelector('input[name="financing"]:checked').value;
-      let payment = null, loanDesc = 'No installed price entered; financing is not calculated.', loanTerms = 'Not entered';
+      let payment = null, loanDesc = 'Enter an installed price to estimate a payment.', loanTerms = 'Not entered';
       if (finance === 'loan' && solarCost !== null) {
         const apr = Number(document.getElementById('apr').value), term = Number(document.getElementById('term').value);
         payment = loanPayment(solarCost, apr, term);
-        loanDesc = 'Illustrative principal-and-interest payment only. Excludes fees, dealer charges, taxes and lender-specific terms; no offer or approval is implied.';
+        loanDesc = 'Estimated principal and interest using your APR and term; lender fees are not included.';
         loanTerms = `${apr.toFixed(1)}% / ${term} yrs`;
       } else if (finance === 'cash') {
-        loanDesc = 'Cash selected. No financing approval or offer is implied.';
+        loanDesc = 'Cash selected.';
       }
       document.getElementById('roofStatus').textContent = status;
       document.getElementById('roofStatusDesc').textContent = statusDesc;
@@ -350,40 +350,41 @@
       document.getElementById('roofCost').textContent = roofLow === null ? 'Not estimated' : `${money(roofLow)}–${money(roofHigh)}`;
       document.getElementById('roofRate').textContent = roofRateLow === null ? 'Enter local rates' : `${money(roofRateLow,2)}–${money(roofRateHigh,2)} / sq ft`;
       document.getElementById('systemSize').textContent = `${systemKW.toFixed(1)} kW`;
-      document.getElementById('systemDesc').textContent = 'Sized to the annual-energy offset target and visitor-entered production assumption. Roof fit is not assessed.';
+      document.getElementById('systemDesc').textContent = 'Based on annual electricity use, target generation and modeled production.';
       document.getElementById('production').textContent = `${number(production)} kWh / yr`;
-      document.getElementById('roofCapacity').textContent = 'Layout required';
+      document.getElementById('roofCapacity').textContent = 'Energy target';
       document.getElementById('annualSavings').textContent = annualSavings === null ? 'Inputs needed' : `${money(annualSavings)} / yr`;
       document.getElementById('monthlySavings').textContent = monthlySavings === null ? '—' : money(monthlySavings);
-      document.getElementById('savingsDesc').textContent = annualSavings === null ? (selfUseShare === null ? 'Enter an annual direct-use share and the tariff inputs needed for the modeled energy flows. Unknown tariff inputs are not treated as zero.' : [selfConsumedKwh < 0.01 ? '0 kWh self-used; no import-rate input is needed.' : rate === null ? `${number(selfConsumedKwh)} kWh self-used; the import rate is unknown.` : `${number(selfConsumedKwh)} kWh self-used × ${money(rate,3)}/kWh = ${money(selfConsumedKwh * rate)} avoided import charges.`, exportedKwh < 0.01 ? '0 kWh exported; no export credit is needed.' : exportRate === null ? `${number(exportedKwh)} kWh exported; the export credit is unknown.` : `${number(exportedKwh)} kWh exported × ${money(exportRate,3)}/kWh = ${money(exportedKwh * exportRate)} export credits.`, 'Total annual energy value and payback are withheld until all required tariff inputs are entered.'].join(' ')) : selfConsumedKwh < 0.01 ? `${number(exportedKwh)} kWh exported × ${money(exportRate,3)}/kWh. No import-rate input is needed because modeled direct use is zero.` : `${number(selfConsumedKwh)} kWh self-used × ${money(rate,3)}/kWh + ${number(exportedKwh)} kWh exported × ${money(exportRate ?? 0,3)}/kWh${exportRate === null ? ' (no export credit needed because modeled exports are zero)' : ''}.`;
+      document.getElementById('savingsDesc').textContent = annualSavings === null
+        ? (selfUseShare === null
+          ? 'Add a direct-use share and utility rates to calculate annual value.'
+          : selfConsumedKwh >= 0.01 && rate === null
+            ? 'Add your marginal import rate to value electricity used at home.'
+            : exportedKwh >= 0.01 && exportRate === null
+              ? 'Add your utility export credit to value surplus generation.'
+              : 'Add the rate inputs needed for this scenario.')
+        : [
+            selfConsumedKwh >= 0.01 ? `${number(selfConsumedKwh)} kWh used at home × ${money(rate,3)}/kWh` : '',
+            exportedKwh >= 0.01 ? `${number(exportedKwh)} kWh exported × ${money(exportRate,3)}/kWh` : ''
+          ].filter(Boolean).join(' · ');
       document.getElementById('payback').textContent = payback === null ? 'Not modeled' : payback > 50 ? '>50 years' : `${payback.toFixed(1)} years`;
       document.getElementById('solarCost').textContent = solarCost === null ? 'Enter installed price' : money(solarCost);
       document.getElementById('loanPayment').textContent = payment === null ? 'Not calculated' : `${money(payment)} / mo`;
       document.getElementById('loanDesc').textContent = loanDesc;
       document.getElementById('loanTerms').textContent = loanTerms;
-      document.getElementById('resultsLocation').textContent = importedCityLabel ? `City-model context: ${importedCityLabel}. Solar yield is from a representative Census place point. The EIA state average is not used as your tariff unless you explicitly apply it as an illustrative scenario.` : 'Based on visitor-entered assumptions. No address or ZIP lookup is performed.';
+      document.getElementById('resultsLocation').textContent = importedCityLabel ? `PVWatts production uses the selected city point: ${importedCityLabel}.` : 'Production uses your entered assumption.';
       const assumptions = [
-        `Roof material: ${document.getElementById('roofType').selectedOptions[0].text}. Roof age: ${age === null ? 'not entered' : `${age} years`} (descriptive input only; age does not diagnose condition or determine replacement urgency). Roof area: ${number(roofArea)} sq ft. ${mode === 'roof' ? 'You supplied a roof-surface area; pitch is not applied again.' : `Approximate building footprint = above-ground finished floor area ÷ ${stories} stories; surface multiplier for the selected ${pitch} pitch is ${CONFIG.pitchFactors[pitch].toFixed(3)}. This simplified method does not model overhangs or complex roof geometry.`}`,
-        roofRateLow === null ? 'Roof replacement cost is not estimated because no local low/high installed rates were entered. The calculator does not invent city prices.' : `Roof material: ${document.getElementById('roofType').selectedOptions[0].text}. Roof cost = ${number(roofArea)} sq ft × ${money(roofRateLow,2)}–${money(roofRateHigh,2)} per roof sq ft. Rate basis: ${roofRateBasis} Confirm both rates match this material, measurement basis and project scope.`,
-        'Roof-space fit is not calculated. Roof surface area does not establish how many modules fit; a site-specific layout must account for roof-plane dimensions, setbacks, fire access, obstructions, shading, orientation and structural condition.',
-        `Annual electricity usage: ${number(annualKwh)} kWh/year entered by you from utility-bill consumption data.`,
-        rate === null ? 'Import rate: not entered. It is required to value self-consumed kWh, but not when the entered direct-use share is zero.' : `Import rate: ${money(rate,3)}/kWh. Basis: ${importRateBasis} Use the marginal energy rate, not necessarily the all-in average bill amount.`,
-        `Production assumption: ${number(productionPerKW)} kWh per kW DC per year. Basis: ${importedCityLabel ? 'city-based NLR PVWatts V8 estimate using a representative Census place point; verify roof-plane and shading differences' : 'visitor-entered or modelled elsewhere; no automatic property-specific estimate'}. The value is editable.`,
-        selfUseShare === null ? 'Energy flow: not split between self-use and exports because no annual direct-use share was entered. No direct-use or export dollar value is calculated.' : selfConsumedKwh < 0.01 ? `Energy flow: 0 kWh self-consumed and ${number(exportedKwh)} kWh exported. Export-only value can be calculated with the visitor-entered export credit; no import-rate input is needed.` : rate === null ? `Energy flow: ${number(selfConsumedKwh)} kWh self-consumed and ${number(exportedKwh)} kWh exported using your ${Math.round(selfUseShare*100)}% scenario input. Dollar value still requires a marginal import rate${exportedKwh >= 0.01 ? ' and an export credit' : ''}.` : exportRate === null && exportedKwh >= 0.01 ? `Energy flow: ${number(selfConsumedKwh)} kWh self-consumed and ${number(exportedKwh)} kWh exported. Self-use value is ${money(selfConsumedKwh * rate)}; total annual energy value and payback are withheld because the export credit is unknown.` : `Savings model: ${number(selfConsumedKwh)} kWh self-consumed at the visitor-entered import rate plus ${number(exportedKwh)} kWh exported at ${money(exportRate ?? 0,3)}/kWh. Self-consumption share = ${Math.round(selfUseShare*100)}%; this is an annual scenario share, not an hourly load simulation.`,
-        solarPricePerWatt === null ? 'Solar installed cost, payback and loan payment are not calculated because no installed price per DC watt was entered.' : `Installed price: ${money(solarPricePerWatt,2)}/W; total modeled cash price ${money(solarCost)}. Price basis: ${solarPriceBasis} Simple payback divides this amount by first-year modeled annual energy value.`,
-        'The model excludes fixed utility charges, time-of-use billing, batteries, degradation, maintenance, inverter replacement, insurance, taxes, incentives, financing fees and future rate changes. It does not determine tax eligibility or include a tax-credit amount; verify current federal, state and utility programs independently.'
+        `Roof: ${document.getElementById('roofType').selectedOptions[0].text}; age ${age === null ? 'not entered' : `${age} years`}; area ${number(roofArea)} sq ft. ${mode === 'roof' ? 'Measured roof area was used as entered.' : `Estimated footprint = finished floor area ÷ ${stories} stories; pitch multiplier = ${CONFIG.pitchFactors[pitch].toFixed(3)}.`}`,
+        roofRateLow === null ? 'Roof cost is not calculated until low and high installed rates are entered.' : `Roof cost = ${number(roofArea)} sq ft × ${money(roofRateLow,2)}–${money(roofRateHigh,2)} per sq ft. Rate basis: ${roofRateBasis}`,
+        'Solar system size uses the annual generation target and modeled production. Roof layout, setbacks and structural fit are part of installation design.',
+        `Annual electricity use: ${number(annualKwh)} kWh/year.`,
+        rate === null ? 'Import rate: not entered.' : `Import rate: ${money(rate,3)}/kWh. Basis: ${importRateBasis}`,
+        `Production assumption: ${number(productionPerKW)} kWh per kW DC per year. Basis: ${importedCityLabel ? 'NLR PVWatts V8 using a representative Census city point' : 'visitor-entered or sourced separately'}.`,
+        selfUseShare === null ? 'Direct-use share: not entered.' : `Annual energy flow: ${number(selfConsumedKwh)} kWh used at home and ${number(exportedKwh)} kWh exported, using a ${Math.round(selfUseShare*100)}% direct-use scenario.`,
+        solarPricePerWatt === null ? 'Payback and loan payment need an installed price per DC watt.' : `Installed price: ${money(solarPricePerWatt,2)}/W (${solarPriceBasis}). Modeled cash price ${money(solarCost)}; simple payback divides this price by first-year modeled annual energy value.`,
+        'Annual scenario excludes fixed utility charges, time-of-use billing, batteries, maintenance, financing fees, incentives and future rate changes.'
       ];
       document.getElementById('assumptionList').innerHTML = assumptions.map(x => `<li>${x.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')}</li>`).join('');
-      const warnings = [];
-      if (condition === 'poor') warnings.push('Reported poor condition: have the roof inspected before solar design or installation.');
-      if (condition === 'unknown') warnings.push('Roof condition is unknown; do not interpret the age or this screen as a replacement decision.');
-      warnings.push('Roof-space fit is not assessed. The energy-target system size may not fit the usable roof area after setbacks, obstructions, fire access, shading and structural review.');
-      if (!rateEntered && selfConsumedKwh !== null && selfConsumedKwh >= 0.01) warnings.push('No import rate was entered. The value of self-consumed electricity and total payback cannot be calculated.');
-      if (selfUseText === '') warnings.push('No annual self-consumption share was entered. Energy flows, dollar value and payback are not calculated.');
-      if (exportText === '' && exportedKwh !== null && exportedKwh >= 0.01) warnings.push('No export credit was entered. Export value, total annual energy value and payback are not calculated; exported electricity is not assumed to be worth $0.');
-      if (solarPricePerWatt === null) warnings.push('No installed solar price was entered; cost and payback are not calculated.');
-      warnings.push('The target annual generation percentage is visitor-entered; it is not a recommendation or a promise of the same reduction in the total utility bill. No self-consumption or export-credit defaults are supplied. Local incentives, utility tariff rules, shading, orientation, structural condition, professional measurements and local prices can change results.');
-      document.getElementById('resultWarning').textContent = warnings.join(' ');
       document.getElementById('results').classList.add('show');
       setStep(3);
       document.getElementById('results').scrollIntoView({behavior:'smooth',block:'start'});
@@ -557,14 +558,14 @@
       syncAreaMode();
       syncFinancingFields();
 
-      roofRateBasis = 'Angi broad national roof-replacement reference range of $4–$11 per roof sq ft; national planning context, not a local quote or material-specific price.';
-      solarPriceBasis = 'EnergySage H1 2026 national solar-only marketplace median of $2.62/W DC; not a local installer quote.';
-      importRateBasis = 'EIA January–September 2026 U.S. average residential price of 18.19 cents/kWh (data released November 24, 2026), loaded only as an illustrative scenario; not a household marginal tariff.';
+      roofRateBasis = 'Angi U.S. roof-replacement reference: $4–$11 per roof sq ft (October 22, 2026).';
+      solarPriceBasis = 'EnergySage H1 2026 national solar-only median: $2.62/W DC before incentives.';
+      importRateBasis = 'EIA January–September 2026 U.S. average residential price of 18.19 cents/kWh, used as a comparison scenario.';
       roofReferenceStatus.hidden = false;
-      roofReferenceStatus.textContent = roofRateBasis + ' This is a deliberately loaded national reference, not a local price. Replace it with comparable written local proposals.';
+      roofReferenceStatus.textContent = roofRateBasis + ' National reference loaded. Replace it with comparable local proposals.';
       solarReferenceStatus.hidden = false;
-      solarReferenceStatus.textContent = solarPriceBasis + ' This is a deliberately loaded national reference, not a quote. Replace it with a current written cash proposal.';
-      addFieldNote(productionInput, 'productionExampleNote', 'The 1,350 kWh/kW/year yield is an illustrative scenario input, not a live PVWatts result. Use the city lookup for a location-based NLR PVWatts V8 estimate.', 'https://developer.nlr.gov/docs/solar/pvwatts/v8/');
+      solarReferenceStatus.textContent = solarPriceBasis + ' National reference loaded. Replace it with a current written cash proposal.';
+      addFieldNote(productionInput, 'productionExampleNote', 'Example yield: 1,350 kWh/kW/year. Use the city lookup for a location-based NLR PVWatts V8 estimate.', 'https://developer.nlr.gov/docs/solar/pvwatts/v8/');
 
       const roofDetails = document.getElementById('roofPriceAssumptions');
       const solarDetails = document.getElementById('solarCostAssumptions');

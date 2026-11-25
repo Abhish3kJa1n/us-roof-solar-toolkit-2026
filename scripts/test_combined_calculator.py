@@ -35,21 +35,21 @@ DEFAULTS={
  'apr':'','term':'','condition':'good','stories':''
 }
 CASES=[
- ('unknown_use_share',{},['Inputs needed','No annual self-consumption share was entered','not split between self-use and exports'],['Rate needed','50%']),
- ('unknown_export_rate',{'selfUse':'50'},['Inputs needed','No export credit was entered','not assumed to be worth $0','export credit is unknown','Total annual energy value and payback are withheld'],['Rate needed','0.000/kWh']),
- ('unknown_import_rate',{'selfUse':'50','rate':'','exportRate':'0.04'},['import rate is unknown','4,320 kWh exported','Total annual energy value and payback are withheld'],['0.000/kWh']),
- ('both_tariff_rates_unknown',{'selfUse':'50','rate':'','exportRate':''},['import rate is unknown','export credit is unknown','Total annual energy value and payback are withheld'],['0.000/kWh']),
- ('complete_scenario',{'selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh self-used','$0.040/kWh','20.8 years'],['Inputs needed']),
+ ('unknown_use_share',{},['Inputs needed','Add a direct-use share and utility rates to calculate annual value','Direct-use share: not entered'],['not split between self-use and exports']),
+ ('unknown_export_rate',{'selfUse':'50'},['Inputs needed','Add your utility export credit to value surplus generation','4,320 kWh exported'],['not assumed to be worth $0']),
+ ('unknown_import_rate',{'selfUse':'50','rate':'','exportRate':'0.04'},['Add your marginal import rate to value electricity used at home','Import rate: not entered','4,320 kWh exported'],['0.000/kWh']),
+ ('both_tariff_rates_unknown',{'selfUse':'50','rate':'','exportRate':''},['Add your marginal import rate to value electricity used at home','Import rate: not entered','50% direct-use scenario'],['0.000/kWh']),
+ ('complete_scenario',{'selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh used at home','$0.040/kWh','20.8 years'],['Inputs needed']),
  ('zero_import_rate_explicit',{'selfUse':'50','rate':'0','exportRate':'0.04'},['$173 / yr','0.000/kWh'],['No import rate was entered']),
- ('all_direct_use_export_not_required',{'selfUse':'100'},['$1,728 / yr','12.5 years','8,640 kWh self-used'],['No export credit was entered']),
- ('export_only_without_import_rate',{'selfUse':'0','exportRate':'0.04','rate':''},['$346 / yr','0 kWh self-consumed','no import-rate input is needed'],['Inputs needed']),
- ('material_is_optional',{'roofType':'','selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh self-used'],['Select a roof material'])
+ ('all_direct_use_export_not_required',{'selfUse':'100'},['$1,728 / yr','12.5 years','8,640 kWh used at home'],['Add your utility export credit']),
+ ('export_only_without_import_rate',{'selfUse':'0','exportRate':'0.04','rate':''},['$346 / yr','8,640 kWh exported'],['Add your marginal import rate']),
+ ('material_is_optional',{'roofType':'','selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh used at home'],['Select a roof material'])
 ]
 
 def main():
  for name,overrides,yes,no in CASES:
   values={**DEFAULTS,**overrides}
-  code=HARNESS+JS+'\n'+f"for(const [k,v] of Object.entries({json.dumps(values)})) makeEl(k).value=v; makeEl('calculateButton').handlers.click(); console.log(JSON.stringify({{annual:makeEl('annualSavings').textContent,desc:makeEl('savingsDesc').textContent,payback:makeEl('payback').textContent,warning:makeEl('resultWarning').textContent,assumptions:makeEl('assumptionList').innerHTML,error:makeEl('error1').textContent}}));"
+  code=HARNESS+JS+'\n'+f"for(const [k,v] of Object.entries({json.dumps(values)})) makeEl(k).value=v; makeEl('calculateButton').handlers.click(); console.log(JSON.stringify({{annual:makeEl('annualSavings').textContent,desc:makeEl('savingsDesc').textContent,payback:makeEl('payback').textContent,warning:makeEl('resultWarning').textContent,assumptions:makeEl('assumptionList').innerHTML,system:makeEl('systemDesc').textContent,error:makeEl('error1').textContent}}));"
   with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(code);temp=Path(f.name)
   try:r=subprocess.run(['node',str(temp)],capture_output=True,text=True)
   finally:temp.unlink(missing_ok=True)
@@ -59,6 +59,8 @@ def main():
   missing=[x for x in yes if x not in combined]
   present=[x for x in no if x in combined]
   if missing or present:raise SystemExit(f'FAIL {name}: missing={missing}; unwanted={present}; output={out}')
+  if out.get('warning'):
+   raise SystemExit(f'FAIL {name}: legacy global result warning must remain empty: {out["warning"]}')
   print('PASS',name)
  # Home-area conversion must not silently assume a one-storey footprint.
  values={**DEFAULTS,'roofArea':'','homeArea':'2000','pitch':'moderate','stories':''}
@@ -111,8 +113,8 @@ def main():
   raise SystemExit(f'FAIL roof reference must not silently load solar price: {prefill}')
  if prefill['afterSolar']['solarPrice'] != '2.62':
   raise SystemExit(f'FAIL explicit solar-price reference button: {prefill}')
- if 'not city-specific' not in prefill['afterRoof']['roofStatus'].lower() or 'not city-specific' not in prefill['afterSolar']['solarStatus'].lower():
-  raise SystemExit(f'FAIL national reference provenance disclosure: {prefill}')
+ if 'Angi broad U.S. roof-replacement reference' not in prefill['afterRoof']['roofStatus'] or 'Broad U.S. price reference' not in prefill['afterRoof']['roofStatus'] or 'EnergySage H1 2026' not in prefill['afterSolar']['solarStatus'] or 'National marketplace benchmark' not in prefill['afterSolar']['solarStatus']:
+  raise SystemExit(f'FAIL national reference source and geographic scope: {prefill}')
  print('PASS roof and solar national references require separate explicit opt-ins')
 
  # An approved city-level historical solar record must replace the national reference and retain its provenance.
@@ -131,8 +133,8 @@ def main():
   raise SystemExit('FAIL explicit EIA illustrative-scenario opt-in button was not created')
  if city['rateAfter'] != '0.1651':
   raise SystemExit('FAIL EIA value should only enter marginal-rate field after explicit visitor click')
- if not city['appliedVisible'] or 'illustrative scenario' not in city['appliedText']:
-  raise SystemExit('FAIL explicit EIA application provenance was not shown')
+ if not city['appliedVisible'] or 'comparison rate' not in city['appliedText']:
+  raise SystemExit('FAIL explicit EIA comparison-rate provenance was not shown')
  print('PASS city-based PVWatts/LBNL prefill leaves tariff blank until visitor explicitly applies EIA scenario')
 
 
@@ -158,8 +160,8 @@ console.log(JSON.stringify(loaded));
  for provenance in ('EIA','Angi','EnergySage'):
   if provenance not in loaded['assumptions']:
    raise SystemExit(f'FAIL U.S. example is missing the {provenance} input provenance: {loaded}')
- if 'PVWatts' not in loaded['productionNote'] or 'not a live PVWatts result' not in loaded['productionNote']:
-  raise SystemExit(f'FAIL U.S. example does not identify the illustrative yield input as non-PVWatts data: {loaded}')
+ if 'Example yield:' not in loaded['productionNote'] or 'city lookup' not in loaded['productionNote'] or 'PVWatts' not in loaded['productionNote']:
+  raise SystemExit(f'FAIL U.S. example does not distinguish its sample yield from location-based PVWatts data: {loaded}')
  print('PASS homepage illustrative U.S. example populates inputs, retains source labels and runs validated calculation')
 
  # Reset must restore the blank, honest starting state and clear city-handoff state.

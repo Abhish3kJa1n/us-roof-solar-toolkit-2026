@@ -50,14 +50,13 @@ loc=(ROOT/'calculators/location-solar.html').read_text(encoding='utf-8')
 for key,val in {'capacity':'1','tilt':'20','azimuth':'180','losses':'14'}.items():
     if not re.search(rf'<input[^>]*id="{key}"[^>]*value="{val}"', loc):
         fail(f'location estimator is missing its disclosed editable reference assumption for {key}')
-for marker in ('not facts inferred from your city','reference configuration','Replace these values'):
+for marker in ('Your city sets the solar resource','editable settings describe the array being modeled','Adjust them to match a proposal'):
     if marker.lower() not in loc.lower():
         fail('city estimator reference assumptions are not adequately disclosed')
 
 for visitor_notice in (
-    'This optional lookup searches the OpenEI Utility Rate Database',
-    'A nearby match does not confirm that the utility serves your home',
-    'Compare the utility name, customer charge, import rate, time-of-use rules and export credit',
+    'This optional lookup finds OpenEI residential rate plans associated with utilities near the selected city.',
+    'Compare the utility and plan with your bill before using a rate.',
 ):
     if visitor_notice not in loc:
         fail(f'OpenEI page is missing visitor-facing limitation: {visitor_notice}')
@@ -65,7 +64,7 @@ for visitor_notice in (
 home=(ROOT/'index.html').read_text(encoding='utf-8')
 home_js=(ROOT/'assets/js/homepage-1.js').read_text(encoding='utf-8')
 location_js=(ROOT/'assets/js/location-solar-1.js').read_text(encoding='utf-8')
-for phrase in ('City-based solar data','It is not inserted into your tariff field','may deliberately apply it as an illustrative scenario'):
+for phrase in ('City-based solar data','it never fills your utility-rate field unless you choose to apply it','EIA state average is shown as an optional comparison'):
     if phrase.lower() not in home.lower(): fail(f'homepage lacks hybrid-data disclosure: {phrase}')
 for token in ("handoff.get('productionPerKw')", "handoff.get('stateAverageRate')", "useEiaStateAverage", "addEventListener('click'", "PVWatts V8", "FieldValidation.refresh", "Berkeley Lab Tracking the Sun 2026"):
     if token not in home_js: fail(f'homepage hybrid handoff is missing {token}')

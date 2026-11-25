@@ -236,9 +236,10 @@ try {
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
   const homepageMethodNote = await page.locator('.calculator-method-note').innerText();
-  assert.match(homepageMethodNote, /original installation of the item is completed/i);
-  assert.match(homepageMethodNote, /original use of the constructed or reconstructed structure/i);
-  assert.match(homepageMethodNote, /payment or deposit before the cutoff does not by itself preserve eligibility/i);
+  assert.match(homepageMethodNote, /Solar size = generation target/i);
+  const homepageTaxFaq = await page.locator('.faq-item').filter({ hasText: 'Does the estimate include tax credits or local incentives?' }).textContent();
+  assert.match(homepageTaxFaq, /credit is unavailable for expenditures after December 31, 2025/i);
+  assert.equal(await page.locator('.faq-item a[href^="https://www.irs.gov/"]').count(), 1, 'homepage tax-credit FAQ must link to current IRS guidance once');
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'combined calculator must not silently prefill a national solar price');
   assert.equal(await page.locator('#roofPriceAssumptions').evaluate(node => node.open), false, 'roof price assumptions should be collapsed initially');
   assert.equal(await page.locator('#solarCostAssumptions').evaluate(node => node.open), false, 'solar cost assumptions should be collapsed initially');
@@ -251,12 +252,12 @@ try {
   assert.equal(await page.locator('#roofRateLow').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
   await page.locator('#roofPriceAssumptions summary').click();
-  assert.match(await page.locator('#roofPriceAssumptions').innerText(), /detach-and-reset, storage and reinstallation are not estimated/i, 'combined calculator must disclose existing solar-array removal/reinstall scope');
+  assert.match(await page.locator('#roofPriceAssumptions').innerText(), /For existing solar panels, get a separate price for removal, storage and reinstallation/i, 'combined calculator must guide homeowners with existing panels to price that work separately');
   assert.equal(await page.locator('#roofPriceAssumptions a[href="guides/roof-before-solar"]').count(), 1, 'combined calculator must link the roof-before-solar guide from this scope note');
   await page.locator('#loadNationalRoofReference').click();
   assert.equal(await page.locator('#roofRateLow').inputValue(), '4');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '11');
-  assert.match(await page.locator('#roofReferenceStatus').innerText(), /not a local or material-specific price/i);
+  assert.ok((await page.locator('#roofReferenceStatus').innerText()).includes('Broad U.S. price reference'));
 
   // Roof material is descriptive and optional; with the required roof area supplied, it must not block progress.
   await page.locator('#roofArea').fill('1800');
@@ -290,9 +291,8 @@ try {
 
   // Roof-area calculator: ensure the geometric estimate and its limitation note render in a real browser.
   await open('/calculators/roof-area.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-disclaimer-desktop.png'), fullPage: true });
-  assert.equal(await page.locator('.calculator-notice').count(), 1, 'roof-area page must render one universal planning notice');
-  assert.equal((await page.locator('.calculator-notice').innerText()).trim(), 'Planning estimates only. Results depend on the inputs and assumptions shown; they are not quotes, inspections, engineering designs, or guarantees.');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-calculator-desktop.png'), fullPage: true });
+  assert.equal(await page.locator('.calculator-notice').count(), 0, 'roof-area page must not show a generic disclaimer banner');
   assert.equal(await page.locator('#result + .calculator-method-note').count(), 1, 'roof-area methodology note must be the immediate sibling after the result');
   await assertNoHorizontalOverflow('roof-area');
   await accessibilityScan('roof-area-desktop');
@@ -305,23 +305,22 @@ try {
   await page.screenshot({ path: path.join(screenshotDir, 'roof-area-calculation-result.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await accessibilityScan('roof-area-mobile');
-  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-disclaimer-mobile.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-calculator-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
-  results.push('roof-area calculator disclosure, geometric formula, result and responsive browser flow: PASS');
+  results.push('roof-area concise method note, geometric formula, result and responsive browser flow: PASS');
 
   // Solar panel-count calculator: verify both mutually exclusive calculation methods.
   await open('/calculators/solar-panel-count.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-disclaimer-desktop.png'), fullPage: true });
-  assert.equal(await page.locator('.calculator-notice').count(), 1, 'solar panel-count page must render one universal planning notice');
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-calculator-desktop.png'), fullPage: true });
+  assert.equal(await page.locator('.calculator-notice').count(), 0, 'panel-count page must not show a generic disclaimer banner');
   assert.equal(await page.locator('#result + .calculator-method-note').count(), 1, 'panel-count methodology note must immediately follow the result');
   await assertNoHorizontalOverflow('solar-panel-count');
   await accessibilityScan('solar-panel-count-desktop');
   const panelCountMethod = await page.locator('.calculator-method-note').innerText();
   assert.match(panelCountMethod, /quoted DC system size/i, 'method note must disclose the quoted-system-size alternative');
   assert.match(panelCountMethod, /annual production is not calculated by this method/i, 'method note must explain what the alternative method does not calculate');
-  assert.match(panelCountMethod, /original installation of the item is completed/i, 'Section 25D timing must identify installation completion');
-  assert.match(panelCountMethod, /original use of the constructed or reconstructed structure/i, 'Section 25D timing must identify the construction/reconstruction rule');
-  assert.equal(await page.locator('.calculator-method-note a[href^="https://www.irs.gov/"]').count(), 1, 'panel-count Section 25D disclosure must link directly to IRS guidance');
+  assert.match(panelCountMethod, /Panel count follows the selected sizing method/i, 'method note must explain how the panel count is used');
+  assert.doesNotMatch(panelCountMethod, /Section 25D|tax credit/i, 'panel-count calculator must not carry unrelated tax-credit language');
 
   await page.locator('#annualUse').fill('10800');
   await page.locator('#offset').fill('80');
@@ -341,13 +340,13 @@ try {
   await page.waitForFunction(() => /17 panels/.test(document.querySelector('#result')?.innerText || ''), undefined, { timeout: 15000 });
   const quotedPanelCount = await page.locator('#result').innerText();
   assert.match(quotedPanelCount, /Quoted target capacity: 6\.60 kW DC/);
-  assert.match(quotedPanelCount, /Annual production was not calculated/);
+  assert.ok(quotedPanelCount.includes('Annual production is not part of the quoted-size method'));
   await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-quoted-size-method-result.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await accessibilityScan('solar-panel-count-mobile');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-disclaimer-mobile.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-calculator-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
-  results.push('solar panel-count usage-based and quoted-size methods, Section 25D timing and responsive browser flow: PASS');
+  results.push('solar panel-count usage-based and quoted-size methods without unrelated tax copy: PASS');
 
   // Standalone solar savings: separate sizing inputs, optional tariff modelling and explicit price reference.
   await open('/calculators/solar-savings.html');
@@ -356,17 +355,16 @@ try {
   await accessibilityScan('solar-savings');
   assert.equal(await page.locator('#price').inputValue(), '', 'standalone solar calculator must not silently prefill a national price');
   assert.equal(await page.locator('#selfUseSensitivity').evaluate(node => node.open), false, 'self-use sensitivity should be collapsed initially');
-  assert.equal(await page.locator('#assumptionDisclosure').evaluate(node => node.open), false, 'detailed limitations should be collapsed initially');
+  assert.equal(await page.locator('#assumptionDisclosure').evaluate(node => node.open), false, 'model assumptions should be collapsed initially');
   await page.locator('#assumptionDisclosure summary').click();
   const limitationsText = await page.locator('#assumptionDisclosure').innerText();
-  assert.match(limitationsText, /not a utility-bill simulator/i);
-  assert.match(limitationsText, /unknown, not zero/i);
+  assert.match(limitationsText, /annual energy totals rather than hourly billing/i);
+  assert.match(limitationsText, /fixed and demand charges/i);
   const solarMethodNote = await page.locator('.calculator-method-note').innerText();
-  assert.match(solarMethodNote, /not allowed for expenditures made after December 31, 2025/i, 'solar calculator must state the current federal Section 25D termination date in the result-adjacent method note');
-  assert.match(solarMethodNote, /original installation of the item is completed/i, 'solar calculator must explain the installation-completion timing rule');
-  assert.match(solarMethodNote, /original use of the constructed or reconstructed structure/i, 'solar calculator must explain the construction/reconstruction timing rule');
-  assert.match(solarMethodNote, /payment or deposit before the cutoff does not by itself preserve eligibility/i, 'solar calculator must explain why payment timing alone does not preserve eligibility');
-  assert.equal(await page.locator('.calculator-method-note a[href^="https://www.irs.gov/"]').count(), 1, 'federal credit timing note must link to the IRS source from the result-adjacent method note');
+  assert.match(solarMethodNote, /Simple payback = system price ÷ modeled first-year annual value/i, 'method note must explain the payback arithmetic');
+  const solarEconomicsText = await page.locator('article').innerText();
+  assert.match(solarEconomicsText, /credit is unavailable for expenditures after December 31, 2025/i, 'solar economics page must retain the current federal credit cutoff');
+  assert.equal(await page.locator('article a[href^="https://www.irs.gov/"]').count(), 1, 'solar economics page must link to IRS timing guidance once');
   await page.locator('#assumptionDisclosure summary').click();
   await page.locator('#annualUse').fill('12000');
   await page.locator('#offset').fill('100');
@@ -424,7 +422,7 @@ try {
 
   // Standalone roof-cost calculator: AHS availability state, material changes and all metal-system references.
   await open('/calculators/roof-replacement-cost.html');
-  assert.match(await page.locator('#main-content').innerText(), /Visitors can deliberately load the broad range as an editable national planning reference/i);
+  assert.match(await page.locator('#main-content').innerText(), /Start with the national reference above or choose a metal range by roof style\/system or base material/i);
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-desktop.png'), fullPage: true });
   await assertNoHorizontalOverflow('roof-cost-desktop');
   await accessibilityScan('roof-cost');
@@ -435,7 +433,7 @@ try {
   assert.equal(await page.locator('.roof-field-details').evaluate(node => node.open), false, 'metal methodology starts collapsed');
   assert.equal(await page.locator('.roof-scope-details').evaluate(node => node.open), false, 'scope caveats start collapsed');
   await page.locator('.roof-scope-details summary').click();
-  assert.match(await page.locator('.roof-scope-details').innerText(), /does not separately calculate array detach-and-reset, storage or reinstallation/i, 'roof calculator must disclose existing solar-array removal/reinstall scope');
+  assert.match(await page.locator('.roof-scope-details').innerText(), /For existing solar equipment, ask your solar provider to price detach-and-reset, storage and reinstallation separately/i, 'roof calculator must guide homeowners with existing solar equipment to price removal and reinstallation');
   assert.equal(await page.locator('.roof-scope-details a[href="../guides/roof-before-solar"]').count(), 1, 'roof calculator must link the roof-before-solar guide from this scope note');
   await page.locator('.roof-scope-details summary').click();
   await page.setViewportSize({ width: 390, height: 844 });
@@ -449,14 +447,12 @@ try {
   await accessibilityScan('roof-cost-mobile');
   await page.screenshot({ path: path.join(screenshotDir, 'roof-cost-progressive-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
-  await page.waitForFunction(() => {
-    const node = document.querySelector('#roofMetroBenchmarkResult');
-    return Boolean(node && /national point estimates reproduce the Census Table C-16/i.test(node.innerText));
-  }, undefined, { timeout: 15000 });
-  assert.equal(await page.locator('#roofMetroBenchmarkField').isVisible(), false, 'empty AHS registry must hide the unavailable dropdown field');
-  const ahsStatus = await page.locator('#roofMetroBenchmarkResult').innerText();
-  assert.match(ahsStatus, /No AHS metro roofing distribution is currently approved/i);
-  assert.match(ahsStatus, /national point estimates reproduce the Census Table C-16/i);
+  assert.equal(await page.locator('#roofMetroBenchmarkField').count(), 0, 'homeowner page must not expose an unavailable metro-price control');
+  assert.equal(await page.locator('#roofMetroBenchmarkResult').count(), 0, 'homeowner page must not expose internal AHS metro-processing status');
+  const roofCostCopy = await page.locator('#main-content').innerText();
+  assert.doesNotMatch(roofCostCopy, /metro-level roofing range|No AHS metro roofing distribution|variance and margin-of-error reconciliation/i, 'internal unpublished AHS processing status must stay out of homeowner copy');
+  assert.match(roofCostCopy, /Published U\.S\. cost references/i, 'approved national roofing cost references remain available');
+  assert.match(roofCostCopy, /Historical Census roofing expenditure/i, 'historical Census context remains available');
 
   const styleValues = await page.locator('#metalSystem optgroup[label="Roof style / system"] option').evaluateAll(options => options.map(option => option.value));
   const materialValues = await page.locator('#metalSystem optgroup[label="Base metal / material"] option').evaluateAll(options => options.map(option => option.value));
@@ -470,7 +466,7 @@ try {
   await page.locator('#loadReference').click();
   assert.equal(await page.locator('#low').inputValue(), '4');
   assert.equal(await page.locator('#high').inputValue(), '11');
-  assert.match(await page.locator('#referenceStatus').innerText(), /not a local or material-specific price/i);
+  assert.ok((await page.locator('#referenceStatus').innerText()).includes('Loaded Angi’s U.S. $4–$11 per roof sq ft reference'));
   await page.locator('#run').click();
   assert.match(await page.locator('#result').innerText(), /\$7,200|\$19,800/);
 
@@ -514,19 +510,19 @@ try {
   // A visitor edit creates a mixed range. Changing system preserves it as custom and does not mislabel it.
   await page.locator('#metalSystem').selectOption('standing_seam');
   await page.locator('#low').fill('10');
-  assert.match(await page.locator('#referenceStatus').innerText(), /high endpoint remains from the original/i);
+  assert.ok((await page.locator('#referenceStatus').innerText()).includes('high rate remains from the original'));
   await page.locator('#metalSystem').selectOption('corrugated');
   assert.equal(await page.locator('#low').inputValue(), '10');
   assert.equal(await page.locator('#high').inputValue(), '16');
   const mixedStatus = await page.locator('#referenceStatus').innerText();
   assert.match(mixedStatus, /standing seam/i);
-  assert.match(mixedStatus, /not a published range for corrugated sheet metal/i);
+  assert.ok(mixedStatus.includes('Reload to use the corrugated sheet metal reference'));
   assert.match(await page.locator('#loadReference').innerText(), /Reload corrugated sheet metal reference/i);
   await page.locator('#run').click();
   const mixedResult = await page.locator('#result').innerText();
-  assert.match(mixedResult, /Mixed\/custom rate pair/i);
-  assert.match(mixedResult, /Original source: HomeGuide published installed range for standing seam/i);
-  assert.match(mixedResult, /not a published range for corrugated sheet metal/i);
+  assert.ok(mixedResult.includes('low rate entered by you: $10'));
+  assert.ok(mixedResult.includes('high rate retained from standing seam: $16'));
+  assert.ok(mixedResult.includes('Reload to use the corrugated sheet metal reference'));
   await page.locator('#loadReference').click();
   assert.equal(await page.locator('#low').inputValue(), '5');
   assert.equal(await page.locator('#high').inputValue(), '12');
@@ -546,11 +542,11 @@ try {
   await page.locator('#material').selectOption('metal');
   assert.equal(await page.locator('#low').inputValue(), '5.5');
   assert.equal(await page.locator('#high').inputValue(), '8.5');
-  assert.match(await page.locator('#referenceStatus').innerText(), /visitor-entered rates were retained/i);
+  assert.match(await page.locator('#referenceStatus').innerText(), /Rates were retained after changing the material from tile to metal/i);
   await page.locator('#metalSystem').selectOption('metal_shingles');
   assert.equal(await page.locator('#low').inputValue(), '5.5');
   assert.equal(await page.locator('#high').inputValue(), '8.5');
-  assert.match(await page.locator('#referenceStatus').innerText(), /not a published reference for the new category/i);
+  assert.match(await page.locator('#referenceStatus').innerText(), /Your rates were retained after changing the metal category to metal shingles/i);
   await page.locator('#loadReference').click();
   await page.waitForTimeout(100);
   const metalRefAfter = await page.locator('#loadReference').evaluate(button => ({

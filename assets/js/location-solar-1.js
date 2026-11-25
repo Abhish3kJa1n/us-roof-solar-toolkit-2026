@@ -190,7 +190,7 @@
       const heading = el('strong', '', `EIA residential electricity benchmark — ${target}`);
       const value = el('p', '', `${format(current, 2)}¢/kWh for January–August 2026, compared with ${format(prior, 2)}¢/kWh for the same months in 2025 (${change > 0 ? '+' : ''}${format(change, 2)}%).`);
       const preliminary = el('p', '', 'EIA labels the 2026 year-to-date values preliminary estimates based on a cutoff-model sample; the 2025 comparison values are final. Monthly estimates can be revised in later releases.');
-      const caution = el('p', '', 'This is a state-wide average price across residential customers, not your utility’s marginal energy charge, your actual tariff, or an estimate of what each solar kWh saves. Do not use it as a substitute for your bill or export-credit rules.');
+      const caution = el('p', '', 'EIA statewide average: a comparison figure. Use your utility’s marginal energy rate and export credit for a household savings estimate.');
       const source = el('a', '', `Source: EIA Electric Power Monthly Table 5.6.B · data release ${release}`);
       source.href = 'https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_06_b';
       source.target = '_blank';
@@ -589,7 +589,6 @@
       data.warnings.forEach((warning) => list.append(el('li', '', warning)));
       resultEl.append(el('p', '', 'PVWatts warnings:'), list);
     }
-    resultEl.append(el('p', '', 'Interpret as a modeled typical-year estimate, not a guarantee. The selected Census place point is a city-level representative coordinate; roof shading and actual site conditions are not inspected.'));
   }
 
   tariffBtn.addEventListener('click', async () => {
@@ -619,7 +618,7 @@
         const tableWrap = el('div', 'table-scroll');
         const table = el('table');
         table.setAttribute('aria-label', 'Nearby candidate utility tariff records');
-        const cap = el('caption', '', 'Nearby candidate records — not confirmed for this property');
+        const cap = el('caption', '', 'Nearby utility rate candidates');
         const thead = el('thead');
         const hrow = el('tr');
         ['Utility', 'Rate name', 'Status / dates', 'Source'].forEach((label) => hrow.append(el('th', '', label)));

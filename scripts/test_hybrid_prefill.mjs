@@ -78,7 +78,7 @@ assert.match(empty.elements.priceContext.textContent, /No price is assumed/);
 // A visitor edit made while the async registry lookup is in flight must never be overwritten.
 const edited = await runScenario({ search: '?city=Austin&state=TX', editDuringFetch: true });
 assert.equal(edited.elements.price.value, '3.87');
-assert.match(edited.elements.priceContext.textContent, /You entered this price/);
+assert.match(edited.elements.priceContext.textContent, /Using the cash price you entered/);
 
 
 // A weak sample is withheld even when the source/license metadata looks approved.
@@ -105,11 +105,11 @@ assert.match(noLicense.elements.priceContext.textContent, /No price is assumed/)
 // The national benchmark loads only on explicit request and cannot be overwritten by an in-flight city lookup.
 const optedIn = await runScenario({ search: '?city=Austin&state=TX', optInDuringFetch: true });
 assert.equal(optedIn.elements.price.value, '2.62');
-assert.match(optedIn.elements.priceContext.textContent, /National solar-only benchmark loaded because you requested it/);
+assert.match(optedIn.elements.priceContext.textContent, /H1 2026 national solar-only median loaded before incentives/);
 
 const explicitNational = await runScenario();
 explicitNational.elements.loadNationalPriceReference.handlers.click();
 assert.equal(explicitNational.elements.price.value, '2.62');
-assert.match(explicitNational.elements.priceContext.textContent, /National solar-only benchmark loaded because you requested it/);
+assert.match(explicitNational.elements.priceContext.textContent, /H1 2026 national solar-only median loaded before incentives/);
 
 console.log('PASS hybrid solar prefill: blank national default, explicit national opt-in, approval-gated city override, PV yield handoff, visitor-edit and opt-in race protection, minimum sample, source-domain and license safeguards.');

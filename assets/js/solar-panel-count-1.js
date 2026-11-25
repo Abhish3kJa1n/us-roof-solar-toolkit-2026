@@ -17,7 +17,7 @@ if (typeof window !== 'undefined' && window.location) {
   if (handoff.has('production') && Number.isFinite(incomingProduction) && incomingProduction >= 100 && incomingProduction <= 4000) {
     productionEl.value = incomingProduction.toFixed(1);
     productionContextEl.hidden = false;
-    productionContextEl.textContent = `Modeled production loaded: ${fmt(incomingProduction, 1)} kWh per kW DC${incomingLocation ? ` for ${incomingLocation}` : ''}. This is a representative-place typical-year model, not a property-specific roof assessment.`;
+    productionContextEl.textContent = `Modeled production loaded: ${fmt(incomingProduction, 1)} kWh per kW DC${incomingLocation ? ` for ${incomingLocation}` : ''}. PVWatts typical-year production for a representative city point. Match array settings to your roof and proposal.`;
   }
 }
 
@@ -83,7 +83,7 @@ runButton.addEventListener('click', () => {
       return;
     }
     if (!(Number.isFinite(production) && production >= 100 && production <= 4000)) {
-      showError('Enter modeled annual production from 100 to 4,000 kWh per kW DC. This broad range is a typo check, not a location benchmark.');
+      showError('Enter modeled annual production from 100 to 4,000 kWh per kW DC. Use the city estimator or a site-specific proposal.');
       return;
     }
     targetGeneration = annualUse * offset / 100;
@@ -111,7 +111,7 @@ runButton.addEventListener('click', () => {
     const difference = estimatedGeneration - targetGeneration;
     panelResult.innerHTML = `<div class="kicker">Estimated panel count · ${fmt(generationOffset)}% annual generation target</div><div class="big">${fmt(panels)} panels</div><p>Calculated array capacity: ${fmt(actualKw, 2)} kW DC · Target annual generation: ${fmt(targetGeneration)} kWh · Approximate modeled annual generation after rounding to whole panels: ${fmt(estimatedGeneration)} kWh.</p><p>Module surface area: ${areaText}. Whole-panel rounding adds approximately ${fmt(difference)} kWh/year above the requested generation target in this simplified model.</p>`;
   } else {
-    panelResult.innerHTML = `<div class="kicker">Estimated panel count · quoted system size</div><div class="big">${fmt(panels)} panels</div><p>Quoted target capacity: ${fmt(targetKw, 2)} kW DC · Approximate whole-module capacity: ${fmt(actualKw, 2)} kW DC · Module surface area: ${areaText}.</p><p>Annual production was not calculated because this method uses a system size from an existing proposal, not an annual generation assumption.</p>`;
+    panelResult.innerHTML = `<div class="kicker">Estimated panel count · quoted system size</div><div class="big">${fmt(panels)} panels</div><p>Quoted target capacity: ${fmt(targetKw, 2)} kW DC · Approximate whole-module capacity: ${fmt(actualKw, 2)} kW DC · Module surface area: ${areaText}.</p><p>Annual production is not part of the quoted-size method.</p>`;
   }
 });
 
