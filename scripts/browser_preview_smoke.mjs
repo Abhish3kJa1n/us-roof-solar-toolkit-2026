@@ -252,7 +252,7 @@ try {
   assert.equal(await page.locator('#roofRateLow').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
   assert.equal(await page.locator('#roofRateHigh').inputValue(), '', 'combined calculator must not silently prefill broad national roof rates');
   await page.locator('#roofPriceAssumptions summary').click();
-  assert.match(await page.locator('#roofPriceAssumptions').innerText(), /detach-and-reset, storage and reinstallation are not estimated/i, 'combined calculator must disclose existing solar-array removal/reinstall scope');
+  assert.match(await page.locator('#roofPriceAssumptions').innerText(), /For existing solar panels, get a separate price for removal, storage and reinstallation/i, 'combined calculator must guide homeowners with existing panels to price that work separately');
   assert.equal(await page.locator('#roofPriceAssumptions a[href="guides/roof-before-solar"]').count(), 1, 'combined calculator must link the roof-before-solar guide from this scope note');
   await page.locator('#loadNationalRoofReference').click();
   assert.equal(await page.locator('#roofRateLow').inputValue(), '4');
