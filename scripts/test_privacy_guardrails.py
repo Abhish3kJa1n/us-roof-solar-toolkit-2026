@@ -238,7 +238,7 @@ if "Independent educational resource" in source_all:
 # Scan every tracked text file for the retired personal Gmail contact, not only public HTML.
 tracked = subprocess.run(
     ["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True
-).stdout.decode("utf-8").split("\\0")
+).stdout.decode("utf-8").split("\0")
 old_contact = "getroofsolarcalculator" + "@gmail.com"
 text_suffixes = {".html", ".js", ".mjs", ".cjs", ".css", ".json", ".md", ".txt", ".xml", ".yml", ".yaml", ".toml", ".py", ".sh", ".sql"}
 for relative in tracked:
