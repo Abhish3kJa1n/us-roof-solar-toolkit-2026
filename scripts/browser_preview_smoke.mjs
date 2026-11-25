@@ -237,7 +237,7 @@ try {
   await accessibilityScan('homepage');
   const homepageMethodNote = await page.locator('.calculator-method-note').innerText();
   assert.match(homepageMethodNote, /Solar size = generation target/i);
-  const homepageTaxFaq = await page.locator('.faq-item').filter({ hasText: 'Does the estimate include tax credits or local incentives?' }).innerText();
+  const homepageTaxFaq = await page.locator('.faq-item').filter({ hasText: 'Does the estimate include tax credits or local incentives?' }).textContent();
   assert.match(homepageTaxFaq, /credit is unavailable for expenditures after December 31, 2025/i);
   assert.equal(await page.locator('.faq-item a[href^="https://www.irs.gov/"]').count(), 1, 'homepage tax-credit FAQ must link to current IRS guidance once');
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'combined calculator must not silently prefill a national solar price');
