@@ -76,7 +76,7 @@ assert.match(pageHtml, /class="roof-cost-step" aria-labelledby="roofDetailsHeadi
 assert.match(pageHtml, /class="roof-cost-step" aria-labelledby="roofPriceHeading"/, 'price assumptions must be grouped as the second task');
 assert.match(pageHtml, /id="area"[^>]*placeholder="e\.g\. 2,000"/, 'area field should provide a concrete example');
 assert.match(pageHtml, /<summary>How metal references are grouped<\/summary>/, 'metal methodology should be disclosed on demand');
-assert.match(pageHtml, /<summary>What may not be included in the installed rate\?<\/summary>/, 'scope exclusions should be expandable');
+assert.match(pageHtml, /<summary>Match the rate to the work scope<\/summary>/, 'rate scope guidance should be expandable');
 assert.match(pageHtml, /id="run"[^>]*data-field-validation-scope="\.panel \.calculator"/, 'validation must still cover grouped calculator inputs');
 assert.match(pageHtml, /<optgroup label="Roof style \/ system">/);
 assert.match(pageHtml, /<optgroup label="Base metal \/ material">/);
