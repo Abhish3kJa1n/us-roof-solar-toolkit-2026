@@ -559,7 +559,7 @@
 
       roofRateBasis = 'Angi broad national roof-replacement reference range of $4–$11 per roof sq ft; national planning context, not a local quote or material-specific price.';
       solarPriceBasis = 'EnergySage H1 2026 national solar-only marketplace median of $2.62/W DC; not a local installer quote.';
-      importRateBasis = 'EIA January–August 2026 U.S. average residential price of 18.19 cents/kWh, loaded only as an illustrative scenario; not a household marginal tariff.';
+      importRateBasis = 'EIA January–September 2026 U.S. average residential price of 18.19 cents/kWh (data released November 24, 2026), loaded only as an illustrative scenario; not a household marginal tariff.';
       roofReferenceStatus.hidden = false;
       roofReferenceStatus.textContent = roofRateBasis + ' This is a deliberately loaded national reference, not a local price. Replace it with comparable written local proposals.';
       solarReferenceStatus.hidden = false;
