@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   cloudflareAccessHeadersForUrl,
   isCloudflareAccessChallenge,
+  installCloudflareAccess,
+  fetchPreview,
 } from './cloudflare_access.mjs';
 
 const base = 'https://audit-site-seo-privacy-ux-ha.roof-solar-toolkit-2026.pages.dev';
@@ -49,6 +51,61 @@ try {
     {},
     'service-token headers must be scoped to the exact Preview origin, not every pages.dev subdomain',
   );
+
+  let routeHandler;
+  await installCloudflareAccess({
+    route: async (pattern, handler) => {
+      assert.equal(pattern, '**/*');
+      routeHandler = handler;
+    },
+  }, base);
+
+  let externalRouteOptions;
+  await routeHandler({
+    request: () => ({
+      url: () => 'https://cdn.example.com/app.js',
+      headers: () => ({
+        accept: '*/*',
+        'cf-access-client-id': 'inherited-id',
+        'cf-access-client-secret': 'inherited-secret',
+      }),
+    }),
+    continue: async (options) => { externalRouteOptions = options; },
+  });
+  assert.equal(externalRouteOptions.headers['cf-access-client-id'], undefined, 'Access client ID must be stripped from off-origin requests');
+  assert.equal(externalRouteOptions.headers['cf-access-client-secret'], undefined, 'Access client secret must be stripped from off-origin requests');
+  assert.equal(externalRouteOptions.headers.accept, '*/*', 'ordinary request headers must be preserved');
+
+  let previewRouteOptions;
+  await routeHandler({
+    request: () => ({
+      url: () => base + '/app.js',
+      headers: () => ({ accept: '*/*' }),
+    }),
+    continue: async (options) => { previewRouteOptions = options; },
+  });
+  assert.equal(previewRouteOptions.headers['CF-Access-Client-Id'], 'test-client-id');
+  assert.equal(previewRouteOptions.headers['CF-Access-Client-Secret'], 'test-client-secret');
+
+  const originalFetch = globalThis.fetch;
+  try {
+    const fetchCalls = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), headers: Object.fromEntries(init.headers.entries()), redirect: init.redirect });
+      return new Response('', {
+        status: 302,
+        headers: { location: 'https://roof-solar-toolkit-2026.cloudflareaccess.com/cdn-cgi/access/login' },
+      });
+    };
+    const redirectResponse = await fetchPreview(base + '/', {}, base);
+    assert.equal(redirectResponse.status, 302);
+    assert.equal(fetchCalls.length, 1, 'cross-origin Access redirects must not be followed');
+    assert.equal(fetchCalls[0].headers['cf-access-client-id'], 'test-client-id');
+    assert.equal(fetchCalls[0].headers['cf-access-client-secret'], 'test-client-secret');
+    assert.equal(fetchCalls[0].redirect, 'manual');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 
   assert.equal(
     isCloudflareAccessChallenge({
