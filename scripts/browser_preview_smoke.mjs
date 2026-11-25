@@ -64,6 +64,7 @@ async function waitForPreview() {
         }
       }
     } catch (error) {
+      if (error?.name === 'CloudflareAccessError') throw error;
       lastStatus = error.message;
     }
     await new Promise(resolve => setTimeout(resolve, 5000));
