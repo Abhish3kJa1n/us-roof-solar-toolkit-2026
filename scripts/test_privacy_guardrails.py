@@ -254,6 +254,33 @@ for relative in tracked:
     if old_contact in tracked_text.lower():
         fail(f"old Gmail contact remains in tracked repository file: {relative}")
 
+# Scan tracked repository content for stale tracker identifiers, allowing only the two
+# untouched CSP policy files and the QA scripts that assert their absence.
+repo_tracker_tokens = (
+    "googletagmanager.com",
+    "gtm-5x5dfwmw",
+    "gtag(",
+    "google-analytics.com",
+    "google-tag-bootstrap",
+)
+for relative in tracked:
+    if not relative or relative.startswith("scripts/"):
+        continue
+    if relative in {"_headers", "functions/_shared/csp.mjs"}:
+        continue
+    candidate = ROOT / relative
+    if candidate.suffix.lower() not in text_suffixes or not candidate.is_file():
+        continue
+    try:
+        tracked_text = candidate.read_text(encoding="utf-8").lower()
+    except UnicodeDecodeError:
+        continue
+    for token in repo_tracker_tokens:
+        if token in tracked_text:
+            fail(f"stale Google tracker reference {token!r} remains in tracked file: {relative}")
+    if re.search(r"(?<![a-z0-9])_ga(?:_[a-z0-9]+)?(?![a-z0-9])", tracked_text):
+        fail(f"Google Analytics _ga identifier remains in tracked file: {relative}")
+
 # Audit executable runtime payload separately. _headers is intentionally excluded:
 # its legacy Google CSP origins are inert permissions and the owner forbade _headers edits.
 runtime_files = list(pages)
