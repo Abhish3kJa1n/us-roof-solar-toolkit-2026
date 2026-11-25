@@ -64,7 +64,7 @@ for visitor_notice in (
 home=(ROOT/'index.html').read_text(encoding='utf-8')
 home_js=(ROOT/'assets/js/homepage-1.js').read_text(encoding='utf-8')
 location_js=(ROOT/'assets/js/location-solar-1.js').read_text(encoding='utf-8')
-for phrase in ('City-based solar data','it never fills your utility-rate field unless you choose to apply it','may deliberately apply it as an illustrative scenario'):
+for phrase in ('City-based solar data','it never fills your utility-rate field unless you choose to apply it','EIA state average is shown as an optional comparison'):
     if phrase.lower() not in home.lower(): fail(f'homepage lacks hybrid-data disclosure: {phrase}')
 for token in ("handoff.get('productionPerKw')", "handoff.get('stateAverageRate')", "useEiaStateAverage", "addEventListener('click'", "PVWatts V8", "FieldValidation.refresh", "Berkeley Lab Tracking the Sun 2026"):
     if token not in home_js: fail(f'homepage hybrid handoff is missing {token}')
