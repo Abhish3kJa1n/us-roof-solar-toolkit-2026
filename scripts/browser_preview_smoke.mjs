@@ -297,7 +297,7 @@ try {
   assert.match(limitationsText, /not a utility-bill simulator/i);
   assert.match(limitationsText, /unknown, not zero/i);
   const solarMethodNote = await page.locator('.calculator-method-note').innerText();
-  assert.match(solarMethodNote, /not available for expenditures made after December 31, 2025/i, 'solar calculator must state the current federal Section 25D termination date in the result-adjacent method note');
+  assert.match(solarMethodNote, /(?:not available|unavailable) for expenditures made after December 31, 2025/i, 'solar calculator must state the current federal Section 25D termination date in the result-adjacent method note');
   assert.equal(await page.locator('.calculator-method-note a[href^="https://www.irs.gov/"]').count(), 1, 'federal credit timing note must link to the IRS source from the result-adjacent method note');
   await page.locator('#assumptionDisclosure summary').click();
   await page.locator('#annualUse').fill('12000');
