@@ -14,7 +14,7 @@ function asUrl(value, base) {
  * Pages Preview origin. Never attach these credentials to Production,
  * other Pages projects, or third-party resources loaded by the page.
  */
-export function cloudflareAccessHeadersForUrl(requestUrl, previewBaseUrl = process.env.PREVIEW_BASE_URL) {
+export class CloudflareAccessConfigurationError extends Error {\n  constructor(message) {\n    super(message);\n    this.name = 'CloudflareAccessConfigurationError';\n  }\n}\n\nexport function cloudflareAccessHeadersForUrl(requestUrl, previewBaseUrl = process.env.PREVIEW_BASE_URL) {
   if (!previewBaseUrl) return {};
 
   const preview = asUrl(previewBaseUrl);
@@ -26,7 +26,7 @@ export function cloudflareAccessHeadersForUrl(requestUrl, previewBaseUrl = proce
   const clientId = (process.env.CF_ACCESS_CLIENT_ID || '').trim();
   const clientSecret = (process.env.CF_ACCESS_CLIENT_SECRET || '').trim();
   if (Boolean(clientId) !== Boolean(clientSecret)) {
-    throw new Error('Cloudflare Access Preview authentication requires both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET GitHub Actions secrets.');
+    throw new CloudflareAccessConfigurationError('Cloudflare Access Preview authentication requires both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET GitHub Actions secrets.');
   }
   if (!clientId) return {};
 
