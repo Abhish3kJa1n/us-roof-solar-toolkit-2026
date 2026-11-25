@@ -13,11 +13,11 @@ const referenceStatus=document.getElementById('referenceStatus');
 const nationalReference={
   type:'national',
   key:'angi-national',
-  label:'broad national Angi roof-replacement reference',
+  label:'Angi U.S. roof-replacement reference',
   low:'4',
   high:'11',
   source:'Angi national roof-replacement cost guide (updated October 22, 2026)',
-  basis:'Angi broad U.S. $4–$11 per roof sq ft reference (updated October 22, 2026).'
+  basis:'Angi U.S. reference: $4–$11 per roof sq ft (updated October 22, 2026).'
 };
 const metalSource='HomeGuide metal roof cost guide (November 21, 2025)';
 const metalReferences={
@@ -47,7 +47,7 @@ let previousMaterial=materialEl.value;
 let previousMetalSystem=metalSystemEl.value;
 
 const hasAnyRate=()=>lowEl.value.trim()!==''||highEl.value.trim()!=='';
-const referenceBasis=reference=>reference.basis||(reference.type==='metal'?'HomeGuide published installed range for '+reference.label+' ('+reference.source+'); not local or property-specific.':(reference.source||'Publisher reference; not local or property-specific.'));
+const referenceBasis=reference=>reference.basis||(reference.type==='metal'?'HomeGuide published installed range for '+reference.label+' ('+reference.source+').':(reference.source||'Publisher reference.'));
 const setStatus=message=>{
   referenceStatus.textContent=message||'';
   referenceStatus.hidden=!message;
@@ -61,8 +61,8 @@ const clearRateState=()=>{
 };
 const endpointDescription=(name,reference)=>{
   const value=name==='low'?lowEl.value:highEl.value;
-  if(editedEndpoints.has(name)) return name+' endpoint was edited by the visitor to '+(value===''?'blank':'$'+value);
-  return name+' endpoint remains '+(value===''?'blank':'$'+value)+' from '+reference.label;
+  if(editedEndpoints.has(name)) return name+' rate entered by you: '+(value===''?'blank':'$'+value);
+  return name+' rate retained from '+reference.label+': '+(value===''?'blank':'$'+value);
 };
 const carriedNotice=(nextLabel)=>{
   if(!carriedReference) return customNotice;
@@ -71,7 +71,7 @@ const carriedNotice=(nextLabel)=>{
 const rateBasis=()=>{
   if(activeReference){
     if(editedEndpoints.size===0) return activeReference.basis;
-    return 'Mixed/custom rate pair. '+endpointDescription('low',activeReference)+'; '+endpointDescription('high',activeReference)+'. The two rates have been edited. Original reference: '+referenceBasis(activeReference);
+    return 'Edited reference rates. '+endpointDescription('low',activeReference)+'; '+endpointDescription('high',activeReference)+'. Source: '+referenceBasis(activeReference);
   }
   if(carriedReference) return carriedNotice(materialEl.value==='metal'&&metalReferences[metalSystemEl.value]?metalReferences[metalSystemEl.value].label:'the selected material');
   if(customNotice) return customNotice;
@@ -113,14 +113,14 @@ function updateReferenceControls(){
 function applyNationalReference(force=false){
   if(!force&&(hasAnyRate()||activeReference||carriedReference||manualRatesEntered)) return;
   setReference(nationalReference,
-    'Loaded Angi’s broad U.S. $4–$11 per roof sq ft reference. Both endpoints are editable; compare with proposals covering the same work.');
+    'Loaded Angi’s U.S. $4–$11 per roof sq ft reference. Both rates are editable.');
 }
 function applyMetalReference(force=false){
   const ref=metalReferences[metalSystemEl.value];
   if(!ref) return;
   if(!force&&(hasAnyRate()||activeReference||carriedReference||manualRatesEntered)) return;
   setReference(ref,
-    'Loaded HomeGuide’s '+ref.label+' category reference range of $'+ref.low+'–$'+ref.high+' per roof sq ft ('+ref.source+'). Broad publisher reference. Both endpoints are editable; changing one makes the pair mixed/custom.');
+    'Loaded HomeGuide’s '+ref.label+' range: $'+ref.low+'–$'+ref.high+' per roof sq ft ('+ref.source+'). Both rates are editable.');
 }
 
 function handleRateEdit(endpoint){
@@ -132,7 +132,7 @@ function handleRateEdit(endpoint){
   if(activeReference){
     editedEndpoints.add(endpoint);
     const other=endpoint==='low'?'high':'low';
-    setStatus('You edited the '+endpoint+' rate. The '+other+' endpoint remains from the original '+activeReference.label+' reference. The pair is now mixed/custom, not the published range. Click Reload to restore the complete reference.');
+    setStatus('You edited the '+endpoint+' rate. The '+other+' rate remains from the original '+activeReference.label+' reference. Reload to restore both original rates.');
     return;
   }
   if(carriedReference){
@@ -233,7 +233,7 @@ document.getElementById('run').addEventListener('click',()=>{
   const totalLow=area*low,totalHigh=area*high;
   const materialLabel=materialEl.value?materialEl.selectedOptions[0].textContent:'not specified';
   const categoryLabel=materialEl.value==='metal'&&metalSystemEl.value?' · Metal reference category: '+metalSystemEl.selectedOptions[0].textContent:'';
-  resultEl.innerHTML='<div class="kicker">Illustrative roof replacement range</div><div class="big">'+roofMoney(totalLow)+' – '+roofMoney(totalHigh)+'</div><p>'+area.toLocaleString('en-US')+' sq ft × '+roofRateMoney(low)+'–'+roofRateMoney(high)+' installed per sq ft. Material label: '+materialLabel+categoryLabel+'.</p><p>Rate basis: '+rateBasis()+' Local labor, material, roof complexity and proposal scope affect the final price.</p>';
+  resultEl.innerHTML='<div class="kicker">Estimated roof replacement range</div><div class="big">'+roofMoney(totalLow)+' – '+roofMoney(totalHigh)+'</div><p>'+area.toLocaleString('en-US')+' sq ft × '+roofRateMoney(low)+'–'+roofRateMoney(high)+' installed per sq ft. Material label: '+materialLabel+categoryLabel+'.</p><p>Rate basis: '+rateBasis()+' Local labor, material, roof complexity and proposal scope affect the final price.</p>';
 });
 document.getElementById('reset').addEventListener('click',()=>{
   areaEl.value='';
