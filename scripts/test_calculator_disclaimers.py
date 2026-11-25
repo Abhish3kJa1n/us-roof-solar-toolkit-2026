@@ -30,7 +30,7 @@ PAGE_SPECIFIC = {
     ),
     "calculators/solar-savings.html": (
         "A blank export credit is unknown, not zero.",
-        "The Residential Clean Energy Credit under Section 25D",
+        "Residential Clean Energy Credit under Section 25D is not available",
     ),
 }
 
