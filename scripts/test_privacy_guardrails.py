@@ -152,7 +152,7 @@ for required_disclosure in (
     "we do not sell personal information for money",
     "we do not share personal information for cross-context behavioral advertising",
     "this site does not currently provide a first-party cookie preference center",
-    "getroofsolarcalculator@gmail.com",
+    "editor@getroofsolarcalculator.online",
 ):
     if required_disclosure not in privacy_notice:
         fail(f"Privacy Policy is missing a material generator-style section or disclosure: {required_disclosure}")
@@ -196,6 +196,10 @@ if "google-tag-bootstrap" in not_found.lower() or "googletagmanager.com" in not_
     fail("404 page still loads Google Tag Manager")
 
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
+if "getroofsolarcalculator@gmail.com" in source_all.lower():
+    fail("old Gmail address remains in a public HTML page")
+if "editor@getroofsolarcalculator.online" not in source_all.lower():
+    fail("replacement editorial email is missing from public HTML")
 for stale_public_phrase in (
     "static demo",
     "location-aware solar model · preview",
