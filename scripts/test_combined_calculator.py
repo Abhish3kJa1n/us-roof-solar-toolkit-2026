@@ -113,8 +113,8 @@ def main():
   raise SystemExit(f'FAIL roof reference must not silently load solar price: {prefill}')
  if prefill['afterSolar']['solarPrice'] != '2.62':
   raise SystemExit(f'FAIL explicit solar-price reference button: {prefill}')
- if 'not city-specific' not in prefill['afterRoof']['roofStatus'].lower() or 'not city-specific' not in prefill['afterSolar']['solarStatus'].lower():
-  raise SystemExit(f'FAIL national reference provenance disclosure: {prefill}')
+ if 'Angi broad U.S. roof-replacement reference' not in prefill['afterRoof']['roofStatus'] or 'Broad U.S. price reference' not in prefill['afterRoof']['roofStatus'] or 'EnergySage H1 2026' not in prefill['afterSolar']['solarStatus'] or 'National marketplace benchmark' not in prefill['afterSolar']['solarStatus']:
+  raise SystemExit(f'FAIL national reference source and geographic scope: {prefill}')
  print('PASS roof and solar national references require separate explicit opt-ins')
 
  # An approved city-level historical solar record must replace the national reference and retain its provenance.
@@ -160,8 +160,8 @@ console.log(JSON.stringify(loaded));
  for provenance in ('EIA','Angi','EnergySage'):
   if provenance not in loaded['assumptions']:
    raise SystemExit(f'FAIL U.S. example is missing the {provenance} input provenance: {loaded}')
- if 'PVWatts' not in loaded['productionNote'] or 'not a live PVWatts result' not in loaded['productionNote']:
-  raise SystemExit(f'FAIL U.S. example does not identify the illustrative yield input as non-PVWatts data: {loaded}')
+ if 'Example yield:' not in loaded['productionNote'] or 'city lookup' not in loaded['productionNote'] or 'PVWatts' not in loaded['productionNote']:
+  raise SystemExit(f'FAIL U.S. example does not distinguish its sample yield from location-based PVWatts data: {loaded}')
  print('PASS homepage illustrative U.S. example populates inputs, retains source labels and runs validated calculation')
 
  # Reset must restore the blank, honest starting state and clear city-handoff state.
