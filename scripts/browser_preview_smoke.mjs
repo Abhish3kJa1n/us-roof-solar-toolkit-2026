@@ -284,6 +284,67 @@ try {
   results.push('combined calculator: PASS');
   await page.screenshot({ path: path.join(screenshotDir, 'combined-calculator-results.png'), fullPage: true });
 
+  // Roof-area calculator: ensure the geometric estimate and its limitation note render in a real browser.
+  await open('/calculators/roof-area.html');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-disclaimer-desktop.png'), fullPage: true });
+  assert.equal(await page.locator('.calculator-notice').count(), 1, 'roof-area page must render one universal planning notice');
+  assert.equal((await page.locator('.calculator-notice').innerText()).trim(), 'Planning estimates only. Results depend on the inputs and assumptions shown; they are not quotes, inspections, engineering designs, or guarantees.');
+  assert.equal(await page.locator('#result + .calculator-method-note').count(), 1, 'roof-area methodology note must be the immediate sibling after the result');
+  await assertNoHorizontalOverflow('roof-area');
+  await accessibilityScan('roof-area-desktop');
+  await page.locator('#footprint').fill('1800');
+  await page.locator('#pitch').selectOption('1.118');
+  await page.locator('#run').click();
+  await page.waitForFunction(() => /2,012 sq ft/.test(document.querySelector('#result')?.innerText || ''), undefined, { timeout: 15000 });
+  const roofAreaResult = await page.locator('#result').innerText();
+  assert.match(roofAreaResult, /1,800 sq ft × pitch multiplier 1\.118/);
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-calculation-result.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await accessibilityScan('roof-area-mobile');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-disclaimer-mobile.png'), fullPage: true });
+  await page.setViewportSize({ width: 1365, height: 900 });
+  results.push('roof-area calculator disclosure, geometric formula, result and responsive browser flow: PASS');
+
+  // Solar panel-count calculator: verify both mutually exclusive calculation methods.
+  await open('/calculators/solar-panel-count.html');
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-disclaimer-desktop.png'), fullPage: true });
+  assert.equal(await page.locator('.calculator-notice').count(), 1, 'solar panel-count page must render one universal planning notice');
+  assert.equal(await page.locator('#result + .calculator-method-note').count(), 1, 'panel-count methodology note must immediately follow the result');
+  await assertNoHorizontalOverflow('solar-panel-count');
+  await accessibilityScan('solar-panel-count-desktop');
+  const panelCountMethod = await page.locator('.calculator-method-note').innerText();
+  assert.match(panelCountMethod, /quoted DC system size/i, 'method note must disclose the quoted-system-size alternative');
+  assert.match(panelCountMethod, /annual production is not calculated by this method/i, 'method note must explain what the alternative method does not calculate');
+  assert.match(panelCountMethod, /original installation of the item is completed/i, 'Section 25D timing must identify installation completion');
+  assert.match(panelCountMethod, /original use of the constructed or reconstructed structure/i, 'Section 25D timing must identify the construction/reconstruction rule');
+  assert.equal(await page.locator('.calculator-method-note a[href^="https://www.irs.gov/"]').count(), 1, 'panel-count Section 25D disclosure must link directly to IRS guidance');
+
+  await page.locator('#annualUse').fill('10800');
+  await page.locator('#offset').fill('80');
+  await page.locator('#production').fill('1500');
+  await page.locator('#watt').fill('400');
+  await page.locator('#run').click();
+  await page.waitForFunction(() => /15 panels/.test(document.querySelector('#result')?.innerText || ''), undefined, { timeout: 15000 });
+  const usagePanelCount = await page.locator('#result').innerText();
+  assert.match(usagePanelCount, /Calculated array capacity: 6\.00 kW DC/);
+  assert.match(usagePanelCount, /Target annual generation: 8,640 kWh/);
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-usage-method-result.png'), fullPage: true });
+
+  await page.locator('#reset').click();
+  await page.locator('#kw').fill('6.6');
+  await page.locator('#watt').fill('400');
+  await page.locator('#run').click();
+  await page.waitForFunction(() => /17 panels/.test(document.querySelector('#result')?.innerText || ''), undefined, { timeout: 15000 });
+  const quotedPanelCount = await page.locator('#result').innerText();
+  assert.match(quotedPanelCount, /Quoted target capacity: 6\.60 kW DC/);
+  assert.match(quotedPanelCount, /Annual production was not calculated/);
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-quoted-size-method-result.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await accessibilityScan('solar-panel-count-mobile');
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-disclaimer-mobile.png'), fullPage: true });
+  await page.setViewportSize({ width: 1365, height: 900 });
+  results.push('solar panel-count usage-based and quoted-size methods, Section 25D timing and responsive browser flow: PASS');
+
   // Standalone solar savings: separate sizing inputs, optional tariff modelling and explicit price reference.
   await open('/calculators/solar-savings.html');
   await page.screenshot({ path: path.join(screenshotDir, 'solar-savings-progressive-desktop.png'), fullPage: true });
