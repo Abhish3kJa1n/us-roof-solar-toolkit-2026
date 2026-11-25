@@ -101,3 +101,9 @@ button:disabled{opacity:.55;cursor:not-allowed}
   .wrap.crumbs{width:min(1320px,calc(100% - 48px))}
 }
 .article>:where(p,ul,ol,h2,h3){max-width:78ch}
+
+/* Shared two-part calculator disclosure: one notice above, one method note below results. */
+.calculator-notice{margin:0 auto 22px;max-width:900px;padding:10px 14px;border-left:3px solid #d39b37;border-radius:0 9px 9px 0;background:#fff8e9;color:#4f5f6f;font-size:12px;line-height:1.55}
+.calculator-method-note{margin:16px 0 0;padding:13px 16px;border:1px solid #dce4eb;border-radius:10px;background:#fff;color:#526577;font-size:12px;line-height:1.6}
+.calculator-method-note p{margin:0}
+.calculator-method-note p+p{margin-top:7px}
