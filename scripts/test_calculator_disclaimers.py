@@ -153,7 +153,7 @@ homepage_results_tag_pos = index.rfind("<div", 0, homepage_results_pos)
 homepage_results_end = matching_div_end(index, homepage_results_tag_pos)
 homepage_note_pos = index.find('<div class="calculator-method-note" role="note">', homepage_results_end)
 homepage_gap = index[homepage_results_end:homepage_note_pos] if homepage_note_pos >= 0 else "missing"
-if homepage_note_pos < 0 or re.sub(r"</div\\s*>|\\s+", "", homepage_gap, flags=re.IGNORECASE):
+if homepage_note_pos < 0 or re.sub(r"</div\s*>|\s+", "", homepage_gap, flags=re.IGNORECASE):
     fail("index.html methodology note must immediately follow the complete combined results block")
 
 print("PASS homepage and all five standalone calculators use one universal notice and one result-adjacent method note.")
