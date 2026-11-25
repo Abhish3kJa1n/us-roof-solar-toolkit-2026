@@ -290,9 +290,8 @@ try {
 
   // Roof-area calculator: ensure the geometric estimate and its limitation note render in a real browser.
   await open('/calculators/roof-area.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-disclaimer-desktop.png'), fullPage: true });
-  assert.equal(await page.locator('.calculator-notice').count(), 1, 'roof-area page must render one universal planning notice');
-  assert.equal((await page.locator('.calculator-notice').innerText()).trim(), 'Planning estimates only. Results depend on the inputs and assumptions shown; they are not quotes, inspections, engineering designs, or guarantees.');
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-calculator-desktop.png'), fullPage: true });
+  assert.equal(await page.locator('.calculator-notice').count(), 0, 'roof-area page must not show a generic disclaimer banner');
   assert.equal(await page.locator('#result + .calculator-method-note').count(), 1, 'roof-area methodology note must be the immediate sibling after the result');
   await assertNoHorizontalOverflow('roof-area');
   await accessibilityScan('roof-area-desktop');
@@ -305,23 +304,22 @@ try {
   await page.screenshot({ path: path.join(screenshotDir, 'roof-area-calculation-result.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await accessibilityScan('roof-area-mobile');
-  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-disclaimer-mobile.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'roof-area-calculator-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
-  results.push('roof-area calculator disclosure, geometric formula, result and responsive browser flow: PASS');
+  results.push('roof-area concise method note, geometric formula, result and responsive browser flow: PASS');
 
   // Solar panel-count calculator: verify both mutually exclusive calculation methods.
   await open('/calculators/solar-panel-count.html');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-disclaimer-desktop.png'), fullPage: true });
-  assert.equal(await page.locator('.calculator-notice').count(), 1, 'solar panel-count page must render one universal planning notice');
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-calculator-desktop.png'), fullPage: true });
+  assert.equal(await page.locator('.calculator-notice').count(), 0, 'panel-count page must not show a generic disclaimer banner');
   assert.equal(await page.locator('#result + .calculator-method-note').count(), 1, 'panel-count methodology note must immediately follow the result');
   await assertNoHorizontalOverflow('solar-panel-count');
   await accessibilityScan('solar-panel-count-desktop');
   const panelCountMethod = await page.locator('.calculator-method-note').innerText();
   assert.match(panelCountMethod, /quoted DC system size/i, 'method note must disclose the quoted-system-size alternative');
   assert.match(panelCountMethod, /annual production is not calculated by this method/i, 'method note must explain what the alternative method does not calculate');
-  assert.match(panelCountMethod, /original installation of the item is completed/i, 'Section 25D timing must identify installation completion');
-  assert.match(panelCountMethod, /original use of the constructed or reconstructed structure/i, 'Section 25D timing must identify the construction/reconstruction rule');
-  assert.equal(await page.locator('.calculator-method-note a[href^="https://www.irs.gov/"]').count(), 1, 'panel-count Section 25D disclosure must link directly to IRS guidance');
+  assert.match(panelCountMethod, /Panel count follows the selected sizing method/i, 'method note must explain how the panel count is used');
+  assert.doesNotMatch(panelCountMethod, /Section 25D|tax credit/i, 'panel-count calculator must not carry unrelated tax-credit language');
 
   await page.locator('#annualUse').fill('10800');
   await page.locator('#offset').fill('80');
@@ -345,9 +343,9 @@ try {
   await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-quoted-size-method-result.png'), fullPage: true });
   await page.setViewportSize({ width: 390, height: 844 });
   await accessibilityScan('solar-panel-count-mobile');
-  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-disclaimer-mobile.png'), fullPage: true });
+  await page.screenshot({ path: path.join(screenshotDir, 'solar-panel-count-calculator-mobile.png'), fullPage: true });
   await page.setViewportSize({ width: 1365, height: 900 });
-  results.push('solar panel-count usage-based and quoted-size methods, Section 25D timing and responsive browser flow: PASS');
+  results.push('solar panel-count usage-based and quoted-size methods without unrelated tax copy: PASS');
 
   // Standalone solar savings: separate sizing inputs, optional tariff modelling and explicit price reference.
   await open('/calculators/solar-savings.html');
@@ -356,17 +354,16 @@ try {
   await accessibilityScan('solar-savings');
   assert.equal(await page.locator('#price').inputValue(), '', 'standalone solar calculator must not silently prefill a national price');
   assert.equal(await page.locator('#selfUseSensitivity').evaluate(node => node.open), false, 'self-use sensitivity should be collapsed initially');
-  assert.equal(await page.locator('#assumptionDisclosure').evaluate(node => node.open), false, 'detailed limitations should be collapsed initially');
+  assert.equal(await page.locator('#assumptionDisclosure').evaluate(node => node.open), false, 'model assumptions should be collapsed initially');
   await page.locator('#assumptionDisclosure summary').click();
   const limitationsText = await page.locator('#assumptionDisclosure').innerText();
-  assert.match(limitationsText, /not a utility-bill simulator/i);
-  assert.match(limitationsText, /unknown, not zero/i);
+  assert.match(limitationsText, /annual totals rather than an hourly utility-bill simulation/i);
+  assert.match(limitationsText, /Enter an export credit to value surplus generation/i);
   const solarMethodNote = await page.locator('.calculator-method-note').innerText();
-  assert.match(solarMethodNote, /not allowed for expenditures made after December 31, 2025/i, 'solar calculator must state the current federal Section 25D termination date in the result-adjacent method note');
-  assert.match(solarMethodNote, /original installation of the item is completed/i, 'solar calculator must explain the installation-completion timing rule');
-  assert.match(solarMethodNote, /original use of the constructed or reconstructed structure/i, 'solar calculator must explain the construction/reconstruction timing rule');
-  assert.match(solarMethodNote, /payment or deposit before the cutoff does not by itself preserve eligibility/i, 'solar calculator must explain why payment timing alone does not preserve eligibility');
-  assert.equal(await page.locator('.calculator-method-note a[href^="https://www.irs.gov/"]').count(), 1, 'federal credit timing note must link to the IRS source from the result-adjacent method note');
+  assert.match(solarMethodNote, /Simple payback = system price ÷ modeled first-year annual value/i, 'method note must explain the payback arithmetic');
+  const solarEconomicsText = await page.locator('article').innerText();
+  assert.match(solarEconomicsText, /credit is unavailable for expenditures after December 31, 2025/i, 'solar economics page must retain the current federal credit cutoff');
+  assert.equal(await page.locator('article a[href^="https://www.irs.gov/"]').count(), 1, 'solar economics page must link to IRS timing guidance once');
   await page.locator('#assumptionDisclosure summary').click();
   await page.locator('#annualUse').fill('12000');
   await page.locator('#offset').fill('100');
