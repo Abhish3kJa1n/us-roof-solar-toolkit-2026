@@ -29,7 +29,7 @@ REQUIRED_PAGE_DETAILS = {
         "What may not be included in the installed rate?",
     ),
     "calculators/solar-panel-count.html": (
-        "does not assess roof fit",
+        "Neither path assesses roof fit",
         "Panel count is not a roof-fit calculation",
     ),
     "calculators/solar-savings.html": (
