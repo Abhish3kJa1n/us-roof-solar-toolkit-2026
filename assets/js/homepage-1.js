@@ -169,7 +169,7 @@
       const note = document.createElement('small');
       note.id = 'importRatePrefillNote';
       note.className = 'field-import-note';
-      note.textContent = `EIA state-average residential electricity price for ${stateLabel}: ${incomingStateRate.toFixed(4)} $/kWh. This is a statewide average, not your marginal utility tariff. It has not been applied.`;
+      note.textContent = `EIA state-average residential electricity price for ${stateLabel}: ${incomingStateRate.toFixed(4)} $/kWh. Statewide average; not applied. Use your utility's marginal rate for a household estimate.`;
       const source = document.createElement('a');
       source.href = 'https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_06_b';
       source.target = '_blank';
@@ -188,7 +188,7 @@
       useButton.addEventListener('click', () => {
         importRateInput.value = incomingStateRate.toFixed(4);
         importRateBasis = `EIA state-average residential price used by explicit visitor choice for ${stateLabel}; illustrative scenario only, not the household marginal tariff.`;
-        appliedNote.textContent = `Applied ${incomingStateRate.toFixed(4)} $/kWh EIA state average for ${stateLabel}. This remains an illustrative scenario, not your household tariff.`;
+        appliedNote.textContent = `Applied ${incomingStateRate.toFixed(4)} $/kWh EIA state average for ${stateLabel}. Use your utility's marginal rate for a household estimate.`;
         appliedNote.hidden = false;
         useButton.disabled = true;
         useButton.textContent = 'EIA scenario value applied';
@@ -200,16 +200,16 @@
     function loadNationalRoofReference() {
       roofLowInput.value = '4';
       roofHighInput.value = '11';
-      roofRateBasis = 'Angi broad national reference range (updated October 22, 2026); not city-specific, material-specific or a contractor quote.';
+      roofRateBasis = 'Angi broad U.S. roof-replacement reference, updated October 22, 2026.';
       roofReferenceStatus.hidden = false;
-      roofReferenceStatus.textContent = `${roofRateBasis} This is an optional national planning reference, not a local or material-specific price. Replace both rates with comparable local quotes; both values remain editable.`;
+      roofReferenceStatus.textContent = `${roofRateBasis} Broad U.S. price reference. Replace both editable rates with comparable local proposals.`;
       refreshField(roofLowInput); refreshField(roofHighInput);
     }
     function loadNationalSolarReference() {
       solarRateInput.value = '2.62';
-      solarPriceBasis = 'EnergySage H1 2026 solar-only marketplace median; national marketplace reference, not city-specific or an installer quote.';
+      solarPriceBasis = 'EnergySage H1 2026 national solar-only marketplace median.';
       solarReferenceStatus.hidden = false;
-      solarReferenceStatus.textContent = `${solarPriceBasis} Loaded because you requested it; this is a national marketplace reference, not a local quote. Replace it with a comparable written cash quote when available.`;
+      solarReferenceStatus.textContent = `${solarPriceBasis} National marketplace benchmark loaded. Replace it with a comparable written cash proposal.`;
       refreshField(solarRateInput);
     }
     document.getElementById('loadNationalRoofReference').addEventListener('click', loadNationalRoofReference);
@@ -242,7 +242,7 @@
       const geography = incomingSolarGeography === 'city' ? importedCityLabel : `${handoff.get('state') || 'Selected'} state-wide`;
       solarPriceBasis = `Berkeley Lab Tracking the Sun 2026 historical ${incomingSolarGeography}-level median for ${geography}; ${incomingSolarSampleN.toLocaleString('en-US')} records, installation years ${incomingSolarYearMin}–${incomingSolarYearMax}, nominal pre-incentive USD/W DC.`;
       solarReferenceStatus.hidden = false;
-      solarReferenceStatus.textContent = `${solarPriceBasis} Published p25–p75: $${incomingSolarP25.toFixed(2)}–$${incomingSolarP75.toFixed(2)}/W DC. Historical distribution, not a current contractor quote. The median input is editable; compare the dataset scope with your written proposal.`;
+      solarReferenceStatus.textContent = `${solarPriceBasis} Published p25–p75: $${incomingSolarP25.toFixed(2)}–$${incomingSolarP75.toFixed(2)}/W DC. Historical installation data. The median input is editable; compare its scope with a current proposal.`;
       addFieldNote(solarRateInput, 'solarCityPricePrefillNote', solarPriceBasis, 'https://emp.lbl.gov/tracking-the-sun');
       refreshField(solarRateInput);
     }
@@ -560,12 +560,12 @@
 
       roofRateBasis = 'Angi broad national roof-replacement reference range of $4–$11 per roof sq ft; national planning context, not a local quote or material-specific price.';
       solarPriceBasis = 'EnergySage H1 2026 national solar-only marketplace median of $2.62/W DC; not a local installer quote.';
-      importRateBasis = 'EIA January–September 2026 U.S. average residential price of 18.19 cents/kWh (data released November 24, 2026), loaded only as an illustrative scenario; not a household marginal tariff.';
+      importRateBasis = 'EIA January–September 2026 U.S. average residential price of 18.19 cents/kWh, used as a comparison scenario.';
       roofReferenceStatus.hidden = false;
-      roofReferenceStatus.textContent = roofRateBasis + ' This is a deliberately loaded national reference, not a local price. Replace it with comparable written local proposals.';
+      roofReferenceStatus.textContent = roofRateBasis + ' National reference loaded. Replace it with comparable local proposals.';
       solarReferenceStatus.hidden = false;
-      solarReferenceStatus.textContent = solarPriceBasis + ' This is a deliberately loaded national reference, not a quote. Replace it with a current written cash proposal.';
-      addFieldNote(productionInput, 'productionExampleNote', 'The 1,350 kWh/kW/year yield is an illustrative scenario input, not a live PVWatts result. Use the city lookup for a location-based NLR PVWatts V8 estimate.', 'https://developer.nlr.gov/docs/solar/pvwatts/v8/');
+      solarReferenceStatus.textContent = solarPriceBasis + ' National reference loaded. Replace it with a current written cash proposal.';
+      addFieldNote(productionInput, 'productionExampleNote', 'Example yield: 1,350 kWh/kW/year. Use the city lookup for a location-based NLR PVWatts V8 estimate.', 'https://developer.nlr.gov/docs/solar/pvwatts/v8/');
 
       const roofDetails = document.getElementById('roofPriceAssumptions');
       const solarDetails = document.getElementById('solarCostAssumptions');
