@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { assertPreviewNotAccessChallenge, cloudflareAccessHeadersForUrl, fetchPreview, installCloudflareAccess } from './cloudflare_access.mjs';
 
 const require = createRequire(import.meta.url);
 const playwrightPath = process.env.PLAYWRIGHT_PACKAGE || '/tmp/roofsolar-playwright/node_modules/playwright';
@@ -32,14 +33,17 @@ async function waitForPreview() {
   let lastStatus = 'no response';
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
-      const response = await fetch(base + '/index.html?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
+      const response = await fetchPreview(base + '/index.html?qa=' + Date.now(), { cache: 'no-store' }, base);
+      assertPreviewNotAccessChallenge(response, 'Preview readiness request');
       lastStatus = 'HTTP ' + response.status;
       if (response.status === 200 && /noindex/i.test(response.headers.get('x-robots-tag') || '')) {
-        const roofResponse = await fetch(base + '/calculators/roof-replacement-cost.html?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
+        const roofResponse = await fetchPreview(base + '/calculators/roof-replacement-cost.html?qa=' + Date.now(), { cache: 'no-store' }, base);
+        assertPreviewNotAccessChallenge(roofResponse, 'Roof calculator Preview readiness request');
         const roofHtml = roofResponse.ok ? await roofResponse.text() : '';
         if (roofResponse.status === 200 && roofHtml.includes('data-qa="metal-reference-state-v2"')) {
           if (expectedPreviewSha) {
-            const identityResponse = await fetch(base + '/build-info.json?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
+            const identityResponse = await fetchPreview(base + '/build-info.json?qa=' + Date.now(), { cache: 'no-store' }, base);
+            assertPreviewNotAccessChallenge(identityResponse, 'Preview build identity request');
             if (!identityResponse.ok) {
               lastStatus = 'Preview content is ready but build identity is not available: HTTP ' + identityResponse.status;
             } else {
@@ -73,6 +77,7 @@ const context = await browser.newContext({
   deviceScaleFactor: 1,
   reducedMotion: 'reduce',
 });
+await installCloudflareAccess(context, base);
 const page = await context.newPage();
 if (expectedPreviewSha) {
   const previewOrigin = new URL(base).origin;
@@ -82,7 +87,7 @@ if (expectedPreviewSha) {
     assetUrl.searchParams.set('qa', expectedPreviewSha);
     return route.continue({
       url: assetUrl.toString(),
-      headers: { ...route.request().headers(), 'cache-control': 'no-cache' }
+      headers: { ...route.request().headers(), ...cloudflareAccessHeadersForUrl(assetUrl, base), 'cache-control': 'no-cache' }
     });
   });
 }
@@ -134,6 +139,7 @@ page.on('requestfailed', request => {
 
 async function open(pathname) {
   const response = await page.goto(base + pathname, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  assertPreviewNotAccessChallenge(response, 'Browser navigation ' + pathname);
   assert.ok(response, 'No HTTP response for ' + pathname);
   assert.equal(response.status(), 200, pathname + ' returned HTTP ' + response.status());
   const headers = response.headers();
@@ -625,6 +631,7 @@ try {
 
   expected404Navigation = true;
   const missingResponse = await page.goto(base + '/__google-tag-browser-404-check-20261118', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  assertPreviewNotAccessChallenge(missingResponse, 'Preview custom 404 request');
   assert.ok(missingResponse, 'No HTTP response for the custom 404 route');
   await page.waitForLoadState('load');
   expected404Navigation = false;
