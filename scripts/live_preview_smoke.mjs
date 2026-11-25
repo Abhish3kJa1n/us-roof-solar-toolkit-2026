@@ -29,7 +29,7 @@ async function waitForCurrentPreview() {
       if (response.ok && String(body.source || '').includes('TIGERweb ACS2026')) return body;
       last = 'HTTP ' + response.status + ': ' + String(body.error || body.source || last);
     } catch (error) {
-      if (error?.name === 'CloudflareAccessError') throw error;
+      if (['CloudflareAccessError', 'CloudflareAccessConfigurationError'].includes(error?.name)) throw error;
       last = error.message;
     }
     await sleep(10000);
