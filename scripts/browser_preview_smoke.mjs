@@ -236,9 +236,10 @@ try {
   await assertNoHorizontalOverflow('homepage');
   await accessibilityScan('homepage');
   const homepageMethodNote = await page.locator('.calculator-method-note').innerText();
-  assert.match(homepageMethodNote, /original installation of the item is completed/i);
-  assert.match(homepageMethodNote, /original use of the constructed or reconstructed structure/i);
-  assert.match(homepageMethodNote, /payment or deposit before the cutoff does not by itself preserve eligibility/i);
+  assert.match(homepageMethodNote, /Solar size = generation target/i);
+  const homepageTaxFaq = await page.locator('.faq-item').filter({ hasText: 'Does the estimate include tax credits or local incentives?' }).innerText();
+  assert.match(homepageTaxFaq, /credit is unavailable for expenditures after December 31, 2025/i);
+  assert.equal(await page.locator('.faq-item a[href^="https://www.irs.gov/"]').count(), 1, 'homepage tax-credit FAQ must link to current IRS guidance once');
   assert.equal(await page.locator('#solarPricePerWatt').inputValue(), '', 'combined calculator must not silently prefill a national solar price');
   assert.equal(await page.locator('#roofPriceAssumptions').evaluate(node => node.open), false, 'roof price assumptions should be collapsed initially');
   assert.equal(await page.locator('#solarCostAssumptions').evaluate(node => node.open), false, 'solar cost assumptions should be collapsed initially');
