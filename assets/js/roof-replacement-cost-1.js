@@ -66,12 +66,12 @@ const endpointDescription=(name,reference)=>{
 };
 const carriedNotice=(nextLabel)=>{
   if(!carriedReference) return customNotice;
-  return 'Mixed/custom rate pair retained after changing from '+carriedReference.label+' to '+nextLabel+'. '+endpointDescription('low',carriedReference)+'; '+endpointDescription('high',carriedReference)+'. These values are not a published range for '+nextLabel+'. Original source: '+referenceBasis(carriedReference)+' Click the reload button to replace both values with the selected category reference, or edit both rates to match your written proposal.';
+  return 'Rates were retained from the previous '+carriedReference.label+' selection. Reload to use the '+nextLabel+' reference or edit both values to match your proposal.';
 };
 const rateBasis=()=>{
   if(activeReference){
     if(editedEndpoints.size===0) return activeReference.basis;
-    return 'Mixed/custom rate pair. '+endpointDescription('low',activeReference)+'; '+endpointDescription('high',activeReference)+'. This is no longer the publisher’s complete published interval. Original reference: '+referenceBasis(activeReference);
+    return 'Mixed/custom rate pair. '+endpointDescription('low',activeReference)+'; '+endpointDescription('high',activeReference)+'. The two rates have been edited. Original reference: '+referenceBasis(activeReference);
   }
   if(carriedReference) return carriedNotice(materialEl.value==='metal'&&metalReferences[metalSystemEl.value]?metalReferences[metalSystemEl.value].label:'the selected material');
   if(customNotice) return customNotice;
