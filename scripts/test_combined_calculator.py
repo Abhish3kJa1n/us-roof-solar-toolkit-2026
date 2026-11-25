@@ -142,7 +142,7 @@ def main():
 const load=makeEl('loadTypicalExample').handlers.click;
 if(typeof load!=='function')throw Error('Load U.S. example button has no handler');
 load();
-const loaded={roofArea:makeEl('roofArea').value,roofRateLow:makeEl('roofRateLow').value,roofRateHigh:makeEl('roofRateHigh').value,annualKwh:makeEl('annualKwh').value,rate:makeEl('rate').value,productionPerKw:makeEl('productionPerKw').value,offset:makeEl('offset').value,selfUse:makeEl('selfUse').value,exportRate:makeEl('exportRate').value,solarPricePerWatt:makeEl('solarPricePerWatt').value,annualSavings:makeEl('annualSavings').textContent,payback:makeEl('payback').textContent,assumptions:makeEl('assumptionList').innerHTML,resultsVisible:makeEl('results').classList.contains('show')};
+const loaded={roofArea:makeEl('roofArea').value,roofRateLow:makeEl('roofRateLow').value,roofRateHigh:makeEl('roofRateHigh').value,annualKwh:makeEl('annualKwh').value,rate:makeEl('rate').value,productionPerKw:makeEl('productionPerKw').value,offset:makeEl('offset').value,selfUse:makeEl('selfUse').value,exportRate:makeEl('exportRate').value,solarPricePerWatt:makeEl('solarPricePerWatt').value,annualSavings:makeEl('annualSavings').textContent,payback:makeEl('payback').textContent,assumptions:makeEl('assumptionList').innerHTML,productionNote:makeEl('productionExampleNote').textContent,resultsVisible:makeEl('results').classList.contains('show')};
 console.log(JSON.stringify(loaded));
 """
  with tempfile.NamedTemporaryFile('w',suffix='.js',encoding='utf-8',delete=False) as f:f.write(quick_code);temp=Path(f.name)
@@ -155,9 +155,11 @@ console.log(JSON.stringify(loaded));
   if loaded.get(key)!=value:raise SystemExit(f'FAIL U.S. example {key}: expected {value}, got {loaded.get(key)}')
  if loaded['annualSavings'] in ('$— / yr','—') or loaded['payback'] in ('— years','—') or not loaded['resultsVisible']:
   raise SystemExit(f'FAIL U.S. example did not run the existing calculation handler: {loaded}')
- for provenance in ('EIA','Angi','EnergySage','PVWatts'):
+ for provenance in ('EIA','Angi','EnergySage'):
   if provenance not in loaded['assumptions']:
    raise SystemExit(f'FAIL U.S. example is missing the {provenance} input provenance: {loaded}')
+ if 'PVWatts' not in loaded['productionNote'] or 'not a live PVWatts result' not in loaded['productionNote']:
+  raise SystemExit(f'FAIL U.S. example does not identify the illustrative yield input as non-PVWatts data: {loaded}')
  print('PASS homepage illustrative U.S. example populates inputs, retains source labels and runs validated calculation')
 
  # Reset must restore the blank, honest starting state and clear city-handoff state.
