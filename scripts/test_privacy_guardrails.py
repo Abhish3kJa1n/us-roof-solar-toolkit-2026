@@ -181,7 +181,10 @@ for internal_detail in (
 
 for contact_page in ("contact.html", "editorial-policy.html", "privacy.html", "terms.html"):
     contact_html = (ROOT / contact_page).read_text(encoding="utf-8")
-    if re.search(r"editor@getroofsolarcalculator\\.online</a>\\.", contact_html, re.I):
+    contact_punctuation_pattern = r"editor@getroofsolarcalculator\\.online</a>\\."
+    if not re.search(contact_punctuation_pattern, "editor@getroofsolarcalculator.online</a>."):
+        fail("contact punctuation regression pattern does not match its positive fixture")
+    if re.search(contact_punctuation_pattern, contact_html, re.I):
         fail(f"contact email is followed by stray punctuation in {contact_page}")
 
 
