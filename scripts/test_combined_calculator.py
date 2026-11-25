@@ -133,8 +133,8 @@ def main():
   raise SystemExit('FAIL explicit EIA illustrative-scenario opt-in button was not created')
  if city['rateAfter'] != '0.1651':
   raise SystemExit('FAIL EIA value should only enter marginal-rate field after explicit visitor click')
- if not city['appliedVisible'] or 'illustrative scenario' not in city['appliedText']:
-  raise SystemExit('FAIL explicit EIA application provenance was not shown')
+ if not city['appliedVisible'] or 'comparison rate' not in city['appliedText']:
+  raise SystemExit('FAIL explicit EIA comparison-rate provenance was not shown')
  print('PASS city-based PVWatts/LBNL prefill leaves tariff blank until visitor explicitly applies EIA scenario')
 
 
