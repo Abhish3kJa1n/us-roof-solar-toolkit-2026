@@ -5,6 +5,8 @@ on:
     branches:
       - "audit/**"
       - "content/**"
+      # PR #74: run browser QA on this focused disclaimer-consolidation branch.
+      - "fix/calculator-disclaimer-consolidation-20261125"
   pull_request:
     branches:
       - main
