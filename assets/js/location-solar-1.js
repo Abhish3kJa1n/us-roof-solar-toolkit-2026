@@ -190,7 +190,7 @@
       const heading = el('strong', '', `EIA residential electricity benchmark — ${target}`);
       const value = el('p', '', `${format(current, 2)}¢/kWh for January–August 2026, compared with ${format(prior, 2)}¢/kWh for the same months in 2025 (${change > 0 ? '+' : ''}${format(change, 2)}%).`);
       const preliminary = el('p', '', 'EIA labels the 2026 year-to-date values preliminary estimates based on a cutoff-model sample; the 2025 comparison values are final. Monthly estimates can be revised in later releases.');
-      const caution = el('p', '', 'EIA statewide average: a comparison figure. Use your utility's marginal energy rate and export credit for a household savings estimate.');
+      const caution = el('p', '', 'EIA statewide average: a comparison figure. Use your utility’s marginal energy rate and export credit for a household savings estimate.');
       const source = el('a', '', `Source: EIA Electric Power Monthly Table 5.6.B · data release ${release}`);
       source.href = 'https://www.eia.gov/electricity/monthly/epm_table_grapher.php?t=epmt_5_06_b';
       source.target = '_blank';
