@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { assertPreviewNotAccessChallenge, fetchPreview, installCloudflareAccess } from './cloudflare_access.mjs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -21,18 +22,40 @@ assert.ok(base, 'PREVIEW_BASE_URL is required');
 fs.mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:1365,height:900},deviceScaleFactor:1,reducedMotion:'reduce'});
+await installCloudflareAccess(context, base);
 const page=await context.newPage();
 const pageErrors=[];
 page.on('pageerror',e=>pageErrors.push(e.message));
 try {
-  const identity=await fetch(base+'/build-info.json',{cache:'no-store'});
-  assert.equal(identity.status,200,'Preview build identity unavailable');
-  const build=await identity.json();
-  assert.equal(build.commit,expectedSha,'Preview alias does not serve the expected PR commit');
+  let build = null;
+  let lastIdentity = 'Preview build identity is not available yet.';
+  for (let attempt = 1; attempt <= 60; attempt += 1) {
+    try {
+      const identity=await fetchPreview(base+'/build-info.json?qa='+Date.now(),{cache:'no-store'},base);
+      assertPreviewNotAccessChallenge(identity, 'Guide QA build identity request');
+      if (identity.status === 200) {
+        const candidate = await identity.json();
+        if (!expectedSha || candidate.commit === expectedSha) {
+          build = candidate;
+          break;
+        }
+        lastIdentity = 'Preview alias currently serves ' + (candidate.commit || 'an unidentified build') + '; waiting for ' + expectedSha + '.';
+      } else {
+        lastIdentity = 'Preview build identity returned HTTP ' + identity.status + '.';
+      }
+    } catch (error) {
+      if (['CloudflareAccessError', 'CloudflareAccessConfigurationError'].includes(error?.name)) throw error;
+      lastIdentity = error.message;
+    }
+    if (attempt < 60) await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+  assert.ok(build, 'Preview alias did not serve the expected PR commit after waiting: ' + lastIdentity);
+  console.log('PREVIEW_READY_FOR_GUIDE_QA ' + (build.commit || 'unversioned') + ': ' + base);
   for (const slug of guides) {
     const route='/guides/'+slug;
     const response=await page.goto(base+route,{waitUntil:'domcontentloaded',timeout:60000});
     assert.ok(response,route+' gave no response');
+    assertPreviewNotAccessChallenge(response, 'Guide navigation ' + route);
     assert.equal(response.status(),200,route+' HTTP status');
     assert.match((response.headers()['x-robots-tag']||'').toLowerCase(),/noindex/,route+' Preview must remain noindex');
     await page.locator('h1').waitFor({state:'visible'});

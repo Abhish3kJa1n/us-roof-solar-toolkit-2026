@@ -4,15 +4,17 @@
  * This intentionally calls the real Census and NLR endpoints. OpenEI is
  * reported as SKIPPED when its optional server-side key is not configured.
  */
+import { assertPreviewNotAccessChallenge, fetchPreview } from './cloudflare_access.mjs';
+
 const base = (process.env.PREVIEW_BASE_URL || '').replace(/\/$/, '');
 if (!base) throw new Error('PREVIEW_BASE_URL is required.');
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 async function jsonRequest(path, extraHeaders = {}) {
-  const response = await fetch(base + path, {
+  const response = await fetchPreview(base + path, {
     headers: { Accept: 'application/json', 'Cache-Control': 'no-cache', ...extraHeaders },
-    redirect: 'error',
-  });
+  }, base);
+  assertPreviewNotAccessChallenge(response, 'Live Preview API request ' + path);
   let body;
   try { body = await response.json(); }
   catch { throw new Error(path + ' returned non-JSON HTTP ' + response.status); }
@@ -27,6 +29,7 @@ async function waitForCurrentPreview() {
       if (response.ok && String(body.source || '').includes('TIGERweb ACS2026')) return body;
       last = 'HTTP ' + response.status + ': ' + String(body.error || body.source || last);
     } catch (error) {
+      if (['CloudflareAccessError', 'CloudflareAccessConfigurationError'].includes(error?.name)) throw error;
       last = error.message;
     }
     await sleep(10000);

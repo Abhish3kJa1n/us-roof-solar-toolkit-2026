@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { assertPreviewNotAccessChallenge, cloudflareAccessHeadersForUrl, fetchPreview, installCloudflareAccess } from './cloudflare_access.mjs';
 
 const require = createRequire(import.meta.url);
 const playwrightPath = process.env.PLAYWRIGHT_PACKAGE || '/tmp/roofsolar-playwright/node_modules/playwright';
@@ -32,14 +33,17 @@ async function waitForPreview() {
   let lastStatus = 'no response';
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
-      const response = await fetch(base + '/index.html?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
+      const response = await fetchPreview(base + '/index.html?qa=' + Date.now(), { cache: 'no-store' }, base);
+      assertPreviewNotAccessChallenge(response, 'Preview readiness request');
       lastStatus = 'HTTP ' + response.status;
       if (response.status === 200 && /noindex/i.test(response.headers.get('x-robots-tag') || '')) {
-        const roofResponse = await fetch(base + '/calculators/roof-replacement-cost.html?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
+        const roofResponse = await fetchPreview(base + '/calculators/roof-replacement-cost.html?qa=' + Date.now(), { cache: 'no-store' }, base);
+        assertPreviewNotAccessChallenge(roofResponse, 'Roof calculator Preview readiness request');
         const roofHtml = roofResponse.ok ? await roofResponse.text() : '';
         if (roofResponse.status === 200 && roofHtml.includes('data-qa="metal-reference-state-v2"')) {
           if (expectedPreviewSha) {
-            const identityResponse = await fetch(base + '/build-info.json?qa=' + Date.now(), { redirect: 'follow', cache: 'no-store' });
+            const identityResponse = await fetchPreview(base + '/build-info.json?qa=' + Date.now(), { cache: 'no-store' }, base);
+            assertPreviewNotAccessChallenge(identityResponse, 'Preview build identity request');
             if (!identityResponse.ok) {
               lastStatus = 'Preview content is ready but build identity is not available: HTTP ' + identityResponse.status;
             } else {
@@ -60,6 +64,7 @@ async function waitForPreview() {
         }
       }
     } catch (error) {
+      if (['CloudflareAccessError', 'CloudflareAccessConfigurationError'].includes(error?.name)) throw error;
       lastStatus = error.message;
     }
     await new Promise(resolve => setTimeout(resolve, 5000));
@@ -73,16 +78,22 @@ const context = await browser.newContext({
   deviceScaleFactor: 1,
   reducedMotion: 'reduce',
 });
+await installCloudflareAccess(context, base);
 const page = await context.newPage();
 if (expectedPreviewSha) {
   const previewOrigin = new URL(base).origin;
   await page.route('**/assets/**', async (route) => {
     const assetUrl = new URL(route.request().url());
-    if (assetUrl.origin !== previewOrigin) return route.continue();
+    const safeHeaders = { ...route.request().headers() };
+    delete safeHeaders['cf-access-client-id'];
+    delete safeHeaders['cf-access-client-secret'];
+    if (assetUrl.origin !== previewOrigin) {
+      return route.continue({ headers: safeHeaders });
+    }
     assetUrl.searchParams.set('qa', expectedPreviewSha);
     return route.continue({
       url: assetUrl.toString(),
-      headers: { ...route.request().headers(), 'cache-control': 'no-cache' }
+      headers: { ...safeHeaders, ...cloudflareAccessHeadersForUrl(assetUrl, base), 'cache-control': 'no-cache' }
     });
   });
 }
@@ -134,6 +145,7 @@ page.on('requestfailed', request => {
 
 async function open(pathname) {
   const response = await page.goto(base + pathname, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  assertPreviewNotAccessChallenge(response, 'Browser navigation ' + pathname);
   assert.ok(response, 'No HTTP response for ' + pathname);
   assert.equal(response.status(), 200, pathname + ' returned HTTP ' + response.status());
   const headers = response.headers();
@@ -625,17 +637,25 @@ try {
 
   expected404Navigation = true;
   const missingResponse = await page.goto(base + '/__google-tag-browser-404-check-20261118', { waitUntil: 'domcontentloaded', timeout: 60000 });
+  assertPreviewNotAccessChallenge(missingResponse, 'Preview custom 404 request');
   assert.ok(missingResponse, 'No HTTP response for the custom 404 route');
   await page.waitForLoadState('load');
   expected404Navigation = false;
   assert.equal(expected404Responses, 1, 'Only the expected main-document 404 response may be returned during the custom 404 check');
   assert.equal(missingResponse.status(), 404, 'Unknown Preview route must return HTTP 404');
   assert.match(await page.locator('main h1').innerText(), /We could not find that page/i, 'Custom 404 content must render');
-  assert.equal(await page.locator('script[src*="google-tag-bootstrap-1.js"]').count(), 1, 'Custom 404 must load its first-party analytics bootstrap');
-  assert.equal(await page.locator('script[src*="googletagmanager.com/gtm.js?id=GTM-5X5DFWMW"]').count(), 0, 'Preview 404 must not load Production Google Analytics');
-  results.push('custom 404 renders and keeps Production Google Analytics disabled on Preview: PASS');
+  assert.equal(await page.locator('script[src*="google-tag-bootstrap-1.js"]').count(), 0, 'Custom 404 must not load the removed Google tracking bootstrap');
+  assert.equal(await page.locator('script[src*="googletagmanager.com/gtm.js"]').count(), 0, 'Custom 404 must not load Google Tag Manager');
+  results.push('custom 404 renders without Google tracking injection: PASS');
 
-  assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load successfully; observed: ' + JSON.stringify(beaconScriptResponses));
+  // Cloudflare Pages preview deployments may not receive the production Web Analytics
+  // injection. If the beacon script is present on preview, its static asset must still return 200.
+  // Require the script on the registered production hostname, not on an unregistered pages.dev alias.
+  const previewHost = new URL(base).hostname.endsWith('.pages.dev');
+  if (!previewHost) {
+    assert.ok(beaconScriptResponses.some(item => item.status === 200), 'Cloudflare Web Analytics beacon script must load on the registered production hostname; observed: ' + JSON.stringify(beaconScriptResponses));
+  }
+  assert.ok(beaconScriptResponses.every(item => item.status === 200), 'Cloudflare Web Analytics beacon script returned a non-200 response: ' + JSON.stringify(beaconScriptResponses));
   // Preview pages.dev hosts are not the registered analytics hostname. A failed beacon request
   // can be aborted during navigation without a matching CORS console message, so counts need not match.
   assert.ok(previewBeaconGenericFailures <= previewBeaconRequestFailures.length, 'Unmatched net::ERR_FAILED console errors must not be suppressed');

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
 import { chromium } from "playwright";
+import { assertPreviewNotAccessChallenge, installCloudflareAccess } from "./cloudflare_access.mjs";
 
 const base = process.env.PREVIEW_BASE_URL;
 if (!base || !/^https:\/\/[a-z0-9-]+\.roof-solar-toolkit-2026\.pages\.dev$/i.test(base)) {
@@ -36,7 +37,9 @@ const pagePaths = [
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const browser = await chromium.launch({ headless: true });
-const page = await browser.newPage({ viewport: { width: 1365, height: 900 } });
+const context = await browser.newContext({ viewport: { width: 1365, height: 900 } });
+await installCloudflareAccess(context, base);
+const page = await context.newPage();
 const pageErrors = [];
 const failedSameOriginRequests = [];
 page.on("pageerror", (error) => pageErrors.push(error.message));
@@ -58,9 +61,11 @@ async function navigate(path) {
         waitUntil: "domcontentloaded",
         timeout: 20000,
       });
+      assertPreviewNotAccessChallenge(response, "Calculator smoke navigation " + path);
       lastStatus = response ? String(response.status()) : "no response";
       if (response?.status() === 200) return response;
     } catch (error) {
+      if (['CloudflareAccessError', 'CloudflareAccessConfigurationError'].includes(error?.name)) throw error;
       lastStatus = error.message;
     }
     await sleep(5000);

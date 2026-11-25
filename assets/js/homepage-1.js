@@ -492,3 +492,132 @@
     }
     restoreCombinedFormState();
 
+    // An explicitly requested, illustrative scenario gives first-time visitors a
+    // complete calculation without making any household-specific value a default.
+    const quickExampleButton = document.getElementById('loadTypicalExample');
+    const resetCalculatorButton = document.getElementById('resetCalculator');
+
+    function clearLocationHandoff() {
+      try { sessionStorage.removeItem(combinedFormStateKey); } catch (_) {}
+      if (window.history && typeof window.history.replaceState === 'function') {
+        window.history.replaceState(null, document.title, window.location.pathname);
+      }
+      importedCityLabel = '';
+      ['productionCityPrefillNote', 'importRatePrefillNote', 'eiaScenarioApplied', 'useEiaStateAverage'].forEach((id) => {
+        const node = document.getElementById(id);
+        if (node) node.remove();
+      });
+    }
+
+    function clearReferenceNotes() {
+      roofRateBasis = 'No roof-price reference loaded; roof cost is not estimated.';
+      solarPriceBasis = 'No solar price entered; payback is not estimated.';
+      importRateBasis = 'No marginal tariff entered; dollar value is not estimated.';
+      roofReferenceStatus.textContent = '';
+      roofReferenceStatus.hidden = true;
+      solarReferenceStatus.textContent = '';
+      solarReferenceStatus.hidden = true;
+    }
+
+    function loadIllustrativeUsExample() {
+      clearLocationHandoff();
+      clearReferenceNotes();
+
+      const values = {
+        roofType: 'asphalt',
+        roofAge: '',
+        roofArea: '2000',
+        homeArea: '',
+        stories: '',
+        pitch: '',
+        roofRateLow: '4',
+        roofRateHigh: '11',
+        condition: 'unknown',
+        annualKwh: '10500',
+        rate: '0.1819',
+        productionPerKw: '1350',
+        offset: '80',
+        selfUse: '40',
+        exportRate: '0.08',
+        solarPricePerWatt: '2.62',
+        apr: '',
+        term: ''
+      };
+      Object.entries(values).forEach(([id, value]) => {
+        document.getElementById(id).value = value;
+        refreshField(document.getElementById(id));
+      });
+
+      document.querySelectorAll('input[name="areaMode"]').forEach((field) => {
+        field.checked = field.value === 'roof';
+      });
+      document.querySelectorAll('input[name="financing"]').forEach((field) => {
+        field.checked = field.value === 'cash';
+      });
+      syncAreaMode();
+      syncFinancingFields();
+
+      roofRateBasis = 'Angi broad national roof-replacement reference range of $4–$11 per roof sq ft; national planning context, not a local quote or material-specific price.';
+      solarPriceBasis = 'EnergySage H1 2026 national solar-only marketplace median of $2.62/W DC; not a local installer quote.';
+      importRateBasis = 'EIA January–September 2026 U.S. average residential price of 18.19 cents/kWh (data released November 24, 2026), loaded only as an illustrative scenario; not a household marginal tariff.';
+      roofReferenceStatus.hidden = false;
+      roofReferenceStatus.textContent = roofRateBasis + ' This is a deliberately loaded national reference, not a local price. Replace it with comparable written local proposals.';
+      solarReferenceStatus.hidden = false;
+      solarReferenceStatus.textContent = solarPriceBasis + ' This is a deliberately loaded national reference, not a quote. Replace it with a current written cash proposal.';
+      addFieldNote(productionInput, 'productionExampleNote', 'The 1,350 kWh/kW/year yield is an illustrative scenario input, not a live PVWatts result. Use the city lookup for a location-based NLR PVWatts V8 estimate.', 'https://developer.nlr.gov/docs/solar/pvwatts/v8/');
+
+      const roofDetails = document.getElementById('roofPriceAssumptions');
+      const solarDetails = document.getElementById('solarCostAssumptions');
+      if (roofDetails) roofDetails.open = true;
+      if (solarDetails) solarDetails.open = true;
+      clearError(1);
+      clearError(2);
+      document.getElementById('results').classList.remove('show');
+      setStep(1);
+
+      // Use the calculator's existing validation and calculation path.
+      document.getElementById('calculateButton').click();
+    }
+
+    function resetCombinedCalculator() {
+      clearLocationHandoff();
+      clearReferenceNotes();
+      const blankFields = [
+        'roofAge', 'roofArea', 'homeArea', 'stories', 'pitch',
+        'roofRateLow', 'roofRateHigh', 'annualKwh', 'rate', 'productionPerKw',
+        'offset', 'selfUse', 'exportRate', 'solarPricePerWatt', 'apr', 'term'
+      ];
+      blankFields.forEach((id) => {
+        document.getElementById(id).value = '';
+        refreshField(document.getElementById(id));
+      });
+      document.getElementById('roofType').value = '';
+      document.getElementById('condition').value = 'unknown';
+      document.querySelectorAll('input[name="areaMode"]').forEach((field) => {
+        field.checked = field.value === 'roof';
+      });
+      document.querySelectorAll('input[name="financing"]').forEach((field) => {
+        field.checked = field.value === 'cash';
+      });
+      syncAreaMode();
+      syncFinancingFields();
+      ['productionExampleNote', 'productionCityPrefillNote'].forEach((id) => {
+        const node = document.getElementById(id);
+        if (node) node.remove();
+      });
+      const restoredNote = document.getElementById('combinedRestoreStatus');
+      if (restoredNote) { restoredNote.textContent = ''; restoredNote.hidden = true; }
+      const roofDetails = document.getElementById('roofPriceAssumptions');
+      const solarDetails = document.getElementById('solarCostAssumptions');
+      if (roofDetails) roofDetails.open = false;
+      if (solarDetails) solarDetails.open = false;
+      clearError(1);
+      clearError(2);
+      document.getElementById('results').classList.remove('show');
+      document.getElementById('resultsLocation').textContent = 'Based on the details you entered.';
+      setStep(1);
+    }
+
+    if (quickExampleButton) quickExampleButton.addEventListener('click', loadIllustrativeUsExample);
+    if (resetCalculatorButton) resetCalculatorButton.addEventListener('click', resetCombinedCalculator);
+

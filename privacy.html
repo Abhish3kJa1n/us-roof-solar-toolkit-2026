@@ -23,7 +23,7 @@
 <p>This Privacy Policy explains how Roof &amp; Solar Toolkit uses information when you visit <strong>getroofsolarcalculator.online</strong>, use its roof and solar calculators, request location-based estimates or contact the site. It describes the website's current practices, not the separate privacy practices of external providers.</p>
 
 <h2>1. Who operates this website</h2>
-<p>This website is presented and operated under the name <strong>Roof &amp; Solar Toolkit</strong>. It provides free roof and residential-solar planning tools and information for U.S. homeowners. For privacy questions or requests, contact the site using <a href="mailto:getroofsolarcalculator@gmail.com?subject=Privacy%20request">getroofsolarcalculator@gmail.com</a></p>
+<p>This website is presented and operated under the name <strong>Roof &amp; Solar Toolkit</strong>. It provides free roof and residential-solar planning tools and information for U.S. homeowners. For privacy questions or requests, contact the site using <a href="mailto:editor@getroofsolarcalculator.online?subject=Privacy%20request">editor@getroofsolarcalculator.online</a></p>
 
 <h2>2. Meaning of personal information</h2>
 <p>In this policy, personal information means information that identifies, relates to, describes or could reasonably be linked to a person or household. The precise legal definition and the rights attached to it depend on the privacy law that applies to you.</p>
@@ -69,9 +69,9 @@
 </tr>
 <tr>
 <th scope="row">Website analytics information</th>
-<td>Page views, session and usage information, approximate location, browser and device information, performance measurements, cookie identifiers and, depending on tag settings, page URLs.</td>
-<td>Cloudflare Web Analytics measures website performance. Google tags, including Google Analytics measurement, are used for general website usage analysis. See sections 6 and 7.</td>
-<td>Cloudflare states that unsampled Web Analytics beacon data is retained for seven days and then aggregated to around 10% for longer-term reporting; its dashboard provides access to the previous six months. Google Analytics retention depends on the setting in the Analytics property.</td>
+<td>Aggregated page-view and performance measurements, including page path, referrer, browser and operating-system family, country and Core Web Vitals metrics.</td>
+<td>Cloudflare Web Analytics measures general site traffic and page performance. It is separate from the calculator's temporary session storage, which preserves form entries only for the city-lookup handoff.</td>
+<td>Cloudflare Web Analytics reports are available in the dashboard for the preceding six months. This describes dashboard reporting availability, not a raw-beacon storage period.</td>
 </tr>
 <tr>
 <th scope="row">Messages you send</th>
@@ -90,7 +90,7 @@
 <h3>Location searches and calculator links</h3>
 <h4>Page URL and query-string information</h4>
 <p>When you type a city search, the search text is sent to the site's location service, which queries U.S. Census Bureau place records for matching locations. When you select a city and state, those values are used to verify the place and obtain a representative Census point. The point represents a general Census place; it is not your street address, parcel, roof coordinates or confirmed utility service territory.</p>
-<p>Some calculator links carry information in the page URL so another calculator can be prefilled. Depending on the link, the URL may include a selected city and state, modeled production figures or a source-based scenario value. Page URLs and their query parameters may be available to analytics tags depending on the active Google tag settings. Do not put names, street addresses, account details or other sensitive information into a URL.</p>
+<p>Some calculator links carry information in the page URL so another calculator can be prefilled. Depending on the link, the URL may include a selected city and state, modeled production figures or a source-based scenario value. The requested URL is processed by the site's hosting and delivery provider and may appear in technical request records. Do not put names, street addresses, account details or other sensitive information into a URL.</p>
 
 <h3>Automatically collected device and usage information</h3>
 <p>When you visit the site, Cloudflare and other enabled service providers may process technical information such as your IP address, browser type, device and operating-system details, requested page or service, timestamps, referrer and other request metadata. This information helps deliver pages, maintain security, troubleshoot failures and understand general site performance.</p>
@@ -130,28 +130,28 @@
 <tbody>
 <tr>
 <th scope="row">Cloudflare</th>
-<td>IP address, connection and request metadata needed to deliver pages and process site requests. Cloudflare Web Analytics receives browser performance measurements through its beacon.</td>
-<td>Website hosting, delivery, security, server-side feature operation and aggregate performance measurement. Cloudflare says Web Analytics does not collect or use visitors' personal data.</td>
+<td>IP address, connection and request metadata needed to deliver pages and process site requests.</td>
+<td>Website hosting, delivery, security, server-side feature operation and protection against abusive requests.</td>
+</tr>
+<tr>
+<th scope="row">Cloudflare Web Analytics</th>
+<td>Page-view and browser performance measurements, including page path, referrer, browser and operating-system family, country and Core Web Vitals metrics.</td>
+<td>Aggregate website traffic and performance reporting. Cloudflare states that Web Analytics does not use cookies for analytics, does not use localStorage or sessionStorage for analytics identifiers, and does not fingerprint individual visitors.</td>
 </tr>
 <tr>
 <th scope="row">U.S. Census Bureau (TIGERweb)</th>
-<td>City search text and, for exact place verification, the selected city and state.</td>
-<td>Find a matching incorporated place or Census-designated place and return a representative point for the requested location.</td>
+<td>A city search term, or the selected city and state used to verify a place and retrieve a representative point.</td>
+<td>Return matching U.S. incorporated-place or Census-designated-place information. The selected point is a general place point, not a home address or property coordinate.</td>
 </tr>
 <tr>
-<th scope="row">National Laboratory of the Rockies (NLR), PVWatts</th>
-<td>The selected Census representative latitude and longitude, state, system capacity, tilt, azimuth and system-loss assumption.</td>
-<td>Return a modeled typical-year solar electricity production estimate when you request one.</td>
+<th scope="row">National Laboratory of the Rockies (NLR), PVWatts V8</th>
+<td>The representative Census latitude and longitude, state and the solar-system settings needed for the model, such as system capacity, tilt, azimuth and losses.</td>
+<td>Return the modeled annual and monthly solar-production estimate you request.</td>
 </tr>
 <tr>
 <th scope="row">OpenEI Utility Rate Database</th>
-<td>The selected Census representative latitude and longitude and state.</td>
-<td>Return nearby residential utility-rate records for discovery. These are candidates, not confirmation of the tariff that applies to a home.</td>
-</tr>
-<tr>
-<th scope="row">Google</th>
-<td>Google tags may process page views, session and usage information, approximate location, browser and device information, cookie identifiers and page URLs. URL query parameters may also be available to tags depending on their settings.</td>
-<td>Google Tag Manager loads Google tags on production pages. Google Analytics is used for general website measurement. The exact tags, triggers, destinations, event settings and property-level sharing options are controlled through the Google configuration.</td>
+<td>The representative Census latitude and longitude and state.</td>
+<td>Find nearby utility-rate records for discovery. These are candidate records, not confirmation of the tariff that applies to a home.</td>
 </tr>
 <tr>
 <th scope="row">Google (email service)</th>
@@ -161,29 +161,28 @@
 </tbody>
 </table>
 </div>
-<p>Cloudflare's <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Privacy Policy</a> and Google's <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Privacy Policy</a> explain how those companies handle information. The U.S. Census Bureau, NLR and OpenEI also publish information about their services and terms.</p>
-<p>The providers listed above receive information to perform or provide the services described. We do not control their independent systems, security practices, or retention settings.</p>
+<p>Cloudflare's <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Privacy Policy</a>, the U.S. Census Bureau's service information, NLR's <a href="https://developer.nlr.gov/docs/solar/pvwatts/v8/" target="_blank" rel="noopener">PVWatts V8 documentation</a> and OpenEI's <a href="https://openei.org/services/doc/rest/util_rates/" target="_blank" rel="noopener">Utility Rates API documentation</a> describe those services and their practices.</p>
+<p>Cloudflare provides hosting, delivery and security for the site. Cloudflare Web Analytics is used for aggregate site-performance reporting. The Census Bureau, NLR and OpenEI receive the location or model inputs needed when you request their respective features. These providers process information under their own terms and policies.</p>
 
 <h2>7. Cookies and similar technologies</h2>
-<p>Cookies and similar browser technologies may be used by enabled third-party tags or service providers. Google Analytics' standard website implementation can use a first-party cookie named <code>_ga</code> to distinguish browsers and sessions. Whether a cookie is set, its lifetime and the precise measurement features depend on the active Google tag and Analytics settings and on your browser.</p>
-<p>Cloudflare Web Analytics uses a browser beacon to measure performance. Cloudflare states that Web Analytics does not collect or use visitors' personal data. The temporary calculator save described in section 3 uses browser session storage; it is not a cookie and is removed after restoration or when the tab is closed, subject to the one-hour expiry.</p>
-<p>This site does not currently provide a first-party cookie preference center. You can manage or block cookies through your browser settings. Google also provides a <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener">Google Analytics browser opt-out add-on</a>. These controls may not block every network request or information processed for website delivery and security. Blocking required requests or scripts may prevent some features from working.</p>
+<p>Cloudflare Web Analytics does not set cookies for analytics, does not use localStorage or sessionStorage for analytics identifiers, and does not fingerprint individual visitors. It measures aggregate page-view and performance information such as page paths, referrers, browser and operating-system family, country and Core Web Vitals metrics.</p>
+<p>The combined calculator uses browser session storage for a separate functional purpose: temporarily preserving selected form entries in the current tab while you open the city-based solar lookup and return. That temporary calculator state is not an analytics identifier, expires after one hour and is removed after restoration or when the tab is closed.</p>
+<p>Cloudflare may use strictly necessary technical mechanisms to deliver and protect the site. These are separate from Cloudflare Web Analytics. This site does not currently provide a first-party cookie preference center. You can manage browser storage and cookies through your browser settings; blocking required site functionality may prevent some features from working.</p>
 
 <h2>8. Advertising, sale and sharing</h2>
-<p>No advertising is currently displayed on this site, and the current production configuration does not enable the AdSense ad-serving script. If advertising is introduced, this policy and any required notices or preference mechanisms will be reviewed and updated before advertising is enabled.</p>
-<p>We do not sell personal information for money. We disclose information to the service providers described in section 6 to operate the website and provide requested features. Google measurement tags are active on production pages. Whether a particular transfer to an analytics provider is treated as a sale or sharing under a specific state privacy law depends on that law and the provider's actual configuration. The live Google Tag Manager container and Analytics property sharing settings have not been fully verified for this policy revision, so this policy does not claim that every measurement transfer is excluded from those legal definitions.</p>
+<p>The site is not currently displaying advertising or loading an AdSense ad-serving script. If advertising is introduced, this policy and any required notices or preference mechanisms will be reviewed and updated before advertising is enabled.</p>
+<p>We do not sell personal information for money. We do not share personal information for cross-context behavioral advertising. We do disclose limited information to Cloudflare to host, deliver and secure the site, and to the Census Bureau, NLR or OpenEI when you request the location or modeling features described in section 6. Those operational disclosures are not used by this site to sell household leads or target advertising. Privacy-law definitions and obligations vary by jurisdiction, and this statement does not replace the rights or exceptions that may apply under a particular law.</p>
 
 <h2>9. Data retention</h2>
 <p>We keep information only for as long as reasonably necessary for the purpose for which it is used, subject to applicable legal, security and recordkeeping requirements. The retention approach differs by information type:</p>
 <ul>
 <li><strong>Calculator entries:</strong> ordinary entries remain in the active browser page. The combined estimator's temporary browser save expires after one hour and is removed after the form is restored or the tab is closed.</li>
-<li><strong>Location and model requests:</strong> the site's service processes the location and model assumptions needed to return the requested result. External providers handle requests under their own retention practices and policies.</li>
-<li><strong>Cloudflare Web Analytics:</strong> Cloudflare states that unsampled beacon data is retained for seven days and then aggregated to around 10% for longer-term reporting. Analytics reports are available in its dashboard for the previous six months.</li>
-<li><strong>Google Analytics:</strong> event-level and user-level retention is controlled by the setting selected in the Analytics property and Google's deletion process. The site's current property-level retention setting has not been independently confirmed for this revision, so no specific Google Analytics retention period is stated here.</li>
-<li><strong>Website delivery and security records:</strong> Cloudflare applies its own service and account settings and retention practices. The site does not have a verified, single retention period for every operational or security record processed by the provider.</li>
+<li><strong>Location and model requests:</strong> the site's service processes the location and model settings needed to return the requested result. Census, NLR and OpenEI handle requests under their own service terms and policies.</li>
+<li><strong>Cloudflare Web Analytics:</strong> Cloudflare's dashboard provides access to the preceding six months of Web Analytics reports. This is the reporting window shown in the dashboard, not a claim about the retention period for raw beacon events.</li>
+<li><strong>Website delivery and security records:</strong> Cloudflare applies its own service, security and account retention practices to technical request information.</li>
 <li><strong>Email correspondence:</strong> messages are kept for as long as reasonably needed to answer the enquiry, handle related follow-up, maintain relevant records and address legal obligations or disputes.</li>
 </ul>
-<p>When information is no longer reasonably needed, it should be deleted or de-identified where appropriate, subject to any legal, security or provider retention requirements.</p>
+<p>When information is no longer reasonably needed, it should be deleted or de-identified where appropriate, subject to applicable legal requirements and provider retention practices.</p>
 
 <h2>10. Data security</h2>
 <p>The site uses HTTPS and security features provided by its hosting and delivery services to help protect information in transit and to operate its online features. Access to third-party services and their systems is also subject to those providers' security controls. No method of transmission or electronic storage is completely secure, and the site cannot guarantee absolute security.</p>
@@ -193,7 +192,7 @@
 
 <h2>12. U.S. state privacy rights</h2>
 <p>Depending on your state of residence, the type of information involved and whether the applicable law covers the site operator, you may have rights to request access to or a copy of personal information, request correction or deletion, obtain information about collection and disclosure, receive portable information, or opt out of certain sale, sharing or targeted-advertising processing. Some laws also provide rights to limit certain uses of sensitive personal information, appeal a denied request or exercise rights without discrimination.</p>
-<p>To submit a privacy request, send an email to <a href="mailto:getroofsolarcalculator@gmail.com?subject=Privacy%20request">getroofsolarcalculator@gmail.com</a> and include the site you are contacting, your state of residence, the right you wish to exercise and enough detail for us to understand the request. Do not include passwords, utility account credentials or unredacted bills. We may ask for reasonable information to verify the request or an authorized agent's authority. Requests will be handled under the law that applies to the request and the site operator.</p>
+<p>To submit a privacy request, send an email to <a href="mailto:editor@getroofsolarcalculator.online?subject=Privacy%20request">editor@getroofsolarcalculator.online</a> and include the site you are contacting, your state of residence, the right you wish to exercise and enough detail for us to understand the request. Do not include passwords, utility account credentials or unredacted bills. We may ask for reasonable information to verify the request or an authorized agent's authority. Requests will be handled under the law that applies to the request and the site operator.</p>
 <p>Not every privacy law applies to every website operator, and rights, exceptions and response periods differ. This policy does not state that the site is covered by every U.S. state privacy law or that every listed right is available in every state.</p>
 
 <h2>13. Children's privacy</h2>
@@ -206,7 +205,7 @@
 <p>This policy may be updated when the site's information practices, service providers or legal obligations materially change. The effective date at the top of the page identifies the latest revision. Material changes will be reflected in the updated policy.</p>
 
 <h2>16. Contact us</h2>
-<p>For questions about this policy or to make a privacy request, use <a href="mailto:getroofsolarcalculator@gmail.com?subject=Privacy%20request">getroofsolarcalculator@gmail.com</a></p>
+<p>For questions about this policy or to make a privacy request, use <a href="mailto:editor@getroofsolarcalculator.online?subject=Privacy%20request">editor@getroofsolarcalculator.online</a></p>
 <p><a href="/terms">Terms of Use</a> · <a href="/about">About</a> · <a href="/editorial-policy">Editorial Policy</a> · <a href="/contact">Contact</a></p>
 </article>
 </main>

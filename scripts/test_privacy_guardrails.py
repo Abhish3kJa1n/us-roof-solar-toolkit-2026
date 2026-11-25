@@ -4,6 +4,7 @@ from __future__ import annotations
 from html.parser import HTMLParser
 from pathlib import Path
 import re
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -135,8 +136,11 @@ for required_disclosure in (
     "u.s. census bureau",
     "national laboratory of the rockies",
     "openei utility rate database",
-    "google tag manager",
-    "google analytics",
+    "cloudflare web analytics",
+    "does not use cookies for analytics",
+    "does not use localstorage or sessionstorage for analytics identifiers",
+    "does not fingerprint individual visitors",
+    "preceding six months of web analytics reports",
     "page url and query-string information",
     "cookies and similar technologies",
     "data retention",
@@ -145,10 +149,11 @@ for required_disclosure in (
     "u.s. state privacy rights",
     "children's privacy",
     "advertising, sale and sharing",
-    "no advertising is currently displayed",
+    "not currently displaying advertising or loading an adsense ad-serving script",
     "we do not sell personal information for money",
+    "we do not share personal information for cross-context behavioral advertising",
     "this site does not currently provide a first-party cookie preference center",
-    "getroofsolarcalculator@gmail.com",
+    "editor@getroofsolarcalculator.online",
 ):
     if required_disclosure not in privacy_notice:
         fail(f"Privacy Policy is missing a material generator-style section or disclosure: {required_disclosure}")
@@ -177,11 +182,28 @@ for internal_detail in (
 
 for contact_page in ("contact.html", "editorial-policy.html", "privacy.html", "terms.html"):
     contact_html = (ROOT / contact_page).read_text(encoding="utf-8")
-    if re.search(r"getroofsolarcalculator\\.gmail\\.com</a>\\.", contact_html, re.I):
+    contact_punctuation_pattern = r"editor@getroofsolarcalculator\.online</a>\."
+    if not re.search(contact_punctuation_pattern, "editor@getroofsolarcalculator.online</a>."):
+        fail("contact punctuation regression pattern does not match its positive fixture")
+    if re.search(contact_punctuation_pattern, contact_html, re.I):
         fail(f"contact email is followed by stray punctuation in {contact_page}")
 
 
+middleware = (ROOT / "functions" / "_middleware.js").read_text(encoding="utf-8")
+for active_tracker in ("googletagmanager.com", "GTM-5X5DFWMW", "gtag("):
+    if active_tracker.lower() in middleware.lower():
+        fail(f"production middleware still injects a Google tracking tag: {active_tracker}")
+if (ROOT / "assets" / "js" / "google-tag-bootstrap-1.js").exists():
+    fail("obsolete Google Tag Manager bootstrap asset still exists")
+not_found = (ROOT / "404.html").read_text(encoding="utf-8")
+if "google-tag-bootstrap" in not_found.lower() or "googletagmanager.com" in not_found.lower():
+    fail("404 page still loads Google Tag Manager")
+
 source_all = "\n".join(f.read_text(encoding="utf-8") for f in pages)
+if "getroofsolarcalculator@gmail.com" in source_all.lower():
+    fail("old Gmail address remains in a public HTML page")
+if "editor@getroofsolarcalculator.online" not in source_all.lower():
+    fail("replacement editorial email is missing from public HTML")
 for stale_public_phrase in (
     "static demo",
     "location-aware solar model · preview",
@@ -213,9 +235,85 @@ if re.search(r"googletag|adsbygoogle|gtag\s*\(|google-analytics|facebook\.net|ho
 if "Independent educational resource" in source_all:
     fail("premature publisher independence claim remains")
 
+# Scan every tracked text file for the retired personal Gmail contact, not only public HTML.
+tracked = subprocess.run(
+    ["git", "ls-files", "-z"], cwd=ROOT, check=True, capture_output=True
+).stdout.decode("utf-8").split("\0")
+old_contact = "getroofsolarcalculator" + "@gmail.com"
+text_suffixes = {".html", ".js", ".mjs", ".cjs", ".css", ".json", ".md", ".txt", ".xml", ".yml", ".yaml", ".toml", ".py", ".sh", ".sql"}
+for relative in tracked:
+    if not relative or relative == "scripts/test_privacy_guardrails.py":
+        continue
+    candidate = ROOT / relative
+    if candidate.suffix.lower() not in text_suffixes or not candidate.is_file():
+        continue
+    try:
+        tracked_text = candidate.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        continue
+    if old_contact in tracked_text.lower():
+        fail(f"old Gmail contact remains in tracked repository file: {relative}")
+
+# Scan tracked repository content for stale tracker identifiers, allowing only the two
+# untouched CSP policy files and the QA scripts that assert their absence.
+repo_tracker_tokens = (
+    "googletagmanager.com",
+    "gtm-5x5dfwmw",
+    "gtag(",
+    "google-analytics.com",
+    "google-tag-bootstrap",
+)
+for relative in tracked:
+    if not relative or relative.startswith("scripts/"):
+        continue
+    if relative in {"_headers", "functions/_shared/csp.mjs"}:
+        continue
+    candidate = ROOT / relative
+    if candidate.suffix.lower() not in text_suffixes or not candidate.is_file():
+        continue
+    try:
+        tracked_text = candidate.read_text(encoding="utf-8").lower()
+    except UnicodeDecodeError:
+        continue
+    for token in repo_tracker_tokens:
+        if token in tracked_text:
+            fail(f"stale Google tracker reference {token!r} remains in tracked file: {relative}")
+    if re.search(r"(?<![a-z0-9])_ga(?:_[a-z0-9]+)?(?![a-z0-9])", tracked_text):
+        fail(f"Google Analytics _ga identifier remains in tracked file: {relative}")
+
+# Audit executable runtime payload separately. _headers is intentionally excluded:
+# its legacy Google CSP origins are inert permissions and the owner forbade _headers edits.
+runtime_files = list(pages)
+for runtime_root in (ROOT / "assets", ROOT / "functions"):
+    if runtime_root.exists():
+        runtime_files.extend(
+            p for p in runtime_root.rglob("*")
+            if p.is_file() and p.suffix.lower() in {".js", ".mjs", ".cjs"}
+        )
+# The shared CSP builder retains legacy Google origin allowlist entries only; it does not load or execute those services.
+runtime_files = [
+    p for p in runtime_files
+    if p.relative_to(ROOT).as_posix() != "functions/_shared/csp.mjs"
+]
+active_tracker_tokens = (
+    "googletagmanager.com",
+    "gtm-5x5dfwmw",
+    "gtag(",
+    "google-analytics.com",
+    "google-tag-bootstrap",
+)
+for runtime_file in runtime_files:
+    runtime_text = runtime_file.read_text(encoding="utf-8").lower()
+    for token in active_tracker_tokens:
+        if token in runtime_text:
+            fail(f"active Google tracking reference {token!r} remains in runtime file: {runtime_file.relative_to(ROOT)}")
+    if re.search(r"(?<![a-z0-9])_ga(?:_[a-z0-9]+)?(?![a-z0-9])", runtime_text):
+        fail(f"Google Analytics _ga identifier remains in runtime file: {runtime_file.relative_to(ROOT)}")
+
+
 print(f"PASS {len(pages)} HTML pages have no form submission endpoint, no inline JS, and only first-party scripts.")
 print(f"PASS JS assets contain no localStorage, cookies or IndexedDB; only the combined estimator uses disclosed, tab-scoped sessionStorage for the city lookup handoff, with a one-hour restoration limit and no identifying fields. API requests do not send household calculator inputs.")
 print("PASS literal defaults are limited to the four editable PVWatts reference-model assumptions and the source-labelled $2.62/W national solar price reference. The combined calculator may load disclosed, editable national roof/solar references at runtime; household consumption, actual bill usage, self-consumption and export credit remain visitor-specific and unprefilled.")
 print("PASS README and methodology contain no obsolete 50% self-use or blank-export-as-zero claim.")
-print("PASS no analytics or ad-serving script is embedded in static HTML; the nonce-protected Google tag is injected only by production middleware, and the Privacy Notice discloses Google Analytics collection separately from Cloudflare Web Analytics.")
+print("PASS no Google Tag Manager or Google Analytics executable is embedded in public HTML, the 404 page or production middleware; Cloudflare Web Analytics is the configured site analytics service.")
 print("LIMIT: static source inspection does not detect host-level logs, server/CDN processing, browser extensions or third-party scripts added after deployment.")

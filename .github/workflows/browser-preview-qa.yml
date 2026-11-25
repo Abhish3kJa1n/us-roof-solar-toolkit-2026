@@ -63,10 +63,14 @@ jobs:
           PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
           AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
           QA_SCREENSHOT_DIR: browser-qa-output
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
       - name: Verify nonce CSP, production-only Google tag targeting and 404 handling
         run: node scripts/smoke_preview_csp.mjs
         env:
           PREVIEW_BASE_URL: ${{ steps.preview.outputs.base_url }}
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
       - name: Capture and audit all 16 homeowner guide pages at desktop, tablet and mobile
         run: node scripts/guide_visual_qa.mjs
         env:
@@ -75,9 +79,31 @@ jobs:
           PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/playwright
           AXE_PLAYWRIGHT_PACKAGE: /tmp/roofsolar-playwright/node_modules/@axe-core/playwright
           QA_GUIDE_SCREENSHOT_DIR: browser-qa-output/guide-pages
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      - name: Decide whether Lighthouse can safely access this Preview
+        id: lighthouse
+        shell: bash
+        env:
+          CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$CF_ACCESS_CLIENT_ID" && -z "$CF_ACCESS_CLIENT_SECRET" ]] || [[ -z "$CF_ACCESS_CLIENT_ID" && -n "$CF_ACCESS_CLIENT_SECRET" ]]; then
+            echo "Cloudflare Access requires both GitHub Actions secrets." >&2
+            exit 1
+          fi
+          if [[ -n "$CF_ACCESS_CLIENT_ID" && -n "$CF_ACCESS_CLIENT_SECRET" ]]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Lighthouse is skipped for this Access-protected Preview. The CLI's global extra-header option would expose the service token to third-party origins; origin-scoped Playwright checks still run."
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Install pinned Lighthouse CLI
+        if: steps.lighthouse.outputs.run == 'true'
         run: npm install --prefix /tmp/roofsolar-lighthouse --no-save lighthouse@13.6.0
       - name: Run mobile Lighthouse audits (diagnostic; no score gate)
+        if: steps.lighthouse.outputs.run == 'true'
         shell: bash
         env:
           PREVIEW_BASE_URL: ${{ steps.preview.outputs.base_url }}
@@ -153,6 +179,9 @@ jobs:
           }
           if (files.length !== 5) throw new Error('Expected 5 Lighthouse JSON reports; found ' + files.length);
           NODE
+      - name: Report protected Preview Lighthouse limitation
+        if: steps.lighthouse.outputs.run != 'true'
+        run: echo "Lighthouse skipped because the Preview service token is configured; the token is not sent through a global-header mechanism."
       - name: Retain browser QA artifacts and Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v4
