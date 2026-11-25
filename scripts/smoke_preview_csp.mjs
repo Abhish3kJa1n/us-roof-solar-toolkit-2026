@@ -21,6 +21,7 @@ async function getReady() {
       if (response.status === 200) return response;
       lastError = new Error(`Preview returned HTTP ${response.status}`);
     } catch (error) {
+      if (error?.name === 'CloudflareAccessError') throw error;
       lastError = error;
     }
     await new Promise((resolve) => setTimeout(resolve, 5000));
