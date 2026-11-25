@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import { assertPreviewNotAccessChallenge, fetchPreview, installCloudflareAccess } from './cloudflare_access.mjs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -21,11 +22,13 @@ assert.ok(base, 'PREVIEW_BASE_URL is required');
 fs.mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({headless:true});
 const context=await browser.newContext({viewport:{width:1365,height:900},deviceScaleFactor:1,reducedMotion:'reduce'});
+await installCloudflareAccess(context, base);
 const page=await context.newPage();
 const pageErrors=[];
 page.on('pageerror',e=>pageErrors.push(e.message));
 try {
-  const identity=await fetch(base+'/build-info.json',{cache:'no-store'});
+  const identity=await fetchPreview(base+'/build-info.json',{cache:'no-store'},base);
+  assertPreviewNotAccessChallenge(identity, 'Guide QA build identity request');
   assert.equal(identity.status,200,'Preview build identity unavailable');
   const build=await identity.json();
   assert.equal(build.commit,expectedSha,'Preview alias does not serve the expected PR commit');
@@ -33,6 +36,7 @@ try {
     const route='/guides/'+slug;
     const response=await page.goto(base+route,{waitUntil:'domcontentloaded',timeout:60000});
     assert.ok(response,route+' gave no response');
+    assertPreviewNotAccessChallenge(response, 'Guide navigation ' + route);
     assert.equal(response.status(),200,route+' HTTP status');
     assert.match((response.headers()['x-robots-tag']||'').toLowerCase(),/noindex/,route+' Preview must remain noindex');
     await page.locator('h1').waitFor({state:'visible'});
