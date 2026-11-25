@@ -357,8 +357,8 @@ try {
   assert.equal(await page.locator('#assumptionDisclosure').evaluate(node => node.open), false, 'model assumptions should be collapsed initially');
   await page.locator('#assumptionDisclosure summary').click();
   const limitationsText = await page.locator('#assumptionDisclosure').innerText();
-  assert.match(limitationsText, /annual totals rather than an hourly utility-bill simulation/i);
-  assert.match(limitationsText, /Enter an export credit to value surplus generation/i);
+  assert.match(limitationsText, /annual energy totals rather than hourly billing/i);
+  assert.match(limitationsText, /fixed and demand charges/i);
   const solarMethodNote = await page.locator('.calculator-method-note').innerText();
   assert.match(solarMethodNote, /Simple payback = system price ÷ modeled first-year annual value/i, 'method note must explain the payback arithmetic');
   const solarEconomicsText = await page.locator('article').innerText();
