@@ -94,15 +94,14 @@ assert.match(missingPage.headers.get("content-type") || "", /^text\/html\b/i, "4
 assert.match(missingPage.headers.get("x-robots-tag") || "", /noindex/i, "404 fallback must stay noindex");
 assert.match(missingPage.headers.get("content-security-policy") || "", /https:\/\/www\.googletagmanager\.com/, "static 404 CSP must allow the Google tag script origin");
 assert.match(missingHtml, /We could not find that page/i, "404 route must return the custom not-found page");
-assert.match(missingHtml, /assets\/js\/google-tag-bootstrap-1\.js/, "404 route must load the first-party bootstrap");
-assert.ok(!/googletagmanager\.com\/gtm\.js\?id=GTM-5X5DFWMW/i.test(missingHtml), "Preview 404 HTML must not contain the Production Google tag loader");
-const notFoundLoaderResponse = await fetch(new URL("/assets/js/google-tag-bootstrap-1.js", base), {
+assert.ok(
+  !/google-tag-bootstrap|googletagmanager\.com\/gtm\.js|gtag\(/i.test(missingHtml),
+  "Preview 404 HTML must not contain executable Google tracking code"
+);
+const obsoleteBootstrap = await fetch(new URL("/assets/js/google-tag-bootstrap-1.js", base), {
   headers: { "Cache-Control": "no-cache" },
 });
-assert.equal(notFoundLoaderResponse.status, 200, "404 analytics bootstrap must be served as a first-party asset");
-const notFoundLoader = await notFoundLoaderResponse.text();
-assert.ok(notFoundLoader.includes("GTM-5X5DFWMW"), "404 bootstrap must use the requested tag ID");
-assert.ok(notFoundLoader.includes("www.getroofsolarcalculator.online"), "404 bootstrap must restrict itself to the production hostnames");
+assert.equal(obsoleteBootstrap.status, 404, "obsolete Google tracking bootstrap asset must not be present");
 
 const secondHome = await get("/");
 const secondNonce = readNonce(secondHome, await secondHome.text(), "/ (second request)");
