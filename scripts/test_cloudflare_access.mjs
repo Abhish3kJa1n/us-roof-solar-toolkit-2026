@@ -13,7 +13,7 @@ delete process.env.CF_ACCESS_CLIENT_SECRET;
 
 try {
   assert.deepEqual(
-    cloudflareAccessHeadersForUrl(base + '/'),
+    cloudflareAccessHeadersForUrl(base + '/', base),
     {},
     'public Preview must keep working before Access is enabled',
   );
@@ -30,14 +30,14 @@ try {
 
   process.env.CF_ACCESS_CLIENT_ID = 'test-client-id';
   assert.throws(
-    () => cloudflareAccessHeadersForUrl(base + '/'),
+    () => cloudflareAccessHeadersForUrl(base + '/', base),
     /both CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET/i,
     'partial credentials must fail clearly',
   );
 
   process.env.CF_ACCESS_CLIENT_SECRET = 'test-client-secret';
   assert.deepEqual(
-    cloudflareAccessHeadersForUrl(base + '/'),
+    cloudflareAccessHeadersForUrl(base + '/', base),
     {
       'CF-Access-Client-Id': 'test-client-id',
       'CF-Access-Client-Secret': 'test-client-secret',
