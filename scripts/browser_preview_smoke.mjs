@@ -84,11 +84,16 @@ if (expectedPreviewSha) {
   const previewOrigin = new URL(base).origin;
   await page.route('**/assets/**', async (route) => {
     const assetUrl = new URL(route.request().url());
-    if (assetUrl.origin !== previewOrigin) return route.continue();
+    const safeHeaders = { ...route.request().headers() };
+    delete safeHeaders['cf-access-client-id'];
+    delete safeHeaders['cf-access-client-secret'];
+    if (assetUrl.origin !== previewOrigin) {
+      return route.continue({ headers: safeHeaders });
+    }
     assetUrl.searchParams.set('qa', expectedPreviewSha);
     return route.continue({
       url: assetUrl.toString(),
-      headers: { ...route.request().headers(), ...cloudflareAccessHeadersForUrl(assetUrl, base), 'cache-control': 'no-cache' }
+      headers: { ...safeHeaders, ...cloudflareAccessHeadersForUrl(assetUrl, base), 'cache-control': 'no-cache' }
     });
   });
 }
