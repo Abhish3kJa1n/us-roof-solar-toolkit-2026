@@ -36,9 +36,9 @@ DEFAULTS={
 }
 CASES=[
  ('unknown_use_share',{},['Inputs needed','Add a direct-use share and utility rates to calculate annual value','Direct-use share: not entered'],['not split between self-use and exports']),
- ('unknown_export_rate',{'selfUse':'50'},['Inputs needed','Add your utility export credit to value surplus generation','Export credit is unknown'],['not assumed to be worth $0']),
+ ('unknown_export_rate',{'selfUse':'50'},['Inputs needed','Add your utility export credit to value surplus generation','4,320 kWh exported'],['not assumed to be worth $0']),
  ('unknown_import_rate',{'selfUse':'50','rate':'','exportRate':'0.04'},['Add your marginal import rate to value electricity used at home','Import rate: not entered','4,320 kWh exported'],['0.000/kWh']),
- ('both_tariff_rates_unknown',{'selfUse':'50','rate':'','exportRate':''},['Add your marginal import rate to value electricity used at home','Import rate: not entered','Direct-use share: 50%'],['0.000/kWh']),
+ ('both_tariff_rates_unknown',{'selfUse':'50','rate':'','exportRate':''},['Add your marginal import rate to value electricity used at home','Import rate: not entered','50% direct-use scenario'],['0.000/kWh']),
  ('complete_scenario',{'selfUse':'50','exportRate':'0.04'},['$1,037 / yr','4,320 kWh used at home','$0.040/kWh','20.8 years'],['Inputs needed']),
  ('zero_import_rate_explicit',{'selfUse':'50','rate':'0','exportRate':'0.04'},['$173 / yr','0.000/kWh'],['No import rate was entered']),
  ('all_direct_use_export_not_required',{'selfUse':'100'},['$1,728 / yr','12.5 years','8,640 kWh used at home'],['Add your utility export credit']),
