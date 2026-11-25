@@ -70,9 +70,9 @@ console.log(JSON.stringify({loaded,edited}));
     if result.returncode: raise SystemExit(f"FAIL roof-cost national-reference preset: {result.stderr}")
     state=json.loads(result.stdout)
     loaded,edited=state["loaded"],state["edited"]
-    if loaded["low"]!="4" or loaded["high"]!="11" or "not a local or material-specific price" not in loaded["status"] or "$7,200 – $19,800" not in loaded["output"] or "Angi broad national" not in loaded["output"]:
+    if loaded["low"]!="4" or loaded["high"]!="11" or "Loaded Angi’s U.S. $4–$11 per roof sq ft reference" not in loaded["status"] or "$7,200 – $19,800" not in loaded["output"] or "Angi U.S. reference: $4–$11 per roof sq ft" not in loaded["output"]:
         raise SystemExit(f"FAIL roof-cost national-reference load mismatch: {loaded}")
-    if "Mixed/custom rate pair" not in edited["output"] or "Original reference: Angi broad national" not in edited["output"] or "You edited the low rate" not in edited["status"]:
+    if "Edited reference rates" not in edited["output"] or "Source: Angi U.S. reference" not in edited["output"] or "You edited the low rate" not in edited["status"]:
         raise SystemExit(f"FAIL roof-cost custom-rate provenance mismatch: {edited}")
     passed += 1; print("PASS roof-cost Angi national fallback requires explicit opt-in and provenance changes after visitor edit")
 
@@ -102,7 +102,7 @@ console.log(JSON.stringify({loaded,edited}));
     state=json.loads(result.stdout); loaded=state["loaded"]; edited=state["edited"]
     if loaded["low"]!="9" or loaded["high"]!="16" or "HomeGuide" not in loaded["status"] or "$18,000 – $32,000" not in loaded["output"]:
         raise SystemExit(f"FAIL standing-seam metal reference mismatch: {loaded}")
-    if "Mixed/custom rate pair" not in edited["output"] or "low endpoint was edited by the visitor" not in edited["output"] or "Original reference: HomeGuide published installed range for standing seam" not in edited["output"]:
+    if "Edited reference rates" not in edited["output"] or "low rate entered by you" not in edited["output"] or "Source: HomeGuide published installed range for standing seam" not in edited["output"]:
         raise SystemExit(f"FAIL metal reference provenance after visitor edit: {edited}")
     passed += 1; print("PASS metal-system selection preloads source-specific HomeGuide range and switches to visitor provenance after edit")
 
