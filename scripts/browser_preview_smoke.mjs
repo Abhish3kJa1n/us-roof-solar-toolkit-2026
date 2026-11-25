@@ -542,7 +542,7 @@ try {
   await page.locator('#material').selectOption('metal');
   assert.equal(await page.locator('#low').inputValue(), '5.5');
   assert.equal(await page.locator('#high').inputValue(), '8.5');
-  assert.match(await page.locator('#referenceStatus').innerText(), /visitor-entered rates were retained/i);
+  assert.match(await page.locator('#referenceStatus').innerText(), /Rates were retained after changing the material from tile to metal/i);
   await page.locator('#metalSystem').selectOption('metal_shingles');
   assert.equal(await page.locator('#low').inputValue(), '5.5');
   assert.equal(await page.locator('#high').inputValue(), '8.5');
